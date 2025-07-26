@@ -374,11 +374,9 @@ export default function RandomPicker() {
   if (showTitle) {
     return (
       <div
-        className="min-h-screen relative flex flex-col bg-center"
+        className="h-screen w-screen flex flex-col justify-between bg-center bg-cover bg-no-repeat"
         style={{
           backgroundImage: "url('/startscreen2.png')",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
         }}
       >
         <div className="absolute inset-0 bg-black opacity-40" />
@@ -410,7 +408,7 @@ export default function RandomPicker() {
   return (
     <div className="min-h-screen bg-[#e6f4f1] flex flex-col items-center justify-start p-2 sm:p-4 sm:justify-center overflow-x-hidden">
       <audio ref={runSoundRef} src="/run.mp3" loop className="hidden" />
-      <div className="bg-white bg-opacity-95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl mt-2 sm:mt-0">
+      <div className="flex flex-col flex-grow w-full max-w-4xl bg-white bg-opacity-95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 overflow-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-3xl sm:text-4xl">🏇</span>
