@@ -374,8 +374,12 @@ export default function RandomPicker() {
   if (showTitle) {
     return (
       <div
-        className="min-h-screen relative flex items-center justify-center text-center bg-cover bg-center"
-        style={{ backgroundImage: "url('/startscreen.png')" }}
+        className="min-h-screen relative flex items-center justify-center text-center bg-center"
+        style={{
+          backgroundImage: "url('/startscreen.png')",
+          backgroundSize: "contain",
+          backgroundRepeat: "no-repeat",
+        }}
       >
         <div className="absolute inset-0 bg-black opacity-40" />
         <motion.div
@@ -523,10 +527,10 @@ export default function RandomPicker() {
         )}
 
         {items.length > 0 && (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6 justify-center items-center">
             <button
               onClick={beginCountdown}
-              className={`flex-1 text-white p-4 rounded-xl font-semibold transition-all transform text-base sm:text-lg ${
+              className={`w-full sm:w-auto text-white p-4 rounded-xl font-semibold transition-all transform text-base sm:text-lg ${
                 isStartDisabled
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 active:scale-95 shadow-lg"
