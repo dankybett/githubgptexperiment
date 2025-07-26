@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 export default function RandomPicker() {
+  const [showTitle, setShowTitle] = useState(true);
   const [itemCount, setItemCount] = useState(0);
   const [items, setItems] = useState([]);
   const [isRacing, setIsRacing] = useState(false);
@@ -369,6 +370,20 @@ export default function RandomPicker() {
   const toggleMute = () => setMuted(!muted);
 
   const isStartDisabled = itemCount === 0 || isRacing || countdown;
+
+  if (showTitle) {
+    return (
+      <div className="min-h-screen bg-[#e6f4f1] flex flex-col items-center justify-center p-4">
+        <h1 className="text-4xl font-bold mb-6">Horse Race Picker</h1>
+        <button
+          onClick={() => setShowTitle(false)}
+          className="px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-semibold"
+        >
+          Start
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#e6f4f1] flex flex-col items-center justify-start p-2 sm:p-4 sm:justify-center overflow-x-hidden">
