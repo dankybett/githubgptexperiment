@@ -373,14 +373,32 @@ export default function RandomPicker() {
 
   if (showTitle) {
     return (
-      <div className="min-h-screen bg-[#e6f4f1] flex flex-col items-center justify-center p-4">
-        <h1 className="text-4xl font-bold mb-6">Horse Race Picker</h1>
-        <button
-          onClick={() => setShowTitle(false)}
-          className="px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-semibold"
+      <div
+        className="min-h-screen relative flex items-center justify-center text-center bg-cover bg-center"
+        style={{ backgroundImage: "url('/startscreen.png')" }}
+      >
+        <div className="absolute inset-0 bg-black opacity-40" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="relative z-10 flex flex-col items-center"
         >
-          Start
-        </button>
+          <h1 className="text-5xl sm:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
+            Horse Race Picker
+          </h1>
+          <p className="text-lg sm:text-xl text-yellow-200 mb-8">
+            Ready... Set... Race!
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTitle(false)}
+            className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full font-bold shadow-xl"
+          >
+            Start
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
