@@ -374,9 +374,9 @@ export default function RandomPicker() {
   if (showTitle) {
     return (
       <div
-        className="min-h-screen relative flex items-center justify-center text-center bg-center"
+        className="min-h-screen relative flex flex-col bg-center"
         style={{
-          backgroundImage: "url('/startscreen.png')",
+          backgroundImage: "url('/startscreen2.png')",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}
@@ -386,7 +386,7 @@ export default function RandomPicker() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="relative z-10 flex flex-col items-center"
+          className="relative z-10 flex flex-col items-center justify-center flex-1 text-center"
         >
           <h1 className="text-5xl sm:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
             Horse Race Picker
@@ -399,7 +399,7 @@ export default function RandomPicker() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowTitle(false)}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full font-bold shadow-xl z-10"
+          className="relative z-10 self-center mb-8 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full font-bold shadow-xl"
         >
           Start
         </motion.button>
