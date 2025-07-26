@@ -377,7 +377,7 @@ export default function RandomPicker() {
         className="min-h-screen relative flex items-center justify-center text-center bg-center"
         style={{
           backgroundImage: "url('/startscreen.png')",
-          backgroundSize: "contain",
+          backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}
       >
@@ -394,15 +394,15 @@ export default function RandomPicker() {
           <p className="text-lg sm:text-xl text-yellow-200 mb-8">
             Ready... Set... Race!
           </p>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowTitle(false)}
-            className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full font-bold shadow-xl"
-          >
-            Start
-          </motion.button>
         </motion.div>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowTitle(false)}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full font-bold shadow-xl z-10"
+        >
+          Start
+        </motion.button>
       </div>
     );
   }
