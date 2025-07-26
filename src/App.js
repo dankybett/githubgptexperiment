@@ -35,7 +35,9 @@ export default function RandomPicker() {
 
   const trackContainerRef = useRef(null);
 
-  const TRACK_LENGTH_PX = 1200;
+  // Increase the track length so the horses can run beyond the initial
+  // viewport width. This gives the scrolling effect more room to work.
+  const TRACK_LENGTH_PX = 2400;
 
   const maxItems = 20;
 
@@ -434,7 +436,6 @@ export default function RandomPicker() {
                 </div>
               </div>
             </div>
-           </div>
           )}
         </div>
 
@@ -486,8 +487,7 @@ export default function RandomPicker() {
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
         {items.length > 0 && (
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -557,8 +557,9 @@ export default function RandomPicker() {
                           : "bg-white bg-opacity-90"
                       }`}
                       animate={{
+                        // Move the horse across the full width of the track.
                         x: positions[index]
-                          ? `${Math.min(positions[index] * 82, 82)}%`
+                          ? `${Math.min(positions[index] * 100, 100)}%`
                           : "0%",
                       }}
                       transition={{ duration: 0.1 }}
@@ -645,7 +646,7 @@ export default function RandomPicker() {
                 </div>
               )}
             </div>
-            </div>
+          </div>
         )}
 
         {history.length > 0 && (
