@@ -1,3 +1,4 @@
+import "./styles.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -9,6 +10,8 @@ const root = createRoot(rootElement);
 
 root.render(
   <StrictMode>
-    <App />
+    <div id="phone-wrapper">
+      <App />
+    </div>
   </StrictMode>
 );
