@@ -918,6 +918,40 @@ export default function RandomPicker() {
     );
   };
 
+  // Confetti animation for winner screen
+  const Confetti = () => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 rounded-sm"
+          style={{
+            backgroundColor: [
+              "#FFC700",
+              "#FF0000",
+              "#2E3191",
+              "#41BBC7",
+              "#FFFFFF",
+            ][i % 5],
+          }}
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: -20,
+            rotate: 0,
+            opacity: 1,
+          }}
+          animate={{
+            y: window.innerHeight + 20,
+            x: Math.random() * window.innerWidth,
+            rotate: Math.random() * 360,
+            opacity: 0,
+          }}
+          transition={{ duration: 2 + Math.random() * 2, delay: Math.random() }}
+        />
+      ))}
+    </div>
+  );
+
   // TITLE SCREEN
   if (showTitle) {
     return (
@@ -1315,12 +1349,28 @@ export default function RandomPicker() {
                 {winner && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <motion.div
-                      className="text-center p-6 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto"
+                      className="text-center p-6 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ duration: 0.5 }}
                     >
-                      <div className="text-4xl mb-2">🏆</div>
+                      <div className="relative mb-2 flex justify-center">
+                        <MotionFadeInImage
+                          src={
+                            winnerIndex !== null
+                              ? shuffledAvatars[
+                                  winnerIndex % shuffledAvatars.length
+                                ]
+                              : ""
+                          }
+                          alt="Winning horse"
+                          className="w-24 h-24 mx-auto"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <Confetti />
+                      </div>
                       <p className="text-lg font-bold text-gray-800">WINNER!</p>
                       <p className="text-xl font-bold text-yellow-800 mb-2">
                         {winner}
