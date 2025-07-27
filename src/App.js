@@ -46,11 +46,11 @@ export default function RandomPicker() {
     "/horses/horse3.png",
     "/horses/horse4.png",
     "/horses/horse5.png",
-    "/horses/horse6.png",
-    "/horses/horse7.png",
-    "/horses/horse8.png",
-    "/horses/horse9.png",
-    "/horses/horse10.png",
+    "/horses/luffyhorse.png",
+    "/horses/narutohorse.png",
+    "/horses/unicorn.png",
+    "/horses/xenohorse.png",
+    "/horses/2horse.png",
   ];
 
   // Preload horse images so they don't pop in when the race starts
