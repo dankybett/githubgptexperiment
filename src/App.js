@@ -22,17 +22,20 @@ export default function RandomPicker() {
   const [raceDistance, setRaceDistance] = useState("medium"); // short, medium, long
   const [currentWeather, setCurrentWeather] = useState(null);
 
+  // Horse avatars can now be custom images located in the `public` folder.
+  // Simply add your images (e.g. horse1.png, horse2.png...) and list the file
+  // names here. They will be displayed instead of the previous emoji icons.
   const horseAvatars = [
-    "🐎",
-    "🦄",
-    "🐫",
-    "🐘",
-    "🐢",
-    "🐕",
-    "🐇",
-    "🐖",
-    "🦓",
-    "🦌",
+    "/horses/horse1.png",
+    "/horses/horse2.png",
+    "/horses/horse3.png",
+    "/horses/horse4.png",
+    "/horses/horse5.png",
+    "/horses/horse6.png",
+    "/horses/horse7.png",
+    "/horses/horse8.png",
+    "/horses/horse9.png",
+    "/horses/horse10.png",
   ];
 
   // Weather effects configuration
@@ -1060,9 +1063,11 @@ export default function RandomPicker() {
                       transition={{ delay: index * 0.1 }}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="text-2xl">
-                          {horseAvatars[index % horseAvatars.length]}
-                        </div>
+                        <img
+                          src={horseAvatars[index % horseAvatars.length]}
+                          alt="Horse avatar"
+                          className="w-8 h-8 object-contain"
+                        />
                         <div>
                           <div className="font-bold text-gray-800">
                             {getHorseName(item, index)}
@@ -1176,7 +1181,9 @@ export default function RandomPicker() {
                         transition={{ duration: 0.1 }}
                       >
                         <div className="flex items-center gap-2">
-                          <motion.span
+                          <motion.img
+                            src={horseAvatars[index % horseAvatars.length]}
+                            alt="Horse avatar"
                             animate={
                               isRacing
                                 ? {
@@ -1191,16 +1198,14 @@ export default function RandomPicker() {
                               repeat: Infinity,
                               ease: "easeInOut",
                             }}
-                            className="text-xl sm:text-2xl"
+                            className="w-6 h-6 sm:w-8 sm:h-8"
                             style={{
                               filter:
                                 winnerIndex === index
                                   ? "drop-shadow(0 0 8px gold)"
                                   : "none",
                             }}
-                          >
-                            {horseAvatars[index % horseAvatars.length]}
-                          </motion.span>
+                          />
                           {/* Horse name following behind */}
                           <div className="bg-white bg-opacity-90 px-2 py-1 rounded-md shadow-sm border border-gray-200">
                             <span className="text-xs font-bold text-gray-800 whitespace-nowrap">
@@ -1231,9 +1236,11 @@ export default function RandomPicker() {
                         transition={{ duration: 0.15 }}
                       >
                         <div className="flex items-center gap-2 w-full">
-                          <span className="text-xl sm:text-2xl opacity-0 flex-shrink-0">
-                            {horseAvatars[index % horseAvatars.length]}
-                          </span>
+                          <img
+                            src={horseAvatars[index % horseAvatars.length]}
+                            alt="Horse avatar"
+                            className="w-6 h-6 sm:w-8 sm:h-8 opacity-0 flex-shrink-0"
+                          />
                           <span className="text-xs sm:text-sm font-bold truncate flex-1">
                             {getHorseName(item, index)}
                           </span>
@@ -1572,9 +1579,11 @@ export default function RandomPicker() {
                       onChange={(e) => handleItemChange(index, e.target.value)}
                       className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-10 pr-12 focus:shadow-lg"
                     />
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg">
-                      {horseAvatars[index % horseAvatars.length]}
-                    </span>
+                    <img
+                      src={horseAvatars[index % horseAvatars.length]}
+                      alt="Horse avatar"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6"
+                    />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
                       #{index + 1}
                     </span>
