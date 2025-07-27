@@ -2,14 +2,23 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 
-function FadeInImage({ src, alt, className = "", ...props }) {
+function FadeInImage({ src, alt, className = "", style = {}, ...props }) {
   const [loaded, setLoaded] = React.useState(false);
+  const [error, setError] = React.useState(false);
+
   return (
     <img
       src={src}
       alt={alt}
       onLoad={() => setLoaded(true)}
-      className={`${className} fade-in-image ${loaded ? "loaded" : ""}`}
+      onError={() => setError(true)}
+      className={`${className} transition-opacity duration-300 ${
+        loaded && !error ? "opacity-100" : "opacity-0"
+      }`}
+      style={{
+        ...style,
+        backgroundColor: loaded ? "transparent" : "#f3f4f6", // Light gray placeholder
+      }}
       {...props}
     />
   );
@@ -34,12 +43,11 @@ export default function RandomPicker() {
   const [raceTime, setRaceTime] = useState(0);
   const [fastestTime, setFastestTime] = useState(null);
   const [nameCategory, setNameCategory] = useState("Default");
-  const [raceDistance, setRaceDistance] = useState("medium"); // short, medium, long
+  const [raceDistance, setRaceDistance] = useState("medium");
   const [currentWeather, setCurrentWeather] = useState(null);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   // Horse avatars can now be custom images located in the `public` folder.
-  // Simply add your images (e.g. horse1.png, horse2.png...) and list the file
-  // names here. They will be displayed instead of the previous emoji icons.
   const horseAvatars = [
     "/horses/horse1.png",
     "/horses/horse2.png",
@@ -62,8 +70,31 @@ export default function RandomPicker() {
   // State to allow shuffling the order of horse avatars
   const [shuffledAvatars, setShuffledAvatars] = useState(horseAvatars);
 
-  // Preload horse images so they don't pop in when the race starts
+  // Enhanced preloading with loading state
   useEffect(() => {
+    let loadedCount = 0;
+    const totalImages = horseAvatars.length;
+
+    const preloadPromises = horseAvatars.map((src) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          loadedCount++;
+          resolve(src);
+        };
+        img.onerror = () => {
+          loadedCount++;
+          resolve(src); // Still resolve to not block loading
+        };
+        img.src = src;
+      });
+    });
+
+    Promise.all(preloadPromises).then(() => {
+      setImagesLoaded(true);
+    });
+
+    // Also add preload links for browser optimization
     const preloadLinks = [];
     horseAvatars.forEach((src) => {
       const link = document.createElement("link");
@@ -73,10 +104,8 @@ export default function RandomPicker() {
       link.dataset.horse = "true";
       document.head.appendChild(link);
       preloadLinks.push(link);
-
-      const img = new Image();
-      img.src = src;
     });
+
     return () => {
       preloadLinks.forEach((link) => link.remove());
     };
@@ -150,21 +179,20 @@ export default function RandomPicker() {
   const animationFrameIdRef = useRef(null);
   const raceStartTime = useRef(null);
   const trackContainerRef = useRef(null);
-  const racePhaseRef = useRef(0); // Track race progress for dramatic events
+  const racePhaseRef = useRef(0);
   const lastLeaderRef = useRef(-1);
   const dramaMomentRef = useRef(0);
   const bellSoundRef = useRef(null);
   const cheerSoundRef = useRef(null);
-  const usedCommentaryRef = useRef(new Set()); // Track used commentary
-  const lastCommentaryRef = useRef(""); // Track last commentary to prevent immediate repeats
+  const usedCommentaryRef = useRef(new Set());
+  const lastCommentaryRef = useRef("");
 
   const [trackLength, setTrackLength] = useState(window.innerWidth * 2);
 
   useEffect(() => {
     const updateTrackLength = () => {
-      // Updated track lengths: classic same as marathon, marathon twice as long
       const baseLength =
-        raceDistance === "short" ? 1.8 : raceDistance === "long" ? 9 : 4.5; // marathon now 9x instead of 4.5x
+        raceDistance === "short" ? 1.8 : raceDistance === "long" ? 9 : 4.5;
       setTrackLength(Math.max(window.innerWidth * baseLength, 1000));
     };
 
@@ -332,7 +360,6 @@ export default function RandomPicker() {
     return shuffled;
   };
 
-  // Generate random weather for each race
   const generateRandomWeather = () => {
     const weatherTypes = Object.keys(weatherEffects);
     const randomWeather =
@@ -414,8 +441,8 @@ export default function RandomPicker() {
     racePhaseRef.current = 0;
     lastLeaderRef.current = -1;
     dramaMomentRef.current = 0;
-    usedCommentaryRef.current.clear(); // Reset commentary tracking
-    lastCommentaryRef.current = ""; // Reset last commentary
+    usedCommentaryRef.current.clear();
+    lastCommentaryRef.current = "";
   };
 
   const startCountdown = () => {
@@ -443,19 +470,19 @@ export default function RandomPicker() {
     const settings = {
       short: {
         baseSpeed: 0.004,
-        speedVariation: 0.003, // Reduced variation for tighter races
-        surgeIntensity: 0.005, // Reduced surge intensity
+        speedVariation: 0.003,
+        surgeIntensity: 0.005,
         surgeFrequency: 0.35,
         comebackChance: 0.15,
         dramaMoments: 2,
         hurdles: [],
         staminaFactor: 0.1,
-        packTightness: 0.85, // New factor for keeping horses together
+        packTightness: 0.85,
       },
       medium: {
         baseSpeed: 0.002,
-        speedVariation: 0.002, // Much tighter speed variation
-        surgeIntensity: 0.003, // Smaller surges
+        speedVariation: 0.002,
+        surgeIntensity: 0.003,
         surgeFrequency: 0.28,
         comebackChance: 0.25,
         dramaMoments: 3,
@@ -464,18 +491,17 @@ export default function RandomPicker() {
         packTightness: 0.9,
       },
       long: {
-        baseSpeed: 0.0008, // Slower for longer race (was 0.0015)
-        speedVariation: 0.0015, // Even tighter for marathon
+        baseSpeed: 0.0008,
+        speedVariation: 0.0015,
         surgeIntensity: 0.002,
         surgeFrequency: 0.22,
         comebackChance: 0.4,
         dramaMoments: 5,
         hurdles: [0.15, 0.35, 0.55, 0.75, 0.9],
         staminaFactor: 0.35,
-        packTightness: 0.95, // Very tight pack for marathon
+        packTightness: 0.95,
       },
     };
-    // Apply weather speed multiplier
     if (currentWeather) {
       const weatherSettings = { ...settings[distance] };
       weatherSettings.baseSpeed *= currentWeather.speedMultiplier;
@@ -487,7 +513,6 @@ export default function RandomPicker() {
   const getCommentaryForPhase = (phase) => {
     let phrases = commentaryPhrases[phase] || commentaryPhrases.middle;
 
-    // Inject weather-related commentary occasionally
     if (
       currentWeather &&
       commentaryPhrases.weather[currentWeather.name.toLowerCase()]
@@ -505,7 +530,6 @@ export default function RandomPicker() {
         phrase !== lastCommentaryRef.current
     );
 
-    // If we've used all phrases or only the last one remains, reset the used set
     if (availablePhrases.length === 0) {
       usedCommentaryRef.current.clear();
       const resetPhrases = phrases.filter(
@@ -535,7 +559,6 @@ export default function RandomPicker() {
     setWinner(null);
     setWinnerIndex(null);
 
-    // Immediate start commentary
     const startPhrases = commentaryPhrases.start;
     setCommentary(
       startPhrases[Math.floor(Math.random() * startPhrases.length)]
@@ -547,7 +570,7 @@ export default function RandomPicker() {
     racePhaseRef.current = 0;
     lastLeaderRef.current = -1;
     dramaMomentRef.current = 0;
-    usedCommentaryRef.current.clear(); // Reset commentary tracking
+    usedCommentaryRef.current.clear();
 
     const settings = getRaceSettings(raceDistance);
 
@@ -557,7 +580,6 @@ export default function RandomPicker() {
       }
     }, 100);
 
-    // More frequent dynamic commentary
     let commentaryCounter = 0;
     commentaryIntervalRef.current = setInterval(() => {
       const progress = Math.max(...positions);
@@ -571,7 +593,6 @@ export default function RandomPicker() {
         dramaMomentRef.current--;
       }
 
-      // Add some variety - occasionally use middle phase commentary even in other phases
       if (commentaryCounter % 3 === 0 && phase !== "dramatic") {
         phase = "middle";
       }
@@ -586,15 +607,14 @@ export default function RandomPicker() {
       trackContainerRef.current.scrollLeft = 0;
     }
 
-    // Initialize horses with varied starting potential
     const horseProfiles = Array(itemCount)
       .fill(0)
       .map((_, idx) => ({
         baseSpeed:
           settings.baseSpeed + (Math.random() - 0.5) * settings.speedVariation,
-        stamina: 0.6 + Math.random() * 0.7, // How well they maintain speed
-        comebackPotential: Math.random(), // Chance for dramatic comeback
-        hurdleSkill: 0.3 + Math.random() * 0.7, // How well they handle hurdles
+        stamina: 0.6 + Math.random() * 0.7,
+        comebackPotential: Math.random(),
+        hurdleSkill: 0.3 + Math.random() * 0.7,
         surgeCount: 0,
         lastSurge: 0,
         isComingBack: false,
@@ -614,40 +634,35 @@ export default function RandomPicker() {
         const currentProgress = Math.max(...prevPositions);
         const currentLeader = prevPositions.indexOf(Math.max(...prevPositions));
 
-        // Check for leader changes to trigger dramatic commentary
         if (currentLeader !== lastLeaderRef.current && currentProgress > 0.1) {
           lastLeaderRef.current = currentLeader;
-          dramaMomentRef.current = 2; // Trigger dramatic commentary
+          dramaMomentRef.current = 2;
         }
 
         updatedPositions = prevPositions.map((pos, idx) => {
           const profile = horseProfiles[idx];
           let speed = profile.baseSpeed;
 
-          // Check if horse is stunned from a hurdle
           const currentTime = Date.now();
           if (profile.isStunned && currentTime < profile.stunnedUntil) {
-            return pos; // Horse is stunned, no movement
+            return pos;
           } else if (profile.isStunned) {
-            profile.isStunned = false; // Recovery from stun
+            profile.isStunned = false;
           }
 
-          // Apply stamina effect (more pronounced in longer races)
           const fatigueEffect =
             1 - pos * (1 - profile.stamina) * settings.staminaFactor;
-          speed *= Math.max(fatigueEffect, 0.3); // Don't let horses stop completely
+          speed *= Math.max(fatigueEffect, 0.3);
 
-          // Pack tightness effect - keep horses closer together
           const averageProgress =
             prevPositions.reduce((a, b) => a + b, 0) / prevPositions.length;
           const deviation = pos - averageProgress;
           const packEffect =
             1 - Math.abs(deviation) * (1 - settings.packTightness);
-          speed *= Math.max(packEffect, 0.7); // Minimum speed multiplier
+          speed *= Math.max(packEffect, 0.7);
 
-          // Check for hurdles
           for (const hurdlePos of settings.hurdles) {
-            const hurdleRange = 0.02; // Small range around hurdle position
+            const hurdleRange = 0.02;
             if (
               pos >= hurdlePos - hurdleRange &&
               pos <= hurdlePos + hurdleRange &&
@@ -655,25 +670,21 @@ export default function RandomPicker() {
             ) {
               profile.hurdlesCrossed.push(hurdlePos);
 
-              // Hurdle jump mechanics based on skill
               const jumpSuccess = Math.random() < profile.hurdleSkill;
 
               if (jumpSuccess) {
-                // Good jump - slight boost
                 speed += settings.surgeIntensity * 0.4;
                 dramaMomentRef.current = Math.max(dramaMomentRef.current, 1);
               } else {
-                // Failed jump - horse stumbles
-                const stunDuration = 400 + Math.random() * 600; // 0.4-1.0 seconds
+                const stunDuration = 400 + Math.random() * 600;
                 profile.isStunned = true;
                 profile.stunnedUntil = currentTime + stunDuration;
-                speed = 0; // Immediate stop
-                dramaMomentRef.current = 3; // Major dramatic moment
+                speed = 0;
+                dramaMomentRef.current = 3;
               }
             }
           }
 
-          // Random surge system (less frequent in longer races)
           const shouldSurge =
             Math.random() < settings.surgeFrequency &&
             pos - profile.lastSurge > 0.12 &&
@@ -685,8 +696,7 @@ export default function RandomPicker() {
             profile.lastSurge = pos;
           }
 
-          // Enhanced comeback mechanic for horses falling behind
-          const isLagging = pos < averageProgress - 0.05; // Much smaller threshold for tighter races
+          const isLagging = pos < averageProgress - 0.05;
           const shouldComeback =
             isLagging &&
             Math.random() <
@@ -695,25 +705,21 @@ export default function RandomPicker() {
 
           if (shouldComeback && !profile.isComingBack) {
             profile.isComingBack = true;
-            speed += settings.surgeIntensity * 1.2; // Smaller comeback boost for tighter races
-            dramaMomentRef.current = 4; // Major dramatic moment
+            speed += settings.surgeIntensity * 1.2;
+            dramaMomentRef.current = 4;
           }
 
-          // Maintain comeback boost for a longer period in marathons
           if (profile.isComingBack) {
-            const comebackBoost = raceDistance === "long" ? 0.3 : 0.2; // Smaller boost
+            const comebackBoost = raceDistance === "long" ? 0.3 : 0.2;
             speed += settings.surgeIntensity * comebackBoost;
             if (pos > averageProgress + 0.03) {
-              // Much smaller threshold
               profile.isComingBack = false;
             }
           }
 
-          // Add controlled randomness (minimal for very tight racing)
-          const randomFactor = 1 + (Math.random() - 0.5) * 0.08; // Much reduced from 0.15
+          const randomFactor = 1 + (Math.random() - 0.5) * 0.08;
           speed *= randomFactor;
 
-          // Final calculation
           let nextPos = Math.max(0, pos + speed);
           if (nextPos > 1) nextPos = 1;
           return nextPos;
@@ -767,13 +773,10 @@ export default function RandomPicker() {
           const minPos = Math.min(...updatedPositions);
           const spread = lead - minPos;
 
-          // Dynamic camera following - focus on the action
           let focusPoint;
           if (spread < 0.15) {
-            // Tight pack - follow the middle of the pack
             focusPoint = (lead + minPos) / 2;
           } else {
-            // Spread out - follow slightly behind the leader to show more action
             focusPoint = lead - 0.1;
           }
 
@@ -809,13 +812,11 @@ export default function RandomPicker() {
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
 
-    // 🔇 Stop cheer sound if playing
     if (cheerSoundRef.current) {
       cheerSoundRef.current.pause();
       cheerSoundRef.current.currentTime = 0;
     }
 
-    // 🔇 Stop race sound too, just in case
     if (raceSoundRef.current) {
       raceSoundRef.current.pause();
       raceSoundRef.current.currentTime = 0;
@@ -834,13 +835,11 @@ export default function RandomPicker() {
     setCurrentWeather(null);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
-    // 🔇 Stop cheer sound
     if (cheerSoundRef.current) {
       cheerSoundRef.current.pause();
       cheerSoundRef.current.currentTime = 0;
     }
 
-    // 🔇 Stop race sound
     if (raceSoundRef.current) {
       raceSoundRef.current.pause();
       raceSoundRef.current.currentTime = 0;
@@ -852,7 +851,6 @@ export default function RandomPicker() {
     setFastestTime(null);
   };
 
-  // Updated function to randomize horse names and avatar order for selected theme
   const randomizeHorseNames = () => {
     const categoryList =
       horseNameCategories[nameCategory] || horseNameCategories["Default"];
@@ -862,12 +860,10 @@ export default function RandomPicker() {
       [nameCategory]: shuffledNames,
     }));
 
-    // Update items with new randomized names (only for empty items)
-    const newItems = items.map(
-      (item, index) => (item.trim() === "" ? "" : item) // Keep existing custom names
+    const newItems = items.map((item, index) =>
+      item.trim() === "" ? "" : item
     );
     setItems(newItems);
-    // Also shuffle the horse avatars so each randomisation changes the image order
     setShuffledAvatars(shuffleArray(shuffledAvatars));
   };
 
@@ -882,12 +878,12 @@ export default function RandomPicker() {
         emoji: "🏃",
         name: "Classic",
         description: "Epic distance race",
-      }, // Updated description
+      },
       long: {
         emoji: "🏔️",
         name: "Marathon",
         description: "Ultimate endurance test",
-      }, // Updated description
+      },
     };
     return info[distance];
   };
@@ -1088,8 +1084,38 @@ export default function RandomPicker() {
           </div>
         </div>
 
+        {/* Loading Screen */}
+        {!imagesLoaded && (
+          <div className="flex-1 flex flex-col justify-center items-center p-4">
+            <motion.div
+              className="text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <motion.div
+                className="text-6xl mb-4"
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                🏇
+              </motion.div>
+              <p className="text-xl font-bold text-gray-700 mb-2">
+                Loading horses...
+              </p>
+              <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* Pre-Race or Countdown */}
-        {!isRacing && !winner && (
+        {imagesLoaded && !isRacing && !winner && (
           <div className="flex-1 flex flex-col justify-center items-center p-4">
             {countdown ? (
               <motion.div
@@ -1146,7 +1172,7 @@ export default function RandomPicker() {
                         <FadeInImage
                           src={shuffledAvatars[index % shuffledAvatars.length]}
                           alt="Horse avatar"
-                          className="w-24 h-24 object-contain"
+                          className="w-24 h-24 object-contain rounded-lg"
                         />
                         <div>
                           <div className="font-bold text-gray-800">
@@ -1176,9 +1202,9 @@ export default function RandomPicker() {
         )}
 
         {/* Race Track */}
-        {(isRacing || winner) && (
+        {imagesLoaded && (isRacing || winner) && (
           <div className="flex-1 p-3 sm:p-4 relative">
-            {/* Commentary Box - Moved to center top */}
+            {/* Commentary Box */}
             {(isRacing || countdown) && (
               <motion.div
                 className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40 p-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white rounded-2xl backdrop-blur-sm shadow-2xl border-2 border-white/20 max-w-md mx-4"
@@ -1247,20 +1273,20 @@ export default function RandomPicker() {
                       {/* Finish line */}
                       <div className="absolute right-1 top-0 h-full w-1 bg-gradient-to-b from-red-500 to-yellow-500 opacity-80"></div>
 
-                      {/* Horse Emoji with Name Following */}
+                      {/* Horse with Following Name */}
                       <motion.div
                         className="absolute top-0 h-full flex items-center z-30"
                         animate={{
                           x: positions[index]
                             ? `${Math.min(
-                                positions[index] * (trackLength - 80),
-                                trackLength - 80
+                                positions[index] * (trackLength - 120),
+                                trackLength - 120
                               )}px`
                             : "0px",
                         }}
                         transition={{ duration: 0.1 }}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <MotionFadeInImage
                             src={
                               shuffledAvatars[index % shuffledAvatars.length]
@@ -1280,67 +1306,41 @@ export default function RandomPicker() {
                               repeat: Infinity,
                               ease: "easeInOut",
                             }}
-                            className="sm:w-24 sm:h-24"
+                            className="w-16 h-16 object-contain rounded-lg flex-shrink-0"
                             style={{
-                              width: "4.5rem",
-                              height: "4.5rem",
                               filter:
                                 winnerIndex === index
                                   ? "drop-shadow(0 0 8px gold)"
                                   : "none",
                             }}
                           />
-                          {/* Horse name following behind */}
-                          <div className="bg-white bg-opacity-90 px-2 py-1 rounded-md shadow-sm border border-gray-200">
-                            <span className="text-xs font-bold text-gray-800 whitespace-nowrap">
-                              {getHorseName(item, index)}
-                            </span>
-                          </div>
-                        </div>
-                      </motion.div>
-
-                      {/* Name Trail */}
-                      <motion.div
-                        className={`absolute left-0 top-0 h-full flex items-center px-3 text-sm font-semibold z-20 rounded-xl shadow-md ${
-                          winnerIndex === index
-                            ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 shadow-lg border-2 border-yellow-500"
-                            : "bg-white bg-opacity-95 border border-gray-200"
-                        }`}
-                        animate={{
-                          width: positions[index]
-                            ? `${Math.max(
-                                Math.min(
-                                  positions[index] * (trackLength - 80),
-                                  trackLength - 80
-                                ),
-                                120
-                              )}px`
-                            : "120px",
-                        }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          <FadeInImage
-                            src={
-                              shuffledAvatars[index % shuffledAvatars.length]
-                            }
-                            alt="Horse avatar"
-                            className="opacity-0 flex-shrink-0 sm:w-24 sm:h-24"
-                            style={{ width: "4.5rem", height: "4.5rem" }}
-                          />
-                          <span className="text-xs sm:text-sm font-bold truncate flex-1">
-                            {getHorseName(item, index)}
-                          </span>
-                          {winnerIndex === index && (
-                            <motion.span
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: 0.3, duration: 0.5 }}
-                              className="text-yellow-600 ml-1"
-                            >
-                              👑
-                            </motion.span>
-                          )}
+                          {/* Following Name Tag */}
+                          <motion.div
+                            className={`px-3 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap ${
+                              winnerIndex === index
+                                ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
+                                : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
+                            }`}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold">
+                                {getHorseName(item, index)}
+                              </span>
+                              {winnerIndex === index && (
+                                <motion.span
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{ delay: 0.5, duration: 0.5 }}
+                                  className="text-yellow-600"
+                                >
+                                  👑
+                                </motion.span>
+                              )}
+                            </div>
+                          </motion.div>
                         </div>
                       </motion.div>
 
@@ -1351,7 +1351,7 @@ export default function RandomPicker() {
                   ))}
                 </div>
 
-                {/* Winner Display - Centered */}
+                {/* Winner Display */}
                 {winner && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <motion.div
@@ -1370,7 +1370,7 @@ export default function RandomPicker() {
                               : ""
                           }
                           alt="Winning horse"
-                          className="w-24 h-24 mx-auto"
+                          className="w-24 h-24 mx-auto object-contain rounded-lg"
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ duration: 0.5 }}
@@ -1428,7 +1428,6 @@ export default function RandomPicker() {
                         <button
                           onClick={async () => {
                             try {
-                              // Create a temporary element for the winner result
                               const winnerElement =
                                 document.createElement("div");
                               winnerElement.innerHTML = `
@@ -1461,7 +1460,6 @@ export default function RandomPicker() {
 
                               document.body.appendChild(winnerElement);
 
-                              // Use html2canvas to create an image
                               try {
                                 const canvas = await html2canvas(
                                   winnerElement.firstElementChild,
@@ -1685,8 +1683,8 @@ export default function RandomPicker() {
                     <FadeInImage
                       src={shuffledAvatars[index % shuffledAvatars.length]}
                       alt="Horse avatar"
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2"
-                      style={{ width: "4.5rem", height: "4.5rem" }}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 object-contain rounded-md"
+                      style={{ width: "2.5rem", height: "2.5rem" }}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
                       #{index + 1}
