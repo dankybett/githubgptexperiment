@@ -1,3 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset and base styles */
 html,
 body,
 #root {
@@ -5,47 +10,55 @@ body,
   padding: 0;
   height: 100%;
   width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Center the app wrapper on large screens */
+/* Ensure full viewport usage */
 body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #000; /* optional background for extra space */
-  min-height: 100vh;
+  background: #000;
+  overflow-x: hidden;
 }
 
-/* Fixed-size “phone” container */
-#phone-wrapper {
-  width: 375px; /* pick the dimensions you want */
-  height: 812px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
+/* Mobile viewport fix */
+@viewport {
+  width: device-width;
+  zoom: 1;
 }
 
-.App {
-  text-align: center;
-  padding: 1rem;
+/* Custom scrollbar for better mobile experience */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
 }
 
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Prevent zoom on input focus (iOS) */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Ensure buttons are touch-friendly */
 button {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.1s;
-}
-
-button:hover {
-  background: linear-gradient(135deg, #8190ff 0%, #0019ff 100%);
-}
-
-button:active {
-  transform: scale(0.97);
+  min-height: 44px;
+  min-width: 44px;
 }
