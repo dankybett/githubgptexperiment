@@ -1274,6 +1274,33 @@ export default function RandomPicker() {
                         transition={{ duration: 0.1 }}
                       >
                         <div className="flex items-center gap-3">
+                          {/* Name tag should trail behind the horse */}
+                          <motion.div
+                            className={`px-3 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap ${
+                              winnerIndex === index
+                                ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
+                                : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
+                            }`}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold">
+                                {getHorseName(item, index)}
+                              </span>
+                              {winnerIndex === index && (
+                                <motion.span
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{ delay: 0.5, duration: 0.5 }}
+                                  className="text-yellow-600"
+                                >
+                                  👑
+                                </motion.span>
+                              )}
+                            </div>
+                          </motion.div>
                           <MotionFadeInImage
                             src={
                               shuffledAvatars[index % shuffledAvatars.length]
@@ -1301,33 +1328,6 @@ export default function RandomPicker() {
                                   : "none",
                             }}
                           />
-                          {/* Following Name Tag */}
-                          <motion.div
-                            className={`px-3 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap ${
-                              winnerIndex === index
-                                ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
-                                : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
-                            }`}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold">
-                                {getHorseName(item, index)}
-                              </span>
-                              {winnerIndex === index && (
-                                <motion.span
-                                  initial={{ scale: 0, rotate: -180 }}
-                                  animate={{ scale: 1, rotate: 0 }}
-                                  transition={{ delay: 0.5, duration: 0.5 }}
-                                  className="text-yellow-600"
-                                >
-                                  👑
-                                </motion.span>
-                              )}
-                            </div>
-                          </motion.div>
                         </div>
                       </motion.div>
 
