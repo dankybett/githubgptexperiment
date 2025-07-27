@@ -20,6 +20,7 @@ export default function RandomPicker() {
   const [fastestTime, setFastestTime] = useState(null);
   const [nameCategory, setNameCategory] = useState("Default");
   const [raceDistance, setRaceDistance] = useState("medium"); // short, medium, long
+  const [currentWeather, setCurrentWeather] = useState(null);
 
   const horseAvatars = [
     "🐎",
@@ -33,6 +34,70 @@ export default function RandomPicker() {
     "🦓",
     "🦌",
   ];
+
+  // Weather effects configuration
+  const weatherEffects = {
+    sunny: {
+      name: "Sunny",
+      emoji: "☀️",
+      description: "Perfect racing conditions",
+      background: "from-yellow-200 via-orange-200 to-yellow-300",
+      trackColor: "from-green-400 to-green-600",
+      speedMultiplier: 1.0,
+      particles: "☀️",
+      particleCount: 3,
+    },
+    rainy: {
+      name: "Rainy",
+      emoji: "🌧️",
+      description: "Slippery track conditions",
+      background: "from-gray-300 via-blue-200 to-gray-400",
+      trackColor: "from-green-600 to-green-800",
+      speedMultiplier: 0.85,
+      particles: "💧",
+      particleCount: 8,
+    },
+    muddy: {
+      name: "Muddy",
+      emoji: "🟤",
+      description: "Heavy going, tough conditions",
+      background: "from-amber-200 via-yellow-300 to-amber-300",
+      trackColor: "from-amber-600 to-amber-800",
+      speedMultiplier: 0.75,
+      particles: "💨",
+      particleCount: 5,
+    },
+    snowy: {
+      name: "Snowy",
+      emoji: "❄️",
+      description: "Winter wonderland racing",
+      background: "from-blue-100 via-white to-blue-200",
+      trackColor: "from-blue-300 to-blue-500",
+      speedMultiplier: 0.8,
+      particles: "❄️",
+      particleCount: 12,
+    },
+    night: {
+      name: "Night",
+      emoji: "🌙",
+      description: "Racing under the stars",
+      background: "from-purple-900 via-blue-900 to-black",
+      trackColor: "from-gray-600 to-gray-800",
+      speedMultiplier: 0.95,
+      particles: "⭐",
+      particleCount: 6,
+    },
+    windy: {
+      name: "Windy",
+      emoji: "🍃",
+      description: "Autumn leaves swirling",
+      background: "from-orange-200 via-red-200 to-yellow-200",
+      trackColor: "from-green-500 to-green-700",
+      speedMultiplier: 0.9,
+      particles: "🍂",
+      particleCount: 10,
+    },
+  };
 
   const commentaryIntervalRef = useRef(null);
   const animationFrameIdRef = useRef(null);
@@ -133,6 +198,13 @@ export default function RandomPicker() {
       "They've done it!",
       "What a champion!",
     ],
+    weather: {
+      rainy: ["The rain is making this treacherous!", "Slipping and sliding!"],
+      muddy: ["The mud is slowing them down!", "Heavy going out there!"],
+      snowy: ["Fighting through the snow!", "Winter conditions are tough!"],
+      windy: ["The wind is picking up!", "Leaves swirling everywhere!"],
+      night: ["Racing under the stars!", "What a beautiful night race!"],
+    },
   };
 
   const horseNameCategories = {
@@ -213,6 +285,14 @@ export default function RandomPicker() {
     return shuffled;
   };
 
+  // Generate random weather for each race
+  const generateRandomWeather = () => {
+    const weatherTypes = Object.keys(weatherEffects);
+    const randomWeather =
+      weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+    setCurrentWeather(weatherEffects[randomWeather]);
+  };
+
   useEffect(() => {
     raceSoundRef.current = new Audio("/run.mp3");
     bellSoundRef.current = new Audio("/startingpistol.mp3");
@@ -275,6 +355,7 @@ export default function RandomPicker() {
   };
 
   const goToRaceScreen = () => {
+    generateRandomWeather();
     setShowRaceScreen(true);
     setWinner(null);
     setWinnerIndex(null);
@@ -347,11 +428,30 @@ export default function RandomPicker() {
         packTightness: 0.95, // Very tight pack for marathon
       },
     };
+    // Apply weather speed multiplier
+    if (currentWeather) {
+      const weatherSettings = { ...settings[distance] };
+      weatherSettings.baseSpeed *= currentWeather.speedMultiplier;
+      return weatherSettings;
+    }
     return settings[distance];
   };
 
   const getCommentaryForPhase = (phase) => {
-    const phrases = commentaryPhrases[phase] || commentaryPhrases.middle;
+    let phrases = commentaryPhrases[phase] || commentaryPhrases.middle;
+
+    // Inject weather-related commentary occasionally
+    if (
+      currentWeather &&
+      commentaryPhrases.weather[currentWeather.name.toLowerCase()]
+    ) {
+      if (Math.random() < 0.3) {
+        phrases = [
+          ...phrases,
+          ...commentaryPhrases.weather[currentWeather.name.toLowerCase()],
+        ];
+      }
+    }
     const availablePhrases = phrases.filter(
       (phrase) =>
         !usedCommentaryRef.current.has(phrase) &&
@@ -606,6 +706,7 @@ export default function RandomPicker() {
               winner: winnerName,
               time: `${finalTime}s`,
               distance: raceDistance,
+              weather: currentWeather?.name || "Clear",
               timestamp: new Date().toLocaleTimeString(),
             },
             ...prev.slice(0, 9),
@@ -657,6 +758,7 @@ export default function RandomPicker() {
     setCommentary("");
     setPositions([]);
     setRaceTime(0);
+    setCurrentWeather(null);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
 
@@ -682,6 +784,7 @@ export default function RandomPicker() {
     setPositions(Array(itemCount).fill(0));
     setRaceTime(0);
     setCountdown(null);
+    setCurrentWeather(null);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
     // 🔇 Stop cheer sound
@@ -738,6 +841,38 @@ export default function RandomPicker() {
       }, // Updated description
     };
     return info[distance];
+  };
+
+  // Weather Particles Component
+  const WeatherParticles = () => {
+    if (!currentWeather) return null;
+
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {Array.from({ length: currentWeather.particleCount }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-2xl opacity-70"
+            initial={{
+              x: Math.random() * window.innerWidth,
+              y: -50,
+            }}
+            animate={{
+              y: window.innerHeight + 50,
+              x: Math.random() * window.innerWidth,
+            }}
+            transition={{
+              duration: 3 + Math.random() * 4,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+              ease: "linear",
+            }}
+          >
+            {currentWeather.particles}
+          </motion.div>
+        ))}
+      </div>
+    );
   };
 
   // TITLE SCREEN
@@ -810,7 +945,15 @@ export default function RandomPicker() {
     const distanceInfo = getRaceDistanceInfo(raceDistance);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 w-full overflow-hidden flex flex-col">
+      <div
+        className={`min-h-screen bg-gradient-to-br ${
+          currentWeather
+            ? currentWeather.background
+            : "from-green-100 via-blue-100 to-purple-100"
+        } w-full overflow-hidden flex flex-col relative`}
+      >
+        {/* Weather Particles */}
+        <WeatherParticles />
         {/* Race Header */}
         <div className="bg-white bg-opacity-90 backdrop-blur-md shadow-lg p-3 sm:p-4">
           <div className="flex justify-between items-center">
@@ -826,9 +969,18 @@ export default function RandomPicker() {
                 <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {distanceInfo.emoji} {distanceInfo.name} Race
                 </h1>
-                <p className="text-xs text-gray-600">
-                  {distanceInfo.description}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <span>{distanceInfo.description}</span>
+                  {currentWeather && (
+                    <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <span>{currentWeather.emoji}</span>
+                        <span>{currentWeather.name}</span>
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -871,6 +1023,11 @@ export default function RandomPicker() {
                   {countdown}
                 </motion.div>
                 <p className="text-2xl font-bold text-gray-700">Get Ready!</p>
+                {currentWeather && (
+                  <p className="text-lg text-gray-600 mt-2">
+                    {currentWeather.emoji} {currentWeather.description}
+                  </p>
+                )}
               </motion.div>
             ) : (
               <motion.div
@@ -881,6 +1038,17 @@ export default function RandomPicker() {
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
                   🏁 {distanceInfo.name} Race Ready!
                 </h2>
+                {currentWeather && (
+                  <div className="mb-4 p-3 bg-white bg-opacity-80 rounded-xl">
+                    <div className="flex items-center justify-center gap-2 text-lg font-semibold">
+                      <span className="text-2xl">{currentWeather.emoji}</span>
+                      <span>Weather: {currentWeather.name}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {currentWeather.description}
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-3 mb-8">
                   {items.map((item, index) => (
@@ -958,7 +1126,11 @@ export default function RandomPicker() {
 
             <div className="overflow-x-auto h-full" ref={trackContainerRef}>
               <div
-                className="p-3 rounded-2xl shadow-inner bg-gradient-to-r from-green-400 to-green-600 relative h-full min-h-96"
+                className={`p-3 rounded-2xl shadow-inner bg-gradient-to-r ${
+                  currentWeather
+                    ? currentWeather.trackColor
+                    : "from-green-400 to-green-600"
+                } relative h-full min-h-96`}
                 style={{ width: `${trackLength}px`, backgroundSize: "cover" }}
               >
                 <div className="space-y-2 relative z-10 py-4">
@@ -1105,6 +1277,12 @@ export default function RandomPicker() {
                       <p className="text-sm text-gray-600">
                         {getRaceDistanceInfo(raceDistance).name} Race
                       </p>
+                      {currentWeather && (
+                        <p className="flex items-center justify-center gap-1 mt-1 text-sm text-gray-600">
+                          <span>{currentWeather.emoji}</span>
+                          <span>{currentWeather.name} conditions</span>
+                        </p>
+                      )}
                       {raceTime === fastestTime && (
                         <p className="text-sm font-bold text-red-600 mt-1">
                           🔥 NEW RECORD! 🔥
@@ -1124,6 +1302,7 @@ export default function RandomPicker() {
                             dramaMomentRef.current = 0;
                             usedCommentaryRef.current.clear();
                             lastCommentaryRef.current = "";
+                            generateRandomWeather();
                             setTimeout(startCountdown, 500);
                           }}
                           className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg font-semibold shadow-lg text-sm"
