@@ -1230,55 +1230,12 @@ export default function RandomPicker() {
                                   "Unable to share result. Please try again."
                                 );
                               }
-
-                              document.body.removeChild(winnerElement);
-
-                              // Convert to blob and share
-                              canvas.toBlob(async (blob) => {
-                                if (
-                                  navigator.share &&
-                                  navigator.canShare &&
-                                  navigator.canShare({
-                                    files: [
-                                      new File([blob], "race-result.png", {
-                                        type: "image/png",
-                                      }),
-                                    ],
-                                  })
-                                ) {
-                                  // Use Web Share API if available
-                                  const file = new File(
-                                    [blob],
-                                    "race-result.png",
-                                    { type: "image/png" }
-                                  );
-                                  await navigator.share({
-                                    title: "Horse Race Result",
-                                    text: `${winner} won the ${
-                                      getRaceDistanceInfo(raceDistance).name
-                                    } race in ${raceTime}s!`,
-                                    files: [file],
-                                  });
-                                } else {
-                                  // Fallback to download
-                                  const url = URL.createObjectURL(blob);
-                                  const a = document.createElement("a");
-                                  a.href = url;
-                                  a.download = `${winner.replace(
-                                    /[^a-zA-Z0-9]/g,
-                                    "_"
-                                  )}_race_result.png`;
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  document.body.removeChild(a);
-                                  URL.revokeObjectURL(url);
-                                }
-                              }, "image/png");
                             } catch (error) {
                               console.error("Error sharing result:", error);
                               alert(
                                 "Unable to share result. Please try again."
                               );
+                              document.body.removeChild(winnerElement);
                             }
                           }}
                           className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold shadow-lg text-sm"
