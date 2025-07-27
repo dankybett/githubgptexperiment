@@ -65,6 +65,7 @@ export default function RandomPicker() {
     "/horses/centaurhorse.png",
     "/horses/burgerhorse.png",
     "/horses/businesshorse.png",
+    "/horses/horsecar.png",
   ];
 
   // State to allow shuffling the order of horse avatars
