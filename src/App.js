@@ -43,7 +43,7 @@ export default function RandomPicker() {
   const horseAvatars = [
     "/horses/horse1.png",
     "/horses/horse2.png",
-    "/horses/horse3.png",
+    "/horses/robohorse.png",
     "/horses/horse4.png",
     "/horses/horse5.png",
     "/horses/luffyhorse.png",
@@ -52,6 +52,9 @@ export default function RandomPicker() {
     "/horses/xenohorse.png",
     "/horses/2horse.png",
   ];
+
+  // State to allow shuffling the order of horse avatars
+  const [shuffledAvatars, setShuffledAvatars] = useState(horseAvatars);
 
   // Preload horse images so they don't pop in when the race starts
   useEffect(() => {
@@ -843,7 +846,7 @@ export default function RandomPicker() {
     setFastestTime(null);
   };
 
-  // Updated function to randomize horse names for selected theme
+  // Updated function to randomize horse names and avatar order for selected theme
   const randomizeHorseNames = () => {
     const categoryList =
       horseNameCategories[nameCategory] || horseNameCategories["Default"];
@@ -858,6 +861,8 @@ export default function RandomPicker() {
       (item, index) => (item.trim() === "" ? "" : item) // Keep existing custom names
     );
     setItems(newItems);
+    // Also shuffle the horse avatars so each randomisation changes the image order
+    setShuffledAvatars(shuffleArray(shuffledAvatars));
   };
 
   const toggleMute = () => setMuted(!muted);
@@ -1099,7 +1104,7 @@ export default function RandomPicker() {
                     >
                       <div className="flex items-center gap-3">
                         <FadeInImage
-                          src={horseAvatars[index % horseAvatars.length]}
+                          src={shuffledAvatars[index % shuffledAvatars.length]}
                           alt="Horse avatar"
                           className="w-24 h-24 object-contain"
                         />
@@ -1217,7 +1222,9 @@ export default function RandomPicker() {
                       >
                         <div className="flex items-center gap-2">
                           <MotionFadeInImage
-                            src={horseAvatars[index % horseAvatars.length]}
+                            src={
+                              shuffledAvatars[index % shuffledAvatars.length]
+                            }
                             alt="Horse avatar"
                             animate={
                               isRacing
@@ -1274,7 +1281,9 @@ export default function RandomPicker() {
                       >
                         <div className="flex items-center gap-2 w-full">
                           <FadeInImage
-                            src={horseAvatars[index % horseAvatars.length]}
+                            src={
+                              shuffledAvatars[index % shuffledAvatars.length]
+                            }
                             alt="Horse avatar"
                             className="opacity-0 flex-shrink-0 sm:w-24 sm:h-24"
                             style={{ width: "4.5rem", height: "4.5rem" }}
@@ -1618,7 +1627,7 @@ export default function RandomPicker() {
                       className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-16 pr-12 focus:shadow-lg"
                     />
                     <FadeInImage
-                      src={horseAvatars[index % horseAvatars.length]}
+                      src={shuffledAvatars[index % shuffledAvatars.length]}
                       alt="Horse avatar"
                       className="absolute left-3 top-1/2 transform -translate-y-1/2"
                       style={{ width: "4.5rem", height: "4.5rem" }}
