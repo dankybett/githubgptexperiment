@@ -2,6 +2,21 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 
+function FadeInImage({ src, alt, className = "", ...props }) {
+  const [loaded, setLoaded] = React.useState(false);
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={() => setLoaded(true)}
+      className={`${className} fade-in-image ${loaded ? "loaded" : ""}`}
+      {...props}
+    />
+  );
+}
+
+const MotionFadeInImage = motion(FadeInImage);
+
 export default function RandomPicker() {
   const [showTitle, setShowTitle] = useState(true);
   const [showRaceScreen, setShowRaceScreen] = useState(false);
@@ -40,10 +55,22 @@ export default function RandomPicker() {
 
   // Preload horse images so they don't pop in when the race starts
   useEffect(() => {
+    const preloadLinks = [];
     horseAvatars.forEach((src) => {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = src;
+      link.dataset.horse = "true";
+      document.head.appendChild(link);
+      preloadLinks.push(link);
+
       const img = new Image();
       img.src = src;
     });
+    return () => {
+      preloadLinks.forEach((link) => link.remove());
+    };
   }, []);
 
   // Weather effects configuration
@@ -1071,10 +1098,10 @@ export default function RandomPicker() {
                       transition={{ delay: index * 0.1 }}
                     >
                       <div className="flex items-center gap-3">
-                        <img
+                        <FadeInImage
                           src={horseAvatars[index % horseAvatars.length]}
                           alt="Horse avatar"
-                          className="w-16 h-16 object-contain"
+                          className="w-24 h-24 object-contain"
                         />
                         <div>
                           <div className="font-bold text-gray-800">
@@ -1189,7 +1216,7 @@ export default function RandomPicker() {
                         transition={{ duration: 0.1 }}
                       >
                         <div className="flex items-center gap-2">
-                          <motion.img
+                          <MotionFadeInImage
                             src={horseAvatars[index % horseAvatars.length]}
                             alt="Horse avatar"
                             animate={
@@ -1206,8 +1233,10 @@ export default function RandomPicker() {
                               repeat: Infinity,
                               ease: "easeInOut",
                             }}
-                            className="w-12 h-12 sm:w-16 sm:h-16"
+                            className="sm:w-24 sm:h-24"
                             style={{
+                              width: "4.5rem",
+                              height: "4.5rem",
                               filter:
                                 winnerIndex === index
                                   ? "drop-shadow(0 0 8px gold)"
@@ -1244,10 +1273,11 @@ export default function RandomPicker() {
                         transition={{ duration: 0.15 }}
                       >
                         <div className="flex items-center gap-2 w-full">
-                          <img
+                          <FadeInImage
                             src={horseAvatars[index % horseAvatars.length]}
                             alt="Horse avatar"
-                            className="w-12 h-12 sm:w-16 sm:h-16 opacity-0 flex-shrink-0"
+                            className="opacity-0 flex-shrink-0 sm:w-24 sm:h-24"
+                            style={{ width: "4.5rem", height: "4.5rem" }}
                           />
                           <span className="text-xs sm:text-sm font-bold truncate flex-1">
                             {getHorseName(item, index)}
@@ -1587,10 +1617,11 @@ export default function RandomPicker() {
                       onChange={(e) => handleItemChange(index, e.target.value)}
                       className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-16 pr-12 focus:shadow-lg"
                     />
-                    <img
+                    <FadeInImage
                       src={horseAvatars[index % horseAvatars.length]}
                       alt="Horse avatar"
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-12 h-12"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2"
+                      style={{ width: "4.5rem", height: "4.5rem" }}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
                       #{index + 1}
