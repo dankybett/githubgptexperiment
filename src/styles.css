@@ -62,3 +62,11 @@ button {
   min-height: 44px;
   min-width: 44px;
 }
+
+.fade-in-image {
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+}
+.fade-in-image.loaded {
+  opacity: 1;
+}
