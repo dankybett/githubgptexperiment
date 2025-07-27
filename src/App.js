@@ -38,6 +38,14 @@ export default function RandomPicker() {
     "/horses/horse10.png",
   ];
 
+  // Preload horse images so they don't pop in when the race starts
+  useEffect(() => {
+    horseAvatars.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
   // Weather effects configuration
   const weatherEffects = {
     sunny: {
@@ -1066,7 +1074,7 @@ export default function RandomPicker() {
                         <img
                           src={horseAvatars[index % horseAvatars.length]}
                           alt="Horse avatar"
-                          className="w-8 h-8 object-contain"
+                          className="w-16 h-16 object-contain"
                         />
                         <div>
                           <div className="font-bold text-gray-800">
@@ -1198,7 +1206,7 @@ export default function RandomPicker() {
                               repeat: Infinity,
                               ease: "easeInOut",
                             }}
-                            className="w-6 h-6 sm:w-8 sm:h-8"
+                            className="w-12 h-12 sm:w-16 sm:h-16"
                             style={{
                               filter:
                                 winnerIndex === index
@@ -1239,7 +1247,7 @@ export default function RandomPicker() {
                           <img
                             src={horseAvatars[index % horseAvatars.length]}
                             alt="Horse avatar"
-                            className="w-6 h-6 sm:w-8 sm:h-8 opacity-0 flex-shrink-0"
+                            className="w-12 h-12 sm:w-16 sm:h-16 opacity-0 flex-shrink-0"
                           />
                           <span className="text-xs sm:text-sm font-bold truncate flex-1">
                             {getHorseName(item, index)}
@@ -1577,12 +1585,12 @@ export default function RandomPicker() {
                       }`}
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
-                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-10 pr-12 focus:shadow-lg"
+                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-16 pr-12 focus:shadow-lg"
                     />
                     <img
                       src={horseAvatars[index % horseAvatars.length]}
                       alt="Horse avatar"
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-12 h-12"
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
                       #{index + 1}
