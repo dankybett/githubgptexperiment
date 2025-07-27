@@ -1,34 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
-
-function FadeInImage({ src, alt, className = "", style = {}, ...props }) {
-  const [loaded, setLoaded] = React.useState(false);
-  const [error, setError] = React.useState(false);
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      onLoad={() => setLoaded(true)}
-      onError={() => setError(true)}
-      className={`${className} transition-opacity duration-300 ${
-        loaded && !error ? "opacity-100" : "opacity-0"
-      }`}
-      style={{
-        ...style,
-        backgroundColor: loaded ? "transparent" : "#f3f4f6", // Light gray placeholder
-      }}
-      {...props}
-    />
-  );
-}
+import FadeInImage from "./components1/FadeInImage";
+import HorseStable from "./components1/HorseStable";
 
 const MotionFadeInImage = motion(FadeInImage);
 
 export default function RandomPicker() {
   const [showTitle, setShowTitle] = useState(true);
   const [showRaceScreen, setShowRaceScreen] = useState(false);
+  const [showStable, setShowStable] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [items, setItems] = useState([]);
   const [isRacing, setIsRacing] = useState(false);
@@ -1542,6 +1523,15 @@ export default function RandomPicker() {
     );
   }
 
+  if (showStable) {
+    return (
+      <HorseStable
+        horseAvatars={horseAvatars}
+        onBack={() => setShowStable(false)}
+      />
+    );
+  }
+
   // SETUP SCREEN
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-cyan-50 to-blue-50 w-full overflow-x-hidden">
@@ -1572,6 +1562,12 @@ export default function RandomPicker() {
                 className="text-lg sm:text-xl hover:scale-110 transition-transform p-2 rounded-full hover:bg-gray-100"
               >
                 {muted ? "🔇" : "🔊"}
+              </button>
+              <button
+                onClick={() => setShowStable(true)}
+                className="text-lg sm:text-sm px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-md"
+              >
+                🏠 Stable
               </button>
             </div>
           </div>
