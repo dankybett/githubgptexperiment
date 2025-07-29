@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import FadeInImage from "./components1/FadeInImage";
 import HorseStable from "./components1/HorseStable";
 import RaceTrack from "./components1/RaceTrack";
+import BattleshipGame from "./components1/BattleshipGame";
 
 const MotionFadeInImage = motion(FadeInImage);
 
@@ -11,6 +12,7 @@ export default function RandomPicker() {
   const [showTitle, setShowTitle] = useState(true);
   const [showRaceScreen, setShowRaceScreen] = useState(false);
   const [showStable, setShowStable] = useState(false);
+  const [showBattleship, setShowBattleship] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [items, setItems] = useState([]);
   const [isRacing, setIsRacing] = useState(false);
@@ -1237,8 +1239,16 @@ export default function RandomPicker() {
       <HorseStable
         horseAvatars={horseAvatars}
         onBack={() => setShowStable(false)}
+        onPlayMinigame={() => {
+          setShowStable(false);
+          setShowBattleship(true);
+        }}
       />
     );
+  }
+
+  if (showBattleship) {
+    return <BattleshipGame onBack={() => setShowBattleship(false)} />;
   }
 
   // SETUP SCREEN
