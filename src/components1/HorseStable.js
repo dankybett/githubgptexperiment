@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import FadeInImage from "./FadeInImage";
+import HorseDetailsModal from "./HorseDetailsModal";
 
 const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
+  const [selectedHorse, setSelectedHorse] = useState(null);
 
+  const handleRename = (id, newName) => {
+    setStableHorses((prev) =>
+      prev.map((horse) =>
+        horse.id === id ? { ...horse, name: newName } : horse
+      )
+    );
+  };
   // Initialize 5 random horses with random positions and movement patterns
   useEffect(() => {
     const shuffledHorses = [...horseAvatars].sort(() => Math.random() - 0.5);
@@ -314,6 +323,13 @@ const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
           </div>
         </div>
       </div>
+      {selectedHorse && (
+        <HorseDetailsModal
+          horse={selectedHorse}
+          onClose={() => setSelectedHorse(null)}
+          onRename={handleRename}
+        />
+      )}
     </div>
   );
 };
