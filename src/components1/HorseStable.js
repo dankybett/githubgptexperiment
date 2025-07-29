@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import FadeInImage from "./FadeInImage";
 
-const HorseStable = ({ horseAvatars, onBack }) => {
+const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
 
@@ -152,14 +152,26 @@ const HorseStable = ({ horseAvatars, onBack }) => {
               </p>
             </div>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onBack}
-            className="px-4 py-2 bg-amber-600 text-amber-100 rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow-lg"
-          >
-            ← Back to Race Setup
-          </motion.button>
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onBack}
+              className="px-4 py-2 bg-amber-600 text-amber-100 rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow-lg"
+            >
+              ← Back to Race Setup
+            </motion.button>
+            {onPlayMinigame && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onPlayMinigame}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-lg"
+              >
+                Play Minigame
+              </motion.button>
+            )}
+          </div>
         </div>
       </div>
 
