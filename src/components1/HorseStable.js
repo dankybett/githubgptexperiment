@@ -307,4 +307,3 @@ const HorseStable = ({ horseAvatars, onBack }) => {
 };
 
 export default HorseStable;
-
