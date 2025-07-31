@@ -759,23 +759,56 @@ export default function RandomPicker() {
 
         if (trackContainerRef.current) {
           const container = trackContainerRef.current;
-          const lead = Math.max(...updatedPositions);
-          const minPos = Math.min(...updatedPositions);
-          const spread = lead - minPos;
 
-          let focusPoint;
-          if (spread < 0.15) {
-            focusPoint = (lead + minPos) / 2;
-          } else {
-            focusPoint = lead - 0.1;
+          // Sort positions in descending order (lead is first)
+          const sorted = [...updatedPositions].sort((a, b) => b - a);
+          const lead = sorted[0];
+          const second = sorted[1] ?? sorted[0]; // Fallback in case only one horse exists
+
+          // Calculate dynamic focus based on race situation
+          const gap = lead - second;
+          const maxGap = trackLength * 0.1; // 10% of track length for reference
+
+          // If horses are close, focus exactly between them
+          // If gap is large, bias slightly toward the leader for better viewing
+          const focusWeight = Math.min(gap / maxGap, 1);
+          let focusPoint = second + (lead - second) * (0.5 + focusWeight * 0.2);
+
+          // Convert focus point to pixel position
+          let targetLeft = focusPoint * (trackLength - container.clientWidth);
+
+          // Ensure leader always remains in view
+          const leaderPixelPos = lead * trackLength;
+          const viewportStart = targetLeft;
+          const viewportEnd = targetLeft + container.clientWidth;
+
+          // If leader is outside the right edge of viewport, adjust
+          if (leaderPixelPos > viewportEnd) {
+            targetLeft = leaderPixelPos - container.clientWidth;
+          }
+          // If leader is outside the left edge of viewport, adjust
+          else if (leaderPixelPos < viewportStart) {
+            targetLeft = leaderPixelPos;
           }
 
-          const newLeft = Math.max(
+          // Apply final boundaries
+          targetLeft = Math.max(
             0,
-            focusPoint * (trackLength - container.clientWidth)
+            Math.min(targetLeft, trackLength - container.clientWidth)
           );
+
+          // Smooth camera movement with damping
+          // Adjust smoothingFactor (0.05-0.2) for different camera responsiveness
+          // Lower values = smoother but slower, Higher values = more responsive
+          const smoothingFactor = 0.1;
+          const currentLeft = container.scrollLeft;
+          const newLeft =
+            currentLeft + (targetLeft - currentLeft) * smoothingFactor;
+
           container.scrollLeft = newLeft;
         }
+
+        return updatedPositions;
 
         return updatedPositions;
       });
