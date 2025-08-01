@@ -88,7 +88,32 @@ const horseNames = [
     "Inferno",
     "Mirage",
     "Nebula",
-  ];
+];
+
+const horsePersonalities = [
+  "Wise mentor of the herd.",
+  "Underdog with a big heart.",
+  "Mystery-loving sleuth.",
+  "Fast and curious traveler.",
+  "Fiery spirit with boundless energy.",
+  "Free soul who roams the plains.",
+  "Quiet but always observant.",
+  "Shy friend who trusts few.",
+  "Thrives in wild weather.",
+  "Appears and vanishes without a sound.",
+  "Always first out of the gate.",
+  "Quick thinker and quicker runner.",
+  "Regal and dignified presence.",
+  "Loud, powerful, and brave.",
+  "Strikes with sudden bursts.",
+  "Seeker of hidden paths.",
+  "Cool-headed in any race.",
+  "Whirlwind of excitement.",
+  "Relentless force on the track.",
+  "Burns with competitive drive.",
+  "Hard to catch and harder to predict.",
+  "Dreamy star-gazer.",
+];
 
   const [unlockedHorses, setUnlockedHorses] = useState(
     horseAvatars.map((_, index) => index < 5)
@@ -1349,8 +1374,9 @@ const horseNames = [
       <HorseStable
         horseAvatars={horseAvatars}
         horseNames={horseNames}
+        horsePersonalities={horsePersonalities}
         unlockedHorses={unlockedHorses}
-        coins={coins}       
+        coins={coins}     
         onBack={() => setShowStable(false)}
         onPlayMinigame={() => {
           setShowStable(false);

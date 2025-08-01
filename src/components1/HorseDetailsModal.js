@@ -38,7 +38,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename }) {
               className="w-full border rounded px-2 py-1"
             />
           </div>
-          <p className="text-sm">Speed: {(horse.speed * 100).toFixed(0)}</p>
+          <p className="text-sm">Personality: {horse.personality}</p>
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1 bg-gray-200 rounded">

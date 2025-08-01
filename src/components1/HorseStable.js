@@ -6,6 +6,7 @@ import HorseDetailsModal from "./HorseDetailsModal";
 const HorseStable = ({
   horseAvatars,
   horseNames,
+  horsePersonalities,
   unlockedHorses,
   coins,
   onBack,
@@ -33,6 +34,7 @@ const HorseStable = ({
       id: index,
       avatar,
       name: horseNames[index],
+      personality: horsePersonalities[index],
       x: Math.random() * 70 + 10,
       y: Math.random() * 60 + 20,
       targetX: Math.random() * 70 + 10,
@@ -47,7 +49,7 @@ const HorseStable = ({
     setStableHorses(horsesWithData);
 
     setTimeout(() => setStableLoaded(true), 1000);
-    }, [horseAvatars, horseNames, unlockedHorses]);
+    }, [horseAvatars, horseNames, horsePersonalities, unlockedHorses]);
 
   // Animation loop for horse movement
   useEffect(() => {
@@ -262,9 +264,10 @@ const HorseStable = ({
           {stableHorses.map((horse) => (
             <motion.div
               key={horse.id}
-              className="absolute z-20"
+              className="absolute z-20 cursor-pointer"
               style={{ left: `${horse.x}%`, top: `${horse.y}%` }}
               transition={{ duration: 0.1, ease: "linear" }}
+              onClick={() => setSelectedHorse(horse)}
             >
               <motion.div
                 className="relative"
