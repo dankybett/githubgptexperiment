@@ -687,6 +687,7 @@ const horsePersonalities = [
       setCommentary(next);
     }, 1800);
 
+    let winnerDeclared = false;
     let finished = false;
 
     if (trackContainerRef.current) {
@@ -824,11 +825,8 @@ const horsePersonalities = [
         }
 
         const winnerIdx = updatedPositions.findIndex((p) => p >= 1);
-        if (winnerIdx !== -1) {
-          finished = true;
-          if (raceSoundRef.current) {
-            raceSoundRef.current.pause();
-          }
+        if (winnerIdx !== -1 && !winnerDeclared) {
+          winnerDeclared = true;
           clearInterval(timerInterval);
           const finalTime = parseFloat(
             ((Date.now() - raceStartTime.current) / 1000).toFixed(1)
@@ -837,8 +835,9 @@ const horsePersonalities = [
           const winnerName = getHorseName(items[winnerIdx], winnerIdx);
           setWinner(winnerName);
           setWinnerIndex(winnerIdx);
-          setIsRacing(false);
           setCommentary(`🏆 ${winnerName} wins in a thrilling finish!`);
+          setRaceTime(finalTime);
+
           if (cheerSoundRef.current) {
             cheerSoundRef.current.currentTime = 0;
             cheerSoundRef.current
@@ -846,8 +845,7 @@ const horsePersonalities = [
               .catch((e) => console.warn("Cheer sound failed:", e));
           }
 
-          setRaceTime(finalTime);
-
+          
           if (!fastestTime || finalTime < fastestTime) {
             setFastestTime(finalTime);
           }
@@ -871,7 +869,16 @@ const horsePersonalities = [
               setCoins((c) => Math.max(0, c - betAmount));
             }
           }
+
           clearInterval(commentaryIntervalRef.current);
+        }
+ 
+        if (updatedPositions.every((p) => p >= 1)) {
+          finished = true;
+          setIsRacing(false);
+          if (raceSoundRef.current) {
+            raceSoundRef.current.pause();
+          }
         }
 
         if (trackContainerRef.current) {
