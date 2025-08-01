@@ -7,3 +7,8 @@ Horse avatars are now loaded from image files. Add your images to the `public`
 folder (e.g. `horse1.png`, `horse2.png`) and list the filenames in
 `src/App.js` inside the `horseAvatars` array. The app will display these images
 in place of the previous emoji icons.
+
+## Unlocking horses
+
+Players begin with 5 horses. Visit the stable to spend in-game coins and unlock
+additional horses

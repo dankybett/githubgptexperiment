@@ -3,7 +3,16 @@ import { motion } from "framer-motion";
 import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
 
-const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
+const UNLOCK_COST = 20;
+
+const HorseStable = ({
+  horseAvatars,
+  unlockedHorses,
+  coins,
+  onUnlockHorse,
+  onBack,
+  onPlayMinigame,
+}) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState(null);
@@ -15,12 +24,11 @@ const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
       )
     );
   };
-  // Initialize 5 random horses with random positions and movement patterns
+ // Initialize roaming horses based on unlocked list
   useEffect(() => {
-    const shuffledHorses = [...horseAvatars].sort(() => Math.random() - 0.5);
-    const selectedHorses = shuffledHorses.slice(0, 5);
+     const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
 
-    const horsesWithData = selectedHorses.map((avatar, index) => ({
+    const horsesWithData = available.map((avatar, index) => ({
       id: index,
       avatar,
       name: `Stable Horse ${index + 1}`,
@@ -37,9 +45,8 @@ const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
 
     setStableHorses(horsesWithData);
 
-    // Simulate loading time
     setTimeout(() => setStableLoaded(true), 1000);
-  }, [horseAvatars]);
+    }, [horseAvatars, unlockedHorses]);
 
   // Animation loop for horse movement
   useEffect(() => {
@@ -161,7 +168,10 @@ const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-4">
+            <div className="text-amber-100 font-semibold">
+              💰 {coins}
+            </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -321,6 +331,37 @@ const HorseStable = ({ horseAvatars, onBack, onPlayMinigame }) => {
               <span>Horses are roaming peacefully</span>
             </div>
           </div>
+        </div>
+      </div>
+       {/* Locked Horses Section */}
+      <div className="p-8">
+        <h3 className="text-center font-bold mb-4">Locked Horses</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {horseAvatars.map((avatar, index) =>
+            unlockedHorses[index] ? null : (
+              <div
+                key={index}
+                className="flex flex-col items-center bg-amber-100 bg-opacity-60 p-4 rounded-lg"
+              >
+                <FadeInImage
+                  src={avatar}
+                  alt="Locked horse"
+                  className="w-20 h-20 object-contain opacity-50"
+                />
+                <button
+                  onClick={() => onUnlockHorse(index, UNLOCK_COST)}
+                  disabled={coins < UNLOCK_COST}
+                  className={`mt-2 px-3 py-1 text-xs rounded ${
+                    coins < UNLOCK_COST
+                      ? "bg-gray-400 text-gray-200"
+                      : "bg-green-600 text-white"
+                  }`}
+                >
+                  Unlock ({UNLOCK_COST})
+                </button>
+              </div>
+            )
+          )}
         </div>
       </div>
       {selectedHorse && (

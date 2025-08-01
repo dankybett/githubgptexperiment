@@ -63,8 +63,27 @@ export default function RandomPicker() {
     "/horses/pinatahorse.png",
   ];
 
-  // State to allow shuffling the order of horse avatars
-  const [shuffledAvatars, setShuffledAvatars] = useState(horseAvatars);
+  const [unlockedHorses, setUnlockedHorses] = useState(
+    horseAvatars.map((_, index) => index < 5)
+  );
+  const [shuffledAvatars, setShuffledAvatars] = useState(() =>
+    horseAvatars.filter((_, index) => index < 5)
+  );
+
+  const handleUnlockHorse = (index, cost) => {
+    if (unlockedHorses[index] || coins < cost) return;
+    setCoins((prev) => prev - cost);
+    setUnlockedHorses((prev) => {
+      const updated = [...prev];
+      updated[index] = true;
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
+    setShuffledAvatars(available);
+  }, [unlockedHorses]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1302,6 +1321,9 @@ export default function RandomPicker() {
     return (
       <HorseStable
         horseAvatars={horseAvatars}
+         unlockedHorses={unlockedHorses}
+        coins={coins}
+        onUnlockHorse={handleUnlockHorse}
         onBack={() => setShowStable(false)}
         onPlayMinigame={() => {
           setShowStable(false);
