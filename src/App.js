@@ -35,6 +35,7 @@ export default function RandomPicker() {
   const [coins, setCoins] = useState(100);
   const [betAmount, setBetAmount] = useState(0);
   const [betHorse, setBetHorse] = useState(null);
+  const [betEnabled, setBetEnabled] = useState(false);
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -409,6 +410,7 @@ export default function RandomPicker() {
     setRaceTime(0);
     setBetHorse(null);
     setBetAmount(0);
+    setBetEnabled(false);
     cancelAnimationFrame(animationFrameIdRef.current);
     clearInterval(commentaryIntervalRef.current);
   };
@@ -849,6 +851,7 @@ export default function RandomPicker() {
     setCurrentWeather(null);
     setBetHorse(null);
     setBetAmount(0);
+    setBetEnabled(false);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
 
@@ -875,6 +878,7 @@ export default function RandomPicker() {
     setCurrentWeather(null);
     setBetHorse(null);
     setBetAmount(0);
+    setBetEnabled(false);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
     if (cheerSoundRef.current) {
@@ -929,7 +933,8 @@ export default function RandomPicker() {
   const toggleMute = () => setMuted(!muted);
 
   const isStartDisabled =
-    itemCount === 0 || !betAmount || betAmount > coins || betHorse === null;
+  itemCount === 0 ||
+    (betEnabled && (!betAmount || betAmount > coins || betHorse === null));
 
   const getRaceDistanceInfo = (distance) => {
     const info = {
@@ -1477,41 +1482,61 @@ export default function RandomPicker() {
           {/* Betting Section */}
           {items.length > 0 && (
             <div className="mb-4">
-              <label className="block font-semibold text-gray-700 text-sm mb-2">
-                Place Your Bet (Coins: {coins})
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
-                  value={betAmount || ""}
-                  onChange={(e) =>
-                    setBetAmount(parseInt(e.target.value, 10) || 0)
-                  }
-                  placeholder="Bet amount"
-                />
-                <select
-                  value={betHorse !== null ? betHorse : ""}
-                  onChange={(e) =>
-                    setBetHorse(
-                      e.target.value === ""
-                        ? null
-                        : parseInt(e.target.value, 10)
-                    )
-                  }
-                  className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
-                >
-                  <option value="" disabled>
-                    Select horse
-                  </option>
-                  {items.map((item, index) => (
-                    <option key={index} value={index}>
-                      {getHorseName(item, index)}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-semibold text-gray-700 text-sm">
+                  Place Your Bet (Coins: {coins})
+                </label>
+                <label className="flex items-center text-xs">
+                  <input
+                    type="checkbox"
+                    className="mr-1"
+                    checked={betEnabled}
+                    onChange={() => {
+                      const next = !betEnabled;
+                      setBetEnabled(next);
+                      if (!next) {
+                        setBetAmount(0);
+                        setBetHorse(null);
+                      }
+                    }}
+                  />
+                  Enable
+                </label>
               </div>
+               {betEnabled && (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                    value={betAmount || ""}
+                    onChange={(e) =>
+                      setBetAmount(parseInt(e.target.value, 10) || 0)
+                    }
+                    placeholder="Bet amount"
+                  />
+                  <select
+                    value={betHorse !== null ? betHorse : ""}
+                    onChange={(e) =>
+                      setBetHorse(
+                        e.target.value === ""
+                          ? null
+                          : parseInt(e.target.value, 10)
+                      )
+                    }
+                    className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                  >
+                    <option value="" disabled>
+                      Select horse
+                    </option>
+                    {items.map((item, index) => (
+                      <option key={index} value={index}>
+                        {getHorseName(item, index)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
