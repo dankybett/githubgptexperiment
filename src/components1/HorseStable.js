@@ -5,6 +5,7 @@ import HorseDetailsModal from "./HorseDetailsModal";
 
 const HorseStable = ({
   horseAvatars,
+  horseNames,
   unlockedHorses,
   coins,
   onBack,
@@ -24,12 +25,14 @@ const HorseStable = ({
   };
  // Initialize roaming horses based on unlocked list
   useEffect(() => {
-     const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
+      const available = horseAvatars
+      .map((avatar, index) => ({ avatar, index }))
+      .filter((_, index) => unlockedHorses[index]);
 
-    const horsesWithData = available.map((avatar, index) => ({
+    const horsesWithData = available.map(({ avatar, index }) => ({
       id: index,
       avatar,
-      name: `Stable Horse ${index + 1}`,
+      name: horseNames[index],
       x: Math.random() * 70 + 10,
       y: Math.random() * 60 + 20,
       targetX: Math.random() * 70 + 10,
@@ -44,7 +47,7 @@ const HorseStable = ({
     setStableHorses(horsesWithData);
 
     setTimeout(() => setStableLoaded(true), 1000);
-    }, [horseAvatars, unlockedHorses]);
+    }, [horseAvatars, horseNames, unlockedHorses]);
 
   // Animation loop for horse movement
   useEffect(() => {

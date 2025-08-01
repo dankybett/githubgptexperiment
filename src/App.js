@@ -65,6 +65,31 @@ export default function RandomPicker() {
     "/horses/pinatahorse.png",
   ];
 
+const horseNames = [
+    "Shadowfax",
+    "Seabiscuit",
+    "Silver Blaze",
+    "Comet",
+    "Blaze",
+    "Spirit",
+    "Eclipse",
+    "Whisper",
+    "Storm",
+    "Phantom",
+    "Flash",
+    "Bolt",
+    "Majesty",
+    "Thunder",
+    "Lightning",
+    "Mystic",
+    "Blizzard",
+    "Tornado",
+    "Hurricane",
+    "Inferno",
+    "Mirage",
+    "Nebula",
+  ];
+
   const [unlockedHorses, setUnlockedHorses] = useState(
     horseAvatars.map((_, index) => index < 5)
   );
@@ -1323,8 +1348,9 @@ export default function RandomPicker() {
     return (
       <HorseStable
         horseAvatars={horseAvatars}
+        horseNames={horseNames}
         unlockedHorses={unlockedHorses}
-        coins={coins}        
+        coins={coins}       
         onBack={() => setShowStable(false)}
         onPlayMinigame={() => {
           setShowStable(false);
@@ -1342,6 +1368,7 @@ export default function RandomPicker() {
     return (
       <LockedHorses
         horseAvatars={horseAvatars}
+        horseNames={horseNames}
         unlockedHorses={unlockedHorses}
         coins={coins}
         onUnlockHorse={handleUnlockHorse}

@@ -6,6 +6,7 @@ const UNLOCK_COST = 20;
 
 const LockedHorses = ({
   horseAvatars,
+  horseNames,
   unlockedHorses,
   coins,
   onUnlockHorse,
@@ -36,17 +37,22 @@ const LockedHorses = ({
                 alt="Locked horse"
                 className="w-20 h-20 object-contain opacity-50 silhouette"
               />
-              <button
-                onClick={() => onUnlockHorse(index, UNLOCK_COST)}
-                disabled={coins < UNLOCK_COST}
-                className={`mt-2 px-3 py-1 text-xs rounded ${
-                  coins < UNLOCK_COST
-                    ? "bg-gray-400 text-gray-200"
-                    : "bg-green-600 text-white"
-                }`}
-              >
-                Unlock ({UNLOCK_COST})
-              </button>
+               <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs font-semibold text-amber-800">
+                  {horseNames[index]}
+                </span>
+                <button
+                  onClick={() => onUnlockHorse(index, UNLOCK_COST)}
+                  disabled={coins < UNLOCK_COST}
+                  className={`px-3 py-1 text-xs rounded ${
+                    coins < UNLOCK_COST
+                      ? "bg-gray-400 text-gray-200"
+                      : "bg-green-600 text-white"
+                  }`}
+                >
+                  Unlock ({UNLOCK_COST})
+                </button>
+              </div>
             </div>
           )
         )}
