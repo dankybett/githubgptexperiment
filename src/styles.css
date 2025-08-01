@@ -70,3 +70,6 @@ button {
 .fade-in-image.loaded {
   opacity: 1;
 }
+.silhouette {
+  filter: brightness(0) saturate(100%);
+}

@@ -34,7 +34,7 @@ const LockedHorses = ({
               <FadeInImage
                 src={avatar}
                 alt="Locked horse"
-                className="w-20 h-20 object-contain opacity-50"
+                className="w-20 h-20 object-contain opacity-50 silhouette"
               />
               <button
                 onClick={() => onUnlockHorse(index, UNLOCK_COST)}
