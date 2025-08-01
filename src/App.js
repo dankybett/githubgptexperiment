@@ -5,6 +5,7 @@ import FadeInImage from "./components1/FadeInImage";
 import HorseStable from "./components1/HorseStable";
 import RaceTrack from "./components1/RaceTrack";
 import BattleshipGame from "./components1/BattleshipGame";
+import LockedHorses from "./components1/LockedHorses";
 
 const MotionFadeInImage = motion(FadeInImage);
 
@@ -13,6 +14,7 @@ export default function RandomPicker() {
   const [showRaceScreen, setShowRaceScreen] = useState(false);
   const [showStable, setShowStable] = useState(false);
   const [showBattleship, setShowBattleship] = useState(false);
+  const [showLockedHorses, setShowLockedHorses] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [items, setItems] = useState([]);
   const [isRacing, setIsRacing] = useState(false);
@@ -1321,13 +1323,31 @@ export default function RandomPicker() {
     return (
       <HorseStable
         horseAvatars={horseAvatars}
-         unlockedHorses={unlockedHorses}
-        coins={coins}
-        onUnlockHorse={handleUnlockHorse}
+        unlockedHorses={unlockedHorses}
+        coins={coins}        
         onBack={() => setShowStable(false)}
         onPlayMinigame={() => {
           setShowStable(false);
           setShowBattleship(true);
+        }}
+        onShowLockedHorses={() => {
+          setShowStable(false);
+          setShowLockedHorses(true);
+        }}
+      />
+    );
+  }
+
+  if (showLockedHorses) {
+    return (
+      <LockedHorses
+        horseAvatars={horseAvatars}
+        unlockedHorses={unlockedHorses}
+        coins={coins}
+        onUnlockHorse={handleUnlockHorse}
+        onBack={() => {
+          setShowLockedHorses(false);
+          setShowStable(true);
         }}
       />
     );
