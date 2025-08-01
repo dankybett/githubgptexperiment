@@ -31,6 +31,11 @@ export default function RandomPicker() {
   const [currentWeather, setCurrentWeather] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
+  // Currency and betting state
+  const [coins, setCoins] = useState(100);
+  const [betAmount, setBetAmount] = useState(0);
+  const [betHorse, setBetHorse] = useState(null);
+
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
     "/horses/horse1.png",
@@ -402,6 +407,8 @@ export default function RandomPicker() {
     setCommentary("");
     setPositions(Array(count).fill(0));
     setRaceTime(0);
+    setBetHorse(null);
+    setBetAmount(0);
     cancelAnimationFrame(animationFrameIdRef.current);
     clearInterval(commentaryIntervalRef.current);
   };
@@ -754,28 +761,69 @@ export default function RandomPicker() {
             },
             ...prev.slice(0, 9),
           ]);
+
+          if (betHorse !== null && betAmount > 0) {
+            if (winnerIdx === betHorse) {
+              setCoins((c) => c + betAmount * itemCount);
+            } else {
+              setCoins((c) => Math.max(0, c - betAmount));
+            }
+          }
           clearInterval(commentaryIntervalRef.current);
         }
 
         if (trackContainerRef.current) {
           const container = trackContainerRef.current;
-          const lead = Math.max(...updatedPositions);
-          const minPos = Math.min(...updatedPositions);
-          const spread = lead - minPos;
 
-          let focusPoint;
-          if (spread < 0.15) {
-            focusPoint = (lead + minPos) / 2;
-          } else {
-            focusPoint = lead - 0.1;
+          // Sort positions in descending order (lead is first)
+          const sorted = [...updatedPositions].sort((a, b) => b - a);
+          const lead = sorted[0];
+          const second = sorted[1] ?? sorted[0]; // Fallback in case only one horse exists
+
+          // Calculate dynamic focus based on race situation
+          const gap = lead - second;
+          const maxGap = trackLength * 0.1; // 10% of track length for reference
+
+          // If horses are close, focus exactly between them
+          // If gap is large, bias slightly toward the leader for better viewing
+          const focusWeight = Math.min(gap / maxGap, 1);
+          let focusPoint = second + (lead - second) * (0.5 + focusWeight * 0.2);
+
+          // Convert focus point to pixel position
+          let targetLeft = focusPoint * (trackLength - container.clientWidth);
+
+          // Ensure leader always remains in view
+          const leaderPixelPos = lead * trackLength;
+          const viewportStart = targetLeft;
+          const viewportEnd = targetLeft + container.clientWidth;
+
+          // If leader is outside the right edge of viewport, adjust
+          if (leaderPixelPos > viewportEnd) {
+            targetLeft = leaderPixelPos - container.clientWidth;
+          }
+          // If leader is outside the left edge of viewport, adjust
+          else if (leaderPixelPos < viewportStart) {
+            targetLeft = leaderPixelPos;
           }
 
-          const newLeft = Math.max(
+          // Apply final boundaries
+          targetLeft = Math.max(
             0,
-            focusPoint * (trackLength - container.clientWidth)
+            Math.min(targetLeft, trackLength - container.clientWidth)
           );
+
+          // Smooth camera movement with damping
+          // Adjust smoothingFactor (0.05-0.2) for different camera responsiveness
+          // Lower values = smoother but slower, Higher values = more responsive
+          const smoothingFactor = 0.1;
+          const currentLeft = container.scrollLeft;
+          const newLeft =
+            currentLeft + (targetLeft - currentLeft) * smoothingFactor;
+
           container.scrollLeft = newLeft;
         }
+
+        return updatedPositions;
 
         return updatedPositions;
       });
@@ -799,6 +847,8 @@ export default function RandomPicker() {
     setPositions([]);
     setRaceTime(0);
     setCurrentWeather(null);
+    setBetHorse(null);
+    setBetAmount(0);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
 
@@ -823,6 +873,8 @@ export default function RandomPicker() {
     setRaceTime(0);
     setCountdown(null);
     setCurrentWeather(null);
+    setBetHorse(null);
+    setBetAmount(0);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
     if (cheerSoundRef.current) {
@@ -868,13 +920,16 @@ export default function RandomPicker() {
     dramaMomentRef.current = 0;
     usedCommentaryRef.current.clear();
     lastCommentaryRef.current = "";
+    setBetHorse(null);
+    setBetAmount(0);
     generateRandomWeather();
     setTimeout(startCountdown, 500);
   };
 
   const toggleMute = () => setMuted(!muted);
 
-  const isStartDisabled = itemCount === 0;
+  const isStartDisabled =
+    itemCount === 0 || !betAmount || betAmount > coins || betHorse === null;
 
   const getRaceDistanceInfo = (distance) => {
     const info = {
@@ -1073,6 +1128,10 @@ export default function RandomPicker() {
                   🏆 {fastestTime}s
                 </div>
               )}
+              <div className="text-xs bg-yellow-100 px-2 py-1 rounded-full flex items-center gap-1">
+                <span>💰</span>
+                <span>{coins}</span>
+              </div>
               {isRacing && (
                 <div className="text-sm font-bold text-blue-600">
                   {raceTime.toFixed(1)}s
@@ -1276,6 +1335,10 @@ export default function RandomPicker() {
                   🏆 Record: {fastestTime}s
                 </div>
               )}
+              <div className="text-xs sm:text-sm bg-yellow-100 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shadow-md flex items-center gap-1">
+                <span>💰</span>
+                <span>{coins}</span>
+              </div>
               <button
                 onClick={toggleMute}
                 className="text-lg sm:text-xl hover:scale-110 transition-transform p-2 rounded-full hover:bg-gray-100"
@@ -1407,6 +1470,47 @@ export default function RandomPicker() {
                     </span>
                   </motion.div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Betting Section */}
+          {items.length > 0 && (
+            <div className="mb-4">
+              <label className="block font-semibold text-gray-700 text-sm mb-2">
+                Place Your Bet (Coins: {coins})
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                  value={betAmount || ""}
+                  onChange={(e) =>
+                    setBetAmount(parseInt(e.target.value, 10) || 0)
+                  }
+                  placeholder="Bet amount"
+                />
+                <select
+                  value={betHorse !== null ? betHorse : ""}
+                  onChange={(e) =>
+                    setBetHorse(
+                      e.target.value === ""
+                        ? null
+                        : parseInt(e.target.value, 10)
+                    )
+                  }
+                  className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                >
+                  <option value="" disabled>
+                    Select horse
+                  </option>
+                  {items.map((item, index) => (
+                    <option key={index} value={index}>
+                      {getHorseName(item, index)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           )}
