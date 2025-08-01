@@ -22,7 +22,20 @@ export default function RandomPicker() {
   const [winnerIndex, setWinnerIndex] = useState(null);
   const [commentary, setCommentary] = useState("");
   const [history, setHistory] = useState([]);
-  const [positions, setPositions] = useState([]);
+  const [positions, setPositionsState] = useState([]);
+  const positionsRef = useRef(positions);
+  const setPositions = (value) => {
+    if (typeof value === "function") {
+      setPositionsState((prev) => {
+        const next = value(prev);
+        positionsRef.current = next;
+        return next;
+      });
+    } else {
+      positionsRef.current = value;
+      setPositionsState(value);
+    }
+  };
   const [muted, setMuted] = useState(false);
   const raceSoundRef = useRef(null);
   const [countdown, setCountdown] = useState(null);
@@ -652,7 +665,7 @@ const horsePersonalities = [
 
     let commentaryCounter = 0;
     commentaryIntervalRef.current = setInterval(() => {
-      const progress = Math.max(...positions);
+      const progress = Math.max(...positionsRef.current);
       let phase = "middle";
       commentaryCounter++;
 
@@ -795,6 +808,16 @@ const horsePersonalities = [
           return nextPos;
         });
 
+        // Limit how far the leader can get ahead to keep the pack tighter
+        const sortedPositions = [...updatedPositions].sort((a, b) => b - a);
+        const leader = sortedPositions[0];
+        const second = sortedPositions[1] ?? sortedPositions[0];
+        const maxLead = 0.15; // 15% of track length
+        if (leader - second > maxLead) {
+          const leaderIndex = updatedPositions.indexOf(leader);
+          updatedPositions[leaderIndex] = second + maxLead;
+        }
+
         const winnerIdx = updatedPositions.findIndex((p) => p >= 1);
         if (winnerIdx !== -1) {
           finished = true;
@@ -898,7 +921,6 @@ const horsePersonalities = [
 
         return updatedPositions;
 
-        return updatedPositions;
       });
 
       if (!finished) {
