@@ -6,6 +6,7 @@ import HorseStable from "./components1/HorseStable";
 import RaceTrack from "./components1/RaceTrack";
 import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
+import { createSeededRng } from "./utils/prng";
 
 const MotionFadeInImage = motion(FadeInImage);
 
@@ -45,6 +46,8 @@ export default function RandomPicker() {
   const [raceDistance, setRaceDistance] = useState("medium");
   const [currentWeather, setCurrentWeather] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [raceSeed, setRaceSeed] = useState(null);
+  const rngRef = useRef(Math.random);
 
   // Currency and betting state
   const [coins, setCoins] = useState(100);
@@ -443,7 +446,7 @@ const horsePersonalities = [
   const generateRandomWeather = () => {
     const weatherTypes = Object.keys(weatherEffects);
     const randomWeather =
-      weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+    weatherTypes[Math.floor(rngRef.current() * weatherTypes.length)];
     setCurrentWeather(weatherEffects[randomWeather]);
   };
 
@@ -512,7 +515,6 @@ const horsePersonalities = [
   };
 
   const goToRaceScreen = () => {
-    generateRandomWeather();
     setShowRaceScreen(true);
     setWinner(null);
     setWinnerIndex(null);
@@ -528,7 +530,7 @@ const horsePersonalities = [
     lastCommentaryRef.current = "";
   };
 
-  const startCountdown = () => {
+   const startCountdown = (seed = Date.now()) => {
     let count = 3;
     setCountdown(count);
     const countdownInterval = setInterval(() => {
@@ -536,7 +538,7 @@ const horsePersonalities = [
       if (count === 0) {
         clearInterval(countdownInterval);
         setCountdown(null);
-        startRace();
+        startRace(seed);
       } else {
         if (bellSoundRef.current) {
           bellSoundRef.current.currentTime = 0;
@@ -600,7 +602,7 @@ const horsePersonalities = [
       currentWeather &&
       commentaryPhrases.weather[currentWeather.name.toLowerCase()]
     ) {
-      if (Math.random() < 0.3) {
+       if (rngRef.current() < 0.3) {
         phrases = [
           ...phrases,
           ...commentaryPhrases.weather[currentWeather.name.toLowerCase()],
@@ -624,14 +626,15 @@ const horsePersonalities = [
     }
 
     const selectedPhrase =
-      availablePhrases[Math.floor(Math.random() * availablePhrases.length)];
+      availablePhrases[Math.floor(rngRef.current() * availablePhrases.length)];
     usedCommentaryRef.current.add(selectedPhrase);
     lastCommentaryRef.current = selectedPhrase;
 
     return selectedPhrase;
   };
 
-  const startRace = () => {
+  const startRace = (seed) => {
+    rngRef.current = createSeededRng(seed);
     setIsRacing(true);
     if (raceSoundRef.current) {
       raceSoundRef.current.currentTime = 0;
@@ -644,7 +647,7 @@ const horsePersonalities = [
 
     const startPhrases = commentaryPhrases.start;
     setCommentary(
-      startPhrases[Math.floor(Math.random() * startPhrases.length)]
+      startPhrases[Math.floor(rngRef.current() * startPhrases.length)]
     );
 
     setPositions(Array(itemCount).fill(0));
@@ -692,12 +695,12 @@ const horsePersonalities = [
 
     const horseProfiles = Array(itemCount)
       .fill(0)
-      .map((_, idx) => ({
+      .map(() => ({
         baseSpeed:
-          settings.baseSpeed + (Math.random() - 0.5) * settings.speedVariation,
-        stamina: 0.6 + Math.random() * 0.7,
-        comebackPotential: Math.random(),
-        hurdleSkill: 0.3 + Math.random() * 0.7,
+          settings.baseSpeed + (rngRef.current() - 0.5) * settings.speedVariation,
+        stamina: 0.6 + rngRef.current() * 0.7,
+        comebackPotential: rngRef.current(),
+        hurdleSkill: 0.3 + rngRef.current() * 0.7,
         surgeCount: 0,
         lastSurge: 0,
         isComingBack: false,
@@ -749,17 +752,19 @@ const horsePersonalities = [
             if (
               pos >= hurdlePos - hurdleRange &&
               pos <= hurdlePos + hurdleRange &&
-              !profile.hurdlesCrossed.includes(hurdlePos)
+              !profile.hurdlesCrossed.some(
+                (stored) => Math.abs(stored - hurdlePos) < 1e-4
+              )
             ) {
               profile.hurdlesCrossed.push(hurdlePos);
 
-              const jumpSuccess = Math.random() < profile.hurdleSkill;
+               const jumpSuccess = rngRef.current() < profile.hurdleSkill;
 
               if (jumpSuccess) {
                 speed += settings.surgeIntensity * 0.4;
                 dramaMomentRef.current = Math.max(dramaMomentRef.current, 1);
               } else {
-                const stunDuration = 400 + Math.random() * 600;
+                const stunDuration = 400 + rngRef.current() * 600;
                 profile.isStunned = true;
                 profile.stunnedUntil = currentTime + stunDuration;
                 speed = 0;
@@ -769,11 +774,11 @@ const horsePersonalities = [
           }
 
           const shouldSurge =
-            Math.random() < settings.surgeFrequency &&
+            rngRef.current() < settings.surgeFrequency &&
             pos - profile.lastSurge > 0.12 &&
             !profile.isStunned;
           if (shouldSurge) {
-            const surgeStrength = 0.6 + Math.random() * 1.2;
+            const surgeStrength = 0.6 + rngRef.current() * 1.2;
             speed += settings.surgeIntensity * surgeStrength;
             profile.surgeCount++;
             profile.lastSurge = pos;
@@ -782,7 +787,7 @@ const horsePersonalities = [
           const isLagging = pos < averageProgress - 0.05;
           const shouldComeback =
             isLagging &&
-            Math.random() <
+           rngRef.current() <
               settings.comebackChance * profile.comebackPotential &&
             !profile.isStunned;
 
@@ -800,7 +805,7 @@ const horsePersonalities = [
             }
           }
 
-          const randomFactor = 1 + (Math.random() - 0.5) * 0.08;
+          const randomFactor = 1 + (rngRef.current() - 0.5) * 0.08;
           speed *= randomFactor;
 
           let nextPos = Math.max(0, pos + speed);
@@ -853,6 +858,7 @@ const horsePersonalities = [
               time: `${finalTime}s`,
               distance: raceDistance,
               weather: currentWeather?.name || "Clear",
+               seed,
               timestamp: new Date().toLocaleTimeString(),
             },
             ...prev.slice(0, 9),
@@ -1019,8 +1025,7 @@ const horsePersonalities = [
     lastCommentaryRef.current = "";
     setBetHorse(null);
     setBetAmount(0);
-    generateRandomWeather();
-    setTimeout(startCountdown, 500);
+    setTimeout(() => startCountdown(), 500);
   };
 
   const toggleMute = () => setMuted(!muted);
@@ -1353,7 +1358,7 @@ const horsePersonalities = [
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={startCountdown}
+                  onClick={() => startCountdown()}
                   className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-bold text-lg shadow-lg"
                 >
                   🚀 Start {distanceInfo.name} Race!
