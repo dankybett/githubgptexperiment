@@ -16,6 +16,22 @@ const HorseStable = ({
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState(null);
+  const [availableHorses, setAvailableHorses] = useState([]);
+  const [selectedHorseIds, setSelectedHorseIds] = useState([]);
+  const [showSelector, setShowSelector] = useState(false);
+
+  const createHorseData = (horse) => ({
+    ...horse,
+    x: Math.random() * 70 + 10,
+    y: Math.random() * 60 + 20,
+    targetX: Math.random() * 70 + 10,
+    targetY: Math.random() * 60 + 20,
+    speed: 0.3 + Math.random() * 0.4,
+    direction: Math.random() * 360,
+    restTime: 0,
+    isResting: false,
+    lastMoveTime: Date.now(),
+  });
 
   const handleRename = (id, newName) => {
     setStableHorses((prev) =>
@@ -23,30 +39,41 @@ const HorseStable = ({
         horse.id === id ? { ...horse, name: newName } : horse
       )
     );
+    setAvailableHorses((prev) =>
+      prev.map((horse) =>
+        horse.id === id ? { ...horse, name: newName } : horse
+      )
+    );
   };
- // Initialize roaming horses based on unlocked list
+
+  const toggleHorseRoaming = (id) => {
+    if (selectedHorseIds.includes(id)) {
+      setSelectedHorseIds((prev) => prev.filter((hid) => hid !== id));
+      setStableHorses((prev) => prev.filter((horse) => horse.id !== id));
+    } else {
+      setSelectedHorseIds((prev) => [...prev, id]);
+      const horseData = availableHorses.find((h) => h.id === id);
+      if (horseData) {
+        setStableHorses((prev) => [...prev, createHorseData(horseData)]);
+      }
+    }
+  };
+
+  // Initialize available and roaming horses based on unlocked list
   useEffect(() => {
       const available = horseAvatars
       .map((avatar, index) => ({ avatar, index }))
-      .filter((_, index) => unlockedHorses[index]);
+      .filter((_, index) => unlockedHorses[index])
+      .map(({ avatar, index }) => ({
+        id: index,
+        avatar,
+        name: horseNames[index],
+        personality: horsePersonalities[index],
+      }));
 
-    const horsesWithData = available.map(({ avatar, index }) => ({
-      id: index,
-      avatar,
-      name: horseNames[index],
-      personality: horsePersonalities[index],
-      x: Math.random() * 70 + 10,
-      y: Math.random() * 60 + 20,
-      targetX: Math.random() * 70 + 10,
-      targetY: Math.random() * 60 + 20,
-      speed: 0.3 + Math.random() * 0.4,
-      direction: Math.random() * 360,
-      restTime: 0,
-      isResting: false,
-      lastMoveTime: Date.now(),
-    }));
-
-    setStableHorses(horsesWithData);
+    setAvailableHorses(available);
+    setSelectedHorseIds(available.map((h) => h.id));
+    setStableHorses(available.map((h) => createHorseData(h)));
 
     setTimeout(() => setStableLoaded(true), 1000);
     }, [horseAvatars, horseNames, horsePersonalities, unlockedHorses]);
@@ -175,6 +202,14 @@ const HorseStable = ({
             <div className="text-amber-100 font-semibold">
               💰 {coins}
             </div>
+             <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowSelector(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow-lg"
+            >
+              Manage Grazing Horses
+            </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -347,6 +382,35 @@ const HorseStable = ({
           </div>
         </div>
         </div>
+        {showSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+          <div className="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Select Grazing Horses</h2>
+            <div className="space-y-2">
+              {availableHorses.map((horse) => (
+                <label key={horse.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedHorseIds.includes(horse.id)}
+                    onChange={() => toggleHorseRoaming(horse.id)}
+                  />
+                  <span>{horse.name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="text-right mt-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowSelector(false)}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow-lg"
+              >
+                Done
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      )}
       {selectedHorse && (
         <HorseDetailsModal
           horse={selectedHorse}

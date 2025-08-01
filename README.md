@@ -11,4 +11,9 @@ in place of the previous emoji icons.
 ## Unlocking horses
 
 Players begin with 5 horses. Visit the stable to spend in-game coins and unlock
-additional horses
+additional horses.
+
+## Grazing horses
+
+In the stable you can choose which unlocked horses are out grazing. Use the
+**Manage Grazing Horses** button to toggle which ones roam the pasture.
