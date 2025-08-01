@@ -1429,6 +1429,7 @@ const horsePersonalities = [
       <LockedHorses
         horseAvatars={horseAvatars}
         horseNames={horseNames}
+        horsePersonalities={horsePersonalities}
         unlockedHorses={unlockedHorses}
         coins={coins}
         onUnlockHorse={handleUnlockHorse}
