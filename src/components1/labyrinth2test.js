@@ -655,35 +655,7 @@ function HorseMazeGame() {
       
       return prevPos;
     });
-  }, [gameState, horsePos, findPathToHorse, currentRewards, minotaurStunned, getSkillLevel, selectedMazeType]);currentRewards]);
-        const points = Math.floor(currentRewards.length / 2) + 1;
-        setSkillPoints(prev => prev + points);
-        return prevPos;
-      }
-      
-      const path = findPathToHorse(mx, my, hx, hy);
-      if (path.length > 0) {
-        const nextStep = path[0];
-        
-        if (nextStep.x === hx && nextStep.y === hy) {
-          if (ghostForm > 0 && Math.random() < 0.1) {
-            return prevPos;
-          }
-          setEndReason('minotaur');
-          setGameState('ended');
-          setInventory(prev => [...prev, ...currentRewards]);
-          const points = Math.floor(currentRewards.length / 2) + 1;
-          setSkillPoints(prev => prev + points);
-          return { x: nextStep.x, y: nextStep.y };
-        }
-        
-        return { x: nextStep.x, y: nextStep.y };
-      }
-      
-      return prevPos;
-    });
-  }, [gameState, horsePos, findPathToHorse, currentRewards, minotaurStunned, getSkillLevel]);
-
+ }, [gameState, horsePos, findPathToHorse, currentRewards, minotaurStunned, getSkillLevel, selectedMazeType]);
   // Horse movement logic
   const moveHorse = useCallback(() => {
     if (gameState !== 'exploring') return;
