@@ -10,9 +10,8 @@ body,
   padding: 0;
   height: 100%;
   width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family: 'Press Start 2P', 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 10px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -72,4 +71,165 @@ button {
 }
 .silhouette {
   filter: brightness(0) saturate(100%);
+}
+
+/* Retro Pixel Button Styles */
+.btn-retro {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.1s ease;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.1) 100%);
+}
+
+.btn-retro:hover {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px #000;
+}
+
+.btn-retro:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000;
+}
+
+.btn-retro:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 4px 4px 0px #000 !important;
+}
+
+.btn-retro-green {
+  background-color: #4CAF50;
+  border-color: #2E7D32;
+  color: white;
+  box-shadow: 4px 4px 0px #2E7D32;
+}
+
+.btn-retro-green:hover {
+  background-color: #66BB6A;
+  box-shadow: 2px 2px 0px #2E7D32;
+}
+
+.btn-retro-green:active {
+  box-shadow: 1px 1px 0px #2E7D32;
+}
+
+.btn-retro-blue {
+  background-color: #2196F3;
+  border-color: #1565C0;
+  color: white;
+  box-shadow: 4px 4px 0px #1565C0;
+}
+
+.btn-retro-blue:hover {
+  background-color: #42A5F5;
+  box-shadow: 2px 2px 0px #1565C0;
+}
+
+.btn-retro-blue:active {
+  box-shadow: 1px 1px 0px #1565C0;
+}
+
+.btn-retro-red {
+  background-color: #F44336;
+  border-color: #C62828;
+  color: white;
+  box-shadow: 4px 4px 0px #C62828;
+}
+
+.btn-retro-red:hover {
+  background-color: #EF5350;
+  box-shadow: 2px 2px 0px #C62828;
+}
+
+.btn-retro-red:active {
+  box-shadow: 1px 1px 0px #C62828;
+}
+
+.btn-retro-purple {
+  background-color: #9C27B0;
+  border-color: #6A1B9A;
+  color: white;
+  box-shadow: 4px 4px 0px #6A1B9A;
+}
+
+.btn-retro-purple:hover {
+  background-color: #AB47BC;
+  box-shadow: 2px 2px 0px #6A1B9A;
+}
+
+.btn-retro-purple:active {
+  box-shadow: 1px 1px 0px #6A1B9A;
+}
+
+.btn-retro-yellow {
+  background-color: #FFEB3B;
+  border-color: #F57F17;
+  color: #333;
+  box-shadow: 4px 4px 0px #F57F17;
+}
+
+.btn-retro-yellow:hover {
+  background-color: #FFF176;
+  box-shadow: 2px 2px 0px #F57F17;
+}
+
+.btn-retro-yellow:active {
+  box-shadow: 1px 1px 0px #F57F17;
+}
+
+.btn-retro-gray {
+  background-color: #9E9E9E;
+  border-color: #424242;
+  color: white;
+  box-shadow: 4px 4px 0px #424242;
+}
+
+.btn-retro-gray:hover {
+  background-color: #BDBDBD;
+  box-shadow: 2px 2px 0px #424242;
+}
+
+.btn-retro-gray:active {
+  box-shadow: 1px 1px 0px #424242;
+}
+
+/* Mobile-responsive font sizes */
+.text-mobile-xs {
+  font-size: 8px;
+}
+
+.text-mobile-sm {
+  font-size: 10px;
+}
+
+.text-mobile-base {
+  font-size: 12px;
+}
+
+.text-mobile-lg {
+  font-size: 14px;
+}
+
+/* Responsive input styling */
+@media (max-width: 640px) {
+  .btn-retro {
+    font-size: 8px;
+    padding: 8px 12px;
+    letter-spacing: 0.5px;
+  }
+  
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 10px !important;
+  }
+  
+  .contestant-input {
+    font-size: 8px;
+  }
 }

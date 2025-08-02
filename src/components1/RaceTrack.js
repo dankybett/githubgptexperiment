@@ -112,7 +112,7 @@ export default function RaceTrack({
                     <div
                       key={hIdx}
                       className="absolute top-2 bottom-2 w-2 bg-gradient-to-b from-amber-600 to-amber-800 opacity-80 rounded-sm shadow-md z-10"
-                      style={{ left: `${hurdlePos * (trackLength - 80)}px` }}
+                      style={{ left: `${hurdlePos * (trackLength - 225)}px` }}
                       title="Hurdle"
                     >
                       <div className="absolute -top-1 -left-1 w-4 h-4 text-xs flex items-center justify-center">
@@ -121,18 +121,22 @@ export default function RaceTrack({
                     </div>
                   )
                 )}
-                <div className="absolute right-1 top-0 h-full w-1 bg-gradient-to-b from-red-500 to-yellow-500 opacity-80"></div>
+                <div className="absolute top-0 h-full w-2 bg-gradient-to-b from-red-500 to-yellow-500 opacity-90 shadow-lg" style={{ right: '50px' }}>
+                  <div className="absolute -top-2 -left-2 text-xs font-bold text-red-600">🏁</div>
+                </div>
                 <motion.div
                   className="absolute top-0 h-full flex items-center z-30"
                   animate={{
                     x: positions[index]
-                      ? `${Math.min(
-                          positions[index] * (trackLength - 120),
-                          trackLength - 120
-                        )}px`
+                      ? positions[index] >= 1.0
+                        ? `${trackLength - 225}px`
+                        : `${positions[index] * (trackLength - 225)}px`
                       : "0px",
                   }}
-                  transition={{ duration: 0.1 }}
+                  transition={{ 
+                    duration: positions[index] >= 1.0 ? 0.3 : 0.1,
+                    ease: positions[index] >= 1.0 ? "easeOut" : "linear"
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -165,7 +169,7 @@ export default function RaceTrack({
                       src={shuffledAvatars[index % shuffledAvatars.length]}
                       alt="Horse avatar"
                       animate={
-                        isRacing
+                        isRacing && positions[index] < 1.0
                           ? {
                               rotateZ: [0, -5, 5, -5, 5, 0],
                               y: [0, -4, 4, -3, 3, 0],
@@ -174,8 +178,8 @@ export default function RaceTrack({
                           : { rotateZ: 0, y: 0, scale: 1 }
                       }
                       transition={{
-                        duration: 0.3,
-                        repeat: Infinity,
+                        duration: positions[index] >= 1.0 ? 0.5 : 0.3,
+                        repeat: positions[index] >= 1.0 ? 0 : Infinity,
                         ease: "easeInOut",
                       }}
                       className="w-16 h-16 object-contain rounded-lg flex-shrink-0"
@@ -196,12 +200,17 @@ export default function RaceTrack({
           </div>
 
           {winner && !isRacing && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <motion.div 
+                className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5, duration: 0.5 }}
+              >
                 <motion.div
                 className="text-center p-6 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5 }}
+                transition={{ delay: 1.5, duration: 0.5 }}
               >
                 <div className="relative mb-2 flex justify-center">
                   <MotionFadeInImage
@@ -347,7 +356,7 @@ export default function RaceTrack({
                   </button>
                 </div>
               </motion.div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>

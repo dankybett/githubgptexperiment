@@ -5,7 +5,11 @@ module.exports = {
     "./public/index.html"
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'pixel': ['"Press Start 2P"', 'Courier New', 'Monaco', 'Menlo', 'monospace'],
+      },
+    },
   },
   plugins: [
     require('@tailwindcss/forms'),

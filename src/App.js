@@ -751,10 +751,21 @@ const horsePersonalities = [
           speed *= Math.max(packEffect, 0.7);
 
           for (const hurdlePos of settings.hurdles) {
-            const hurdleRange = 0.02;
+            // Convert to pixel positions to match visual rendering
+            const horsePixelPos = pos * (trackLength - 225);
+            const hurdlePixelPos = hurdlePos * (trackLength - 225);
+            const horseImageWidth = 64; // Horse image is w-16 h-16 (64px)
+            const hurdleWidth = 10; // Hurdle width in pixels
+            
+            // Trigger collision when horse approaches hurdle (before visual contact)
+            const approachDistance = 80; // Trigger much earlier before visual contact
+            const horseFrontPixel = horsePixelPos + horseImageWidth;
+            const hurdleStartPixel = hurdlePixelPos - approachDistance;
+            const hurdleEndPixel = hurdlePixelPos + hurdleWidth;
+            
             if (
-              pos >= hurdlePos - hurdleRange &&
-              pos <= hurdlePos + hurdleRange &&
+              horseFrontPixel >= hurdleStartPixel &&
+              horsePixelPos <= hurdleEndPixel &&
               !profile.hurdlesCrossed.some(
                 (stored) => Math.abs(stored - hurdlePos) < 1e-4
               )
@@ -873,6 +884,15 @@ const horsePersonalities = [
           }
 
           clearInterval(commentaryIntervalRef.current);
+          
+          // Scroll to finish line to show winner at the end
+          setTimeout(() => {
+            if (trackContainerRef.current) {
+              const container = trackContainerRef.current;
+              const finishLinePosition = trackLength - container.clientWidth;
+              container.scrollLeft = Math.max(0, finishLinePosition);
+            }
+          }, 500);
         }
  
         if (updatedPositions.every((p) => p >= 1)) {
@@ -1045,14 +1065,12 @@ const horsePersonalities = [
 
   const getRaceDistanceInfo = (distance) => {
     const info = {
-      short: { emoji: "⚡", name: "Sprint", description: "Quick & intense" },
+      short: {name: "Sprint", description: "Quick & intense" },
       medium: {
-        emoji: "🏃",
         name: "Classic",
         description: "Epic distance race",
       },
       long: {
-        emoji: "🏔️",
         name: "Marathon",
         description: "Ultimate endurance test",
       },
@@ -1183,7 +1201,7 @@ const horsePersonalities = [
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowTitle(false)}
-          className="relative z-10 self-center mb-8 mx-4 px-8 py-4 bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 text-white rounded-2xl font-bold shadow-2xl text-lg"
+          className="relative z-10 self-center mb-8 mx-4 px-8 py-4 btn-retro btn-retro-green font-bold text-lg"
         >
           🚀 Start Racing!
         </motion.button>
@@ -1251,7 +1269,7 @@ const horsePersonalities = [
               )}
               <button
                 onClick={backToSetup}
-                className="text-sm px-3 py-1 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                className="text-sm px-3 py-1 btn-retro btn-retro-gray"
                 disabled={isRacing}
               >
                 ← Back
@@ -1368,7 +1386,7 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => startCountdown()}
-                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-bold text-lg shadow-lg"
+                  className="px-8 py-4 btn-retro btn-retro-green text-white font-bold text-lg"
                 >
                   🚀 Start {distanceInfo.name} Race!
                 </motion.button>
@@ -1500,7 +1518,7 @@ const horsePersonalities = [
               </button>
               <button
                 onClick={() => setShowStable(true)}
-                className="text-lg sm:text-sm px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-md"
+                className="text-lg sm:text-sm px-3 py-2 btn-retro btn-retro-yellow text-white"
               >
                 🏠 Stable
               </button>
@@ -1545,7 +1563,7 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={randomizeHorseNames}
-                  className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all text-lg shadow-lg"
+                  className="px-3 py-2 btn-retro btn-retro-purple text-white text-lg"
                   title="Randomize horse names for selected theme"
                 >
                   🎲
@@ -1567,17 +1585,17 @@ const horsePersonalities = [
                   <button
                     key={dist}
                     onClick={() => setRaceDistance(dist)}
-                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-semibold shadow-md transition-all border-2 ${
+                    className={`flex-1 px-4 py-3 text-sm font-semibold ${
                       isSelected
-                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                        ? "btn-retro btn-retro-blue text-white"
+                        : "btn-retro bg-white text-gray-700"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
                       <span>{info.emoji}</span>
                       <span>{info.name}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-sm text-gray-500 mt-1">
                       {info.description}
                     </div>
                   </button>
@@ -1610,7 +1628,7 @@ const horsePersonalities = [
                       }`}
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
-                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-16 pr-12 focus:shadow-lg"
+                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-16 pr-12 focus:shadow-lg contestant-input"
                     />
                     <FadeInImage
                       src={shuffledAvatars[index % shuffledAvatars.length]}
@@ -1695,10 +1713,10 @@ const horsePersonalities = [
                 whileHover={{ scale: isStartDisabled ? 1 : 1.02 }}
                 whileTap={{ scale: isStartDisabled ? 1 : 0.98 }}
                 onClick={goToRaceScreen}
-                className={`w-full sm:w-auto text-white p-4 rounded-xl font-semibold transition-all transform text-sm ${
+                className={`w-full sm:w-auto text-white p-4 font-semibold text-sm ${
                   isStartDisabled
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 shadow-lg hover:shadow-xl"
+                    ? "btn-retro btn-retro-gray"
+                    : "btn-retro btn-retro-green"
                 }`}
                 disabled={isStartDisabled}
               >
@@ -1708,7 +1726,7 @@ const horsePersonalities = [
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={resetRace}
-                className="w-full sm:w-auto px-6 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all shadow-lg font-semibold py-4 text-sm"
+                className="w-full sm:w-auto px-6 btn-retro btn-retro-red text-white font-semibold py-4 text-sm"
               >
                 🔄 Reset
               </motion.button>
@@ -1730,7 +1748,7 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={clearHistory}
-                  className="text-xs text-red-600 hover:text-red-800 font-medium bg-red-50 px-3 py-1 rounded-full hover:bg-red-100 transition-all shadow-sm"
+                  className="text-xs btn-retro btn-retro-red font-medium px-3 py-1"
                 >
                   Clear History
                 </motion.button>
