@@ -50,6 +50,7 @@ export default function RandomPicker() {
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [raceSeed, setRaceSeed] = useState(null);
   const rngRef = useRef(Math.random);
+  const [surgingHorses, setSurgingHorses] = useState([]);
 
   // Currency and betting state
   const [coins, setCoins] = useState(100);
@@ -580,12 +581,12 @@ const horsePersonalities = [
       long: {
         baseSpeed: 0.0008,
         speedVariation: 0.0006, // Reduced from 0.0015 for closer racing
-        surgeIntensity: 0.002,
-        surgeFrequency: 0.32, // Increased from 0.22 for more action
-        comebackChance: 0.5, // Increased from 0.4 for more lead changes
-        dramaMoments: 5,
+        surgeIntensity: 0.004, // Doubled from 0.002 for bigger surges
+        surgeFrequency: 0.55, // Increased from 0.32 for constant action
+        comebackChance: 0.7, // Increased from 0.5 for frequent lead changes
+        dramaMoments: 8, // Increased from 5 for more excitement
         hurdles: [0.15, 0.35, 0.55, 0.75, 0.9],
-        staminaFactor: 0.35,
+        staminaFactor: 0.25, // Reduced from 0.35 to reduce fatigue effects
         packTightness: 0.98,
       },
     };
@@ -741,6 +742,8 @@ const horsePersonalities = [
         hurdlesCrossed: [],
         isStunned: false,
         stunnedUntil: 0,
+        isSurging: false,
+        surgeEndTime: 0,
       }));
 
     const updatePositions = () => {
@@ -784,18 +787,22 @@ const horsePersonalities = [
           // Aggressive rubber band effect for competitive racing
           const progressDiff = pos - averageProgress;
           
+          // Marathon gets extra swing effects for maximum drama
+          const isMarathon = raceDistance === "long";
+          const marathonMultiplier = isMarathon ? 1.3 : 1.0;
+          
           // Strong boost for horses behind
           if (progressDiff < -0.05) {
-            speed *= 1.2; // 20% speed boost for stragglers
+            speed *= (1.2 * marathonMultiplier); // Extra strong boost in marathons
           } else if (progressDiff < -0.02) {
-            speed *= 1.1; // 10% speed boost for slightly behind
+            speed *= (1.1 * marathonMultiplier); // Enhanced boost for marathons
           }
           
           // Strong slowdown for early leaders
           if (progressDiff > 0.05) {
-            speed *= 0.85; // 15% speed reduction for clear leaders
+            speed *= (0.85 / marathonMultiplier); // Extra penalty for marathon leaders
           } else if (progressDiff > 0.02) {
-            speed *= 0.92; // 8% speed reduction for slight leaders
+            speed *= (0.92 / marathonMultiplier); // Enhanced penalty for marathon leaders
           }
 
           for (const hurdlePos of settings.hurdles) {
@@ -844,6 +851,13 @@ const horsePersonalities = [
             speed += settings.surgeIntensity * surgeStrength;
             profile.surgeCount++;
             profile.lastSurge = pos;
+            profile.isSurging = true;
+            profile.surgeEndTime = Date.now() + 1500; // Surge effect lasts 1.5 seconds
+          }
+          
+          // Clear surge state if time has passed
+          if (profile.isSurging && Date.now() > profile.surgeEndTime) {
+            profile.isSurging = false;
           }
 
           const isLagging = pos < averageProgress - 0.05;
@@ -860,9 +874,9 @@ const horsePersonalities = [
           }
 
           if (profile.isComingBack) {
-            const comebackBoost = raceDistance === "long" ? 0.3 : 0.2;
+            const comebackBoost = raceDistance === "long" ? 0.6 : 0.2; // Double marathon comeback boost
             speed += settings.surgeIntensity * comebackBoost;
-            if (pos > averageProgress + 0.03) {
+            if (pos > averageProgress + 0.02) { // End comeback sooner for more frequent lead changes
               profile.isComingBack = false;
             }
           }
@@ -1001,6 +1015,10 @@ const horsePersonalities = [
 
           container.scrollLeft = newLeft;
         }
+
+        // Update surging horses state for visual effects
+        const currentlySurging = horseProfiles.map((profile, index) => profile.isSurging);
+        setSurgingHorses(currentlySurging);
 
         return updatedPositions;
 
@@ -1460,6 +1478,7 @@ const horsePersonalities = [
             raceTime={raceTime}
             fastestTime={fastestTime}
             shuffledAvatars={shuffledAvatars}
+            surgingHorses={surgingHorses}
             getHorseName={getHorseName}
             getRaceSettings={getRaceSettings}
             getRaceDistanceInfo={getRaceDistanceInfo}

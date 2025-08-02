@@ -53,6 +53,7 @@ export default function RaceTrack({
   raceTime,
   fastestTime,
   shuffledAvatars,
+  surgingHorses,
   getHorseName,
   getRaceSettings,
   getRaceDistanceInfo,
@@ -114,11 +115,23 @@ export default function RaceTrack({
                       className={`px-3 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap ${
                         winnerIndex === index
                           ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
+                          : surgingHorses[index]
+                          ? "bg-gradient-to-r from-orange-400 to-red-500 text-white border-orange-600"
                           : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
                       }`}
                       initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
+                      animate={{ 
+                        scale: surgingHorses[index] ? [1, 1.1, 1] : 1, 
+                        opacity: 1,
+                        boxShadow: surgingHorses[index] 
+                          ? ["0 0 0px rgba(255,165,0,0)", "0 0 20px rgba(255,165,0,0.8)", "0 0 0px rgba(255,165,0,0)"]
+                          : "0 4px 6px rgba(0,0,0,0.1)"
+                      }}
+                      transition={{ 
+                        delay: 0.2,
+                        scale: { duration: 0.3, repeat: surgingHorses[index] ? Infinity : 0 },
+                        boxShadow: { duration: 0.5, repeat: surgingHorses[index] ? Infinity : 0 }
+                      }}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold">
@@ -132,6 +145,16 @@ export default function RaceTrack({
                             className="text-yellow-600"
                           >
                             👑
+                          </motion.span>
+                        )}
+                        {surgingHorses[index] && winnerIndex !== index && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: [1, 1.3, 1] }}
+                            transition={{ duration: 0.3, repeat: Infinity }}
+                            className="text-orange-200"
+                          >
+                            ⚡
                           </motion.span>
                         )}
                       </div>
@@ -158,6 +181,8 @@ export default function RaceTrack({
                         filter:
                           winnerIndex === index
                             ? "drop-shadow(0 0 8px gold)"
+                            : surgingHorses[index]
+                            ? "drop-shadow(0 0 12px orange) brightness(1.2)"
                             : "none",
                       }}
                     />
