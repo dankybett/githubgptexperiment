@@ -51,6 +51,7 @@ export default function RandomPicker() {
   const [raceSeed, setRaceSeed] = useState(null);
   const rngRef = useRef(Math.random);
   const [surgingHorses, setSurgingHorses] = useState([]);
+  const [fatiguedHorses, setFatiguedHorses] = useState([]);
 
   // Currency and betting state
   const [coins, setCoins] = useState(100);
@@ -744,6 +745,7 @@ const horsePersonalities = [
         stunnedUntil: 0,
         isSurging: false,
         surgeEndTime: 0,
+        isFatigued: false,
       }));
 
     const updatePositions = () => {
@@ -776,6 +778,9 @@ const horsePersonalities = [
           const fatigueEffect =
             1 - pos * (1 - profile.stamina) * settings.staminaFactor;
           speed *= Math.max(fatigueEffect, 0.3);
+          
+          // Track if horse is heavily fatigued (fatigue effect below 0.7)
+          profile.isFatigued = fatigueEffect < 0.7;
 
           const averageProgress =
             prevPositions.reduce((a, b) => a + b, 0) / prevPositions.length;
@@ -1016,9 +1021,11 @@ const horsePersonalities = [
           container.scrollLeft = newLeft;
         }
 
-        // Update surging horses state for visual effects
+        // Update surging and fatigued horses state for visual effects
         const currentlySurging = horseProfiles.map((profile, index) => profile.isSurging);
+        const currentlyFatigued = horseProfiles.map((profile, index) => profile.isFatigued);
         setSurgingHorses(currentlySurging);
+        setFatiguedHorses(currentlyFatigued);
 
         return updatedPositions;
 
@@ -1479,6 +1486,7 @@ const horsePersonalities = [
             fastestTime={fastestTime}
             shuffledAvatars={shuffledAvatars}
             surgingHorses={surgingHorses}
+            fatiguedHorses={fatiguedHorses}
             getHorseName={getHorseName}
             getRaceSettings={getRaceSettings}
             getRaceDistanceInfo={getRaceDistanceInfo}

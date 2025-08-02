@@ -54,6 +54,7 @@ export default function RaceTrack({
   fastestTime,
   shuffledAvatars,
   surgingHorses,
+  fatiguedHorses,
   getHorseName,
   getRaceSettings,
   getRaceDistanceInfo,
@@ -117,6 +118,8 @@ export default function RaceTrack({
                           ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
                           : surgingHorses[index]
                           ? "bg-gradient-to-r from-orange-400 to-red-500 text-white border-orange-600"
+                          : fatiguedHorses[index]
+                          ? "bg-gradient-to-r from-gray-400 to-gray-600 text-gray-200 border-gray-700"
                           : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
                       }`}
                       initial={{ scale: 0.8, opacity: 0 }}
@@ -157,6 +160,16 @@ export default function RaceTrack({
                             ⚡
                           </motion.span>
                         )}
+                        {fatiguedHorses[index] && winnerIndex !== index && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: [1, 0.8, 1] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="text-gray-400"
+                          >
+                            😮‍💨
+                          </motion.span>
+                        )}
                       </div>
                     </motion.div>
                     <MotionFadeInImage
@@ -183,6 +196,8 @@ export default function RaceTrack({
                             ? "drop-shadow(0 0 8px gold)"
                             : surgingHorses[index]
                             ? "drop-shadow(0 0 12px orange) brightness(1.2)"
+                            : fatiguedHorses[index]
+                            ? "brightness(0.6) saturate(0.5)"
                             : "none",
                       }}
                     />
