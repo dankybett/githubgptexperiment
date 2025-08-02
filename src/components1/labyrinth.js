@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 
 const MAZE_SIZE = 12;
 const CELL_EMPTY = 0;
@@ -82,7 +82,7 @@ const SKILL_TREE = {
   }
 };
 
-function HorseMazeGame() {
+function HorseMazeGame({ onBack }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [minotaurPos, setMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
@@ -700,9 +700,20 @@ function HorseMazeGame() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-100 to-green-200 p-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-2 text-green-800">
-          🐎 Horse Maze Explorer
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+            >
+              ← Back
+            </button>
+          )}
+          <h1 className="text-4xl font-bold text-center flex-1 text-green-800">
+            🐎 Horse Maze Explorer
+          </h1>
+          <div className="w-20" />
+        </div>
         <p className="text-center text-green-700 mb-6">
           Watch your brave horse explore mysterious mazes and collect treasures!
         </p>

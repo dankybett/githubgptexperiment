@@ -12,6 +12,7 @@ const HorseStable = ({
   onBack,
   onPlayMinigame,
   onShowLockedHorses,
+  onSendToLabyrinth,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -416,6 +417,10 @@ const HorseStable = ({
           horse={selectedHorse}
           onClose={() => setSelectedHorse(null)}
           onRename={handleRename}
+          onSendToLabyrinth={() => {
+            setSelectedHorse(null);
+            onSendToLabyrinth();
+          }}
         />
       )}
     </div>

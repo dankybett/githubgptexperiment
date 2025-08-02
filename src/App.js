@@ -6,6 +6,7 @@ import HorseStable from "./components1/HorseStable";
 import RaceTrack from "./components1/RaceTrack";
 import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
+import HorseMazeGame from "./components1/labyrinth";
 import { createSeededRng } from "./utils/prng";
 
 const MotionFadeInImage = motion(FadeInImage);
@@ -15,6 +16,7 @@ export default function RandomPicker() {
   const [showRaceScreen, setShowRaceScreen] = useState(false);
   const [showStable, setShowStable] = useState(false);
   const [showBattleship, setShowBattleship] = useState(false);
+  const [showLabyrinth, setShowLabyrinth] = useState(false);
   const [showLockedHorses, setShowLockedHorses] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [items, setItems] = useState([]);
@@ -1410,7 +1412,7 @@ const horsePersonalities = [
         horseNames={horseNames}
         horsePersonalities={horsePersonalities}
         unlockedHorses={unlockedHorses}
-        coins={coins}     
+        coins={coins} 
         onBack={() => setShowStable(false)}
         onPlayMinigame={() => {
           setShowStable(false);
@@ -1419,6 +1421,10 @@ const horsePersonalities = [
         onShowLockedHorses={() => {
           setShowStable(false);
           setShowLockedHorses(true);
+        }}
+         onSendToLabyrinth={() => {
+          setShowStable(false);
+          setShowLabyrinth(true);
         }}
       />
     );
@@ -1440,6 +1446,18 @@ const horsePersonalities = [
       />
     );
   }
+
+  if (showLabyrinth) {
+    return (
+      <HorseMazeGame
+        onBack={() => {
+          setShowLabyrinth(false);
+          setShowStable(true);
+        }}
+      />
+    );
+  }
+
 
   if (showBattleship) {
     return <BattleshipGame onBack={() => setShowBattleship(false)} />;

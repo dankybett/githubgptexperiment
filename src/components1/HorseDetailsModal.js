@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-export default function HorseDetailsModal({ horse, onClose, onRename }) {
+export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth }) {
   const [name, setName] = useState(horse.name);
 
   const handleSave = () => {
@@ -40,16 +40,24 @@ export default function HorseDetailsModal({ horse, onClose, onRename }) {
           </div>
           <p className="text-sm">Personality: {horse.personality}</p>
         </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1 bg-gray-200 rounded">
-            Cancel
-          </button>
+        <div className="mt-4 space-y-2">
           <button
-            onClick={handleSave}
-            className="px-3 py-1 bg-blue-600 text-white rounded"
+          onClick={onSendToLabyrinth}
+          className="w-full px-3 py-1 bg-purple-600 text-white rounded"
           >
-            Save
+          Send to Labyrinth
           </button>
+          <div className="flex justify-end gap-2">
+            <button onClick={onClose} className="px-3 py-1 bg-gray-200 rounded">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-3 py-1 bg-blue-600 text-white rounded"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
