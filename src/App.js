@@ -557,36 +557,36 @@ const horsePersonalities = [
     const settings = {
       short: {
         baseSpeed: 0.004,
-        speedVariation: 0.003,
+        speedVariation: 0.001, // Reduced from 0.003 for closer racing
         surgeIntensity: 0.005,
-        surgeFrequency: 0.35,
-        comebackChance: 0.15,
+        surgeFrequency: 0.45, // Increased from 0.35 for more action
+        comebackChance: 0.35, // Increased from 0.15 for more lead changes
         dramaMoments: 2,
         hurdles: [],
         staminaFactor: 0.1,
-        packTightness: 0.85,
+        packTightness: 0.95,
       },
       medium: {
         baseSpeed: 0.002,
-        speedVariation: 0.002,
+        speedVariation: 0.0008, // Reduced from 0.002 for closer racing
         surgeIntensity: 0.003,
-        surgeFrequency: 0.28,
-        comebackChance: 0.25,
+        surgeFrequency: 0.38, // Increased from 0.28 for more action
+        comebackChance: 0.4, // Increased from 0.25 for more lead changes
         dramaMoments: 3,
         hurdles: [0.3, 0.65],
         staminaFactor: 0.2,
-        packTightness: 0.9,
+        packTightness: 0.97,
       },
       long: {
         baseSpeed: 0.0008,
-        speedVariation: 0.0015,
+        speedVariation: 0.0006, // Reduced from 0.0015 for closer racing
         surgeIntensity: 0.002,
-        surgeFrequency: 0.22,
-        comebackChance: 0.4,
+        surgeFrequency: 0.32, // Increased from 0.22 for more action
+        comebackChance: 0.5, // Increased from 0.4 for more lead changes
         dramaMoments: 5,
         hurdles: [0.15, 0.35, 0.55, 0.75, 0.9],
         staminaFactor: 0.35,
-        packTightness: 0.95,
+        packTightness: 0.98,
       },
     };
     if (currentWeather) {
@@ -779,7 +779,24 @@ const horsePersonalities = [
           const deviation = pos - averageProgress;
           const packEffect =
             1 - Math.abs(deviation) * (1 - settings.packTightness);
-          speed *= Math.max(packEffect, 0.7);
+          speed *= Math.max(packEffect, 0.8);
+          
+          // Aggressive rubber band effect for competitive racing
+          const progressDiff = pos - averageProgress;
+          
+          // Strong boost for horses behind
+          if (progressDiff < -0.05) {
+            speed *= 1.2; // 20% speed boost for stragglers
+          } else if (progressDiff < -0.02) {
+            speed *= 1.1; // 10% speed boost for slightly behind
+          }
+          
+          // Strong slowdown for early leaders
+          if (progressDiff > 0.05) {
+            speed *= 0.85; // 15% speed reduction for clear leaders
+          } else if (progressDiff > 0.02) {
+            speed *= 0.92; // 8% speed reduction for slight leaders
+          }
 
           for (const hurdlePos of settings.hurdles) {
             // Convert to pixel positions to match visual rendering
@@ -862,7 +879,7 @@ const horsePersonalities = [
         const sortedPositions = [...updatedPositions].sort((a, b) => b - a);
         const leader = sortedPositions[0];
         const second = sortedPositions[1] ?? sortedPositions[0];
-        const maxLead = 0.15; // 15% of track length
+        const maxLead = 0.05; // 5% of track length for ultra-tight racing
         if (leader - second > maxLead) {
           const leaderIndex = updatedPositions.indexOf(leader);
           updatedPositions[leaderIndex] = second + maxLead;
