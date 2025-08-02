@@ -60,36 +60,7 @@ export default function RaceTrack({
   backToSetup,
 }) {
   return (
-    <div className="flex-1 p-3 sm:p-4 relative">
-      {(isRacing || countdown) && (
-        <motion.div
-          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40 p-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white rounded-2xl backdrop-blur-sm shadow-2xl border-2 border-white/20 max-w-md mx-4"
-          animate={{
-            scale: [1, 1.02, 1],
-            boxShadow: [
-              "0 10px 25px rgba(0,0,0,0.3)",
-              "0 15px 35px rgba(0,0,0,0.4)",
-              "0 10px 25px rgba(0,0,0,0.3)",
-            ],
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
-          initial={{ y: -50, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-        >
-          <div className="flex items-center gap-3">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="text-2xl"
-            >
-              📢
-            </motion.div>
-            <p className="text-sm sm:text-base font-bold text-center flex-1 leading-tight">
-              {commentary || `Get ready... ${countdown}!`}
-            </p>
-          </div>
-        </motion.div>
-      )}
+    <div className="flex-1 p-3 sm:p-4 relative flex flex-col">
 
       <div className="overflow-x-auto h-full" ref={trackContainerRef}>
         <div
@@ -360,6 +331,39 @@ export default function RaceTrack({
           )}
         </div>
       </div>
+      
+      {/* Commentary below race track */}
+      {(isRacing || countdown) && (
+        <motion.div
+          key={commentary || countdown} 
+          className="mt-4 p-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white rounded-2xl backdrop-blur-sm shadow-2xl border-2 border-white/20 max-w-md mx-auto"
+          animate={{
+            scale: [1, 1.02, 1],
+            boxShadow: [
+              "0 10px 25px rgba(0,0,0,0.3)",
+              "0 15px 35px rgba(0,0,0,0.4)",
+              "0 10px 25px rgba(0,0,0,0.3)",
+            ],
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 50, opacity: 0 }}
+        >
+          <div className="flex items-center gap-3 justify-center">
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-2xl"
+            >
+              📢
+            </motion.div>
+            <p className="text-sm sm:text-base font-bold text-center flex-1 leading-tight">
+              {commentary || `Get ready... ${countdown}!`}
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

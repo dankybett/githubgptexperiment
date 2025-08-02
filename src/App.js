@@ -600,6 +600,7 @@ const horsePersonalities = [
   const getCommentaryForPhase = (phase) => {
     let phrases = commentaryPhrases[phase] || commentaryPhrases.middle;
 
+    // Add weather-specific commentary if applicable
     if (
       currentWeather &&
       commentaryPhrases.weather[currentWeather.name.toLowerCase()]
@@ -611,20 +612,50 @@ const horsePersonalities = [
         ];
       }
     }
+    
+    // Filter out already used phrases - never repeat during same race
     const availablePhrases = phrases.filter(
       (phrase) =>
         !usedCommentaryRef.current.has(phrase) &&
         phrase !== lastCommentaryRef.current
     );
 
+    // If we've exhausted all phrases in this category, try other categories
     if (availablePhrases.length === 0) {
-      usedCommentaryRef.current.clear();
-      const resetPhrases = phrases.filter(
-        (phrase) => phrase !== lastCommentaryRef.current
+      // Get phrases from all other categories that haven't been used
+      const allCategories = ['early', 'middle', 'dramatic', 'final'];
+      const alternativePhases = allCategories
+        .filter(cat => cat !== phase)
+        .flatMap(cat => commentaryPhrases[cat] || [])
+        .filter(phrase => !usedCommentaryRef.current.has(phrase) && phrase !== lastCommentaryRef.current);
+      
+      if (alternativePhases.length > 0) {
+        const selectedPhrase = alternativePhases[Math.floor(rngRef.current() * alternativePhases.length)];
+        usedCommentaryRef.current.add(selectedPhrase);
+        lastCommentaryRef.current = selectedPhrase;
+        return selectedPhrase;
+      }
+      
+      // If absolutely no phrases left, create a dynamic one
+      const dynamicPhrases = [
+        "What an incredible race!",
+        "The excitement continues!",
+        "This is pure racing magic!",
+        "Unbelievable action on the track!",
+        "The competition is fierce out there!"
+      ];
+      const unusedDynamic = dynamicPhrases.filter(phrase => 
+        !usedCommentaryRef.current.has(phrase) && phrase !== lastCommentaryRef.current
       );
-      availablePhrases.push(
-        ...(resetPhrases.length > 0 ? resetPhrases : phrases)
-      );
+      if (unusedDynamic.length > 0) {
+        const selectedPhrase = unusedDynamic[Math.floor(rngRef.current() * unusedDynamic.length)];
+        usedCommentaryRef.current.add(selectedPhrase);
+        lastCommentaryRef.current = selectedPhrase;
+        return selectedPhrase;
+      }
+      
+      // Absolute fallback - should rarely happen
+      return "Racing continues...";
     }
 
     const selectedPhrase =
