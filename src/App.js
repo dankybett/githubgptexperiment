@@ -54,7 +54,7 @@ export default function RandomPicker() {
   const [fatiguedHorses, setFatiguedHorses] = useState([]);
 
   // Currency and betting state
-  const [coins, setCoins] = useState(100);
+  const [coins, setCoins] = useState(1000);
   const [betAmount, setBetAmount] = useState(0);
   const [betHorse, setBetHorse] = useState(null);
   const [betEnabled, setBetEnabled] = useState(false);
@@ -63,6 +63,7 @@ export default function RandomPicker() {
   const horseAvatars = [
     "/horses/horse1.png",
     "/horses/horse2.png",
+    "/horses/horse3.png",
     "/horses/robohorse.png",
     "/horses/horse4.png",
     "/horses/horse5.png",
@@ -83,6 +84,20 @@ export default function RandomPicker() {
     "/horses/horsecar.png",
     "/horses/Picassohorse.png",
     "/horses/pinatahorse.png",
+    "/horses/astrohorse.png",
+    "/horses/barthorse.png",
+    "/horses/beehorse.png",
+    "/horses/cathorse.png",
+    "/horses/clownhorse.png",
+    "/horses/cthuluhorse.png",
+    "/horses/donkeyhorse.png",
+    "/horses/duckyhorse.png",
+    "/horses/medusahorse.png",
+    "/horses/minotaurhorse.png",
+    "/horses/ponyhorse.png",
+    "/horses/predatorhorse.png",
+    "/horses/sharkhorse.png",
+    "/horses/skellyhorse.png",
   ];
 
 const horseNames = [
@@ -108,6 +123,21 @@ const horseNames = [
     "Inferno",
     "Mirage",
     "Nebula",
+    "Stardust",
+    "Cosmic",
+    "Bart",
+    "Buzzer",
+    "Whiskers",
+    "Jester",
+    "Tentacles",
+    "Donkey",
+    "Rubber",
+    "Gorgon",
+    "Labyrinth",
+    "Pony",
+    "Hunter",
+    "Jaws",
+    "Bones",
 ];
 
 const horsePersonalities = [
@@ -133,6 +163,21 @@ const horsePersonalities = [
   "Burns with competitive drive.",
   "Hard to catch and harder to predict.",
   "Dreamy star-gazer.",
+  "Explorer of cosmic distances.",
+  "Space traveler with stellar speed.",
+  "Yellow speedster with a donut obsession.",
+  "Buzzes around with honey-powered energy.",
+  "Purrs through races with feline grace.",
+  "Brings laughter to every competition.",
+  "Ancient terror with tentacled might.",
+  "Stubborn but surprisingly fast.",
+  "Squeaks through tight spots.",
+  "Stone-cold stare freezes competition.",
+  "Maze-master with horn expertise.",
+  "Small but mighty competitor.",
+  "Hunts victory with predatory instinct.",
+  "Fin-ished opponents with aquatic speed.",
+  "Rattles bones on the racetrack.",
 ];
 
   const [unlockedHorses, setUnlockedHorses] = useState(
