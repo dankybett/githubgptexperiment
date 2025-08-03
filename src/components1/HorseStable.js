@@ -10,7 +10,6 @@ const HorseStable = ({
   unlockedHorses,
   coins,
   onBack,
-  onPlayMinigame,
   onShowLockedHorses,
   onSendToLabyrinth,
 }) => {
@@ -426,23 +425,6 @@ const HorseStable = ({
             >
               {window.innerWidth < 640 ? 'Manage' : 'Manage Horses'}
             </motion.button>
-            {onPlayMinigame && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onPlayMinigame}
-                className="btn-retro btn-retro-blue"
-                style={{
-                  padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
-                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
-                  flex: window.innerWidth < 640 ? '1' : 'none',
-                  minWidth: window.innerWidth < 640 ? '0' : 'auto',
-                  letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
-                }}
-              >
-                Game
-              </motion.button>
-            )}
             {onShowLockedHorses && (
               <motion.button
                 whileHover={{ scale: 1.05 }}

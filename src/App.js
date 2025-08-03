@@ -1559,10 +1559,6 @@ const horsePersonalities = [
         unlockedHorses={unlockedHorses}
         coins={coins} 
         onBack={() => setShowStable(false)}
-        onPlayMinigame={() => {
-          setShowStable(false);
-          setShowBattleship(true);
-        }}
         onShowLockedHorses={() => {
           setShowStable(false);
           setShowLockedHorses(true);
