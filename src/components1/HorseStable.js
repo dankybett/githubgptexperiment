@@ -20,7 +20,10 @@ const HorseStable = ({
   const [availableHorses, setAvailableHorses] = useState([]);
   const [selectedHorseIds, setSelectedHorseIds] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
-  const [showNameTags, setShowNameTags] = useState(true);
+  const [showNameTags, setShowNameTags] = useState(false);
+  const [showMusicLibrary, setShowMusicLibrary] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   // Pan/drag state
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -340,7 +343,7 @@ const HorseStable = ({
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🏇
+                
               </motion.span>
               <div>
                 <h1 
@@ -352,7 +355,7 @@ const HorseStable = ({
                     lineHeight: '1.2'
                   }}
                 >
-                  🏠 Horse Stable
+                  Horse Stable
                 </h1>
                 {window.innerWidth >= 640 && (
                   <p 
@@ -533,10 +536,39 @@ const HorseStable = ({
             transformOrigin: 'center center',
             transform: 'scale(1)',
             fontSize: '14px',
-            fontFamily: 'system-ui, sans-serif'
+            fontFamily: 'system-ui, sans-serif',
+            borderLeft: '4px solid #8B4513',
+            borderRight: '4px solid #8B4513'
           }}
         >
           
+          {/* Fence along top and bottom */}
+          {/* Top fence */}
+          <div style={{
+            position: 'absolute',
+            top: '-18px',
+            left: '0px',
+            width: '100%',
+            height: '64px',
+            backgroundImage: 'url(/stable/fence.png)',
+            backgroundRepeat: 'repeat-x',
+            backgroundSize: 'auto 64px',
+            zIndex: '5'
+          }}></div>
+          
+          {/* Bottom fence */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-18px',
+            left: '0px',
+            width: '100%',
+            height: '64px',
+            backgroundImage: 'url(/stable/fence.png)',
+            backgroundRepeat: 'repeat-x',
+            backgroundSize: 'auto 64px',
+            zIndex: '15'
+          }}></div>
+
           {/* Decorative Assets */}
           {/* Farm Building */}
           <div 
@@ -592,7 +624,14 @@ const HorseStable = ({
               right: '348px',
               width: '64px',
               height: '64px',
-              zIndex: '10'
+              zIndex: '10',
+              cursor: 'pointer'
+            }}
+            onClick={(e) => {
+              if (!isDragging) {
+                e.stopPropagation();
+                setShowMusicLibrary(true);
+              }
             }}
           >
             <img 
@@ -678,7 +717,7 @@ const HorseStable = ({
                       top: '50px',
                       left: '0%',
                       transform: 'translateX(-50%)',
-                      fontFamily: 'monospace',
+                      fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
                       fontWeight: 'bold',
                       fontSize: '10px',
                       letterSpacing: '0.5px'
@@ -705,11 +744,16 @@ const HorseStable = ({
 
           {/* Stable Info Panel */}
           <motion.div
-            className="absolute top-4 right-4 bg-amber-800 bg-opacity-90 text-amber-100 p-4 border-2 border-amber-600"
+            className="absolute top-4 right-4 border-2"
             style={{
-              fontFamily: 'monospace',
-              fontSize: '12px',
-              letterSpacing: '1px'
+              backgroundColor: 'rgba(146, 64, 14, 0.9)',
+              borderColor: '#d97706',
+              color: '#fef3c7',
+              padding: '16px',
+              fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+              fontSize: '8px',
+              letterSpacing: '1px',
+              zIndex: '20'
             }}
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -721,39 +765,75 @@ const HorseStable = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontFamily: 'monospace'
+              fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+              fontSize: '8px'
             }}>
               <span>🏠</span>
               STABLE STATUS
             </h3>
             <div style={{
-              fontSize: '11px',
-              fontFamily: 'monospace',
+              fontSize: '7px',
+              fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
               lineHeight: '1.4'
             }}>
-              <p>🐎 HORSES: {stableHorses.length}</p>
-              <p>🌱 PASTURE: HEALTHY</p>
-              <p>💧 WATER: FRESH</p>
-              <p>🌾 FEED: STOCKED</p>
+              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>🐎 HORSES: {stableHorses.length}</p>
+              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>🌱 PASTURE: HEALTHY</p>
+              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>💧 WATER: FRESH</p>
+              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>🌾 FEED: STOCKED</p>
             </div>
           </motion.div>
 
-          {/* Activity indicator */}
-          <div className="absolute bottom-4 left-4 text-amber-800 bg-amber-100 bg-opacity-80 px-3 py-2 border-2 border-amber-700"
-            style={{
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              letterSpacing: '1px'
-            }}>
-            <div className="flex items-center gap-2">
-              <motion.div
-                className="w-2 h-2 bg-green-500"
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              <span>HORSES ROAMING PEACEFULLY</span>
+          {/* Now Playing indicator */}
+          {isPlaying && (
+            <div className="absolute bottom-4 left-4 border-2"
+              style={{
+                color: '#92400e',
+                backgroundColor: 'rgba(251, 191, 36, 0.8)',
+                padding: '8px 12px',
+                borderColor: '#a16207',
+                fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                fontSize: '8px',
+                letterSpacing: '1px',
+                zIndex: '25'
+              }}>
+              <div className="flex items-center gap-2">
+                <img 
+                  src="/record collection/theme song.png"
+                  alt="Theme Song Album Cover"
+                  style={{
+                    width: '70px',
+                    height: '70px',
+                    objectFit: 'cover',
+                    border: '1px solid #92400e'
+                  }}
+                />
+                <motion.div
+                  className="w-2 h-2 bg-blue-500"
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+                <span style={{ fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important' }}>NOW PLAYING: THEME SONG</span>
+                <button
+                  className="ml-2 px-2 py-1 bg-amber-700 border border-amber-600 text-amber-100 hover:bg-amber-600 transition-colors"
+                  style={{
+                    fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                    fontSize: '10px',
+                    letterSpacing: '1px'
+                  }}
+                  onClick={() => {
+                    if (currentAudio) {
+                      currentAudio.pause();
+                      currentAudio.currentTime = 0;
+                      setIsPlaying(false);
+                      setCurrentAudio(null);
+                    }
+                  }}
+                >
+                  STOP
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         </div>
         {showSelector && (
@@ -795,6 +875,84 @@ const HorseStable = ({
             onSendToLabyrinth();
           }}
         />
+      )}
+      {showMusicLibrary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+          <div className="bg-amber-800 border-2 border-amber-600 p-6 w-80 max-h-[80vh] overflow-y-auto"
+            style={{
+              fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+              fontSize: '12px',
+              letterSpacing: '1px'
+            }}>
+            <h2 className="text-xl font-bold mb-4 text-amber-100 text-center"
+              style={{
+                fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                letterSpacing: '2px'
+              }}>
+              MUSIC LIBRARY
+            </h2>
+            <div className="space-y-2">
+              <div 
+                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '11px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (isPlaying) {
+                    return; // Don't start playing if already playing
+                  }
+                  
+                  // Stop any currently playing audio
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Gallop to Glory.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  
+                  // Set up event listeners
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                  });
+                  
+                  audio.addEventListener('error', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    console.log('Audio play failed');
+                  });
+                  
+                  audio.play().catch(err => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    console.log('Audio play failed:', err);
+                  });
+                }}
+              >
+                <span className="text-amber-100">♪ THEME SONG</span>
+              </div>
+            </div>
+            <div className="text-right mt-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowMusicLibrary(false)}
+                className="px-4 py-2 bg-amber-600 border-2 border-amber-500 text-amber-100 hover:bg-amber-700 transition-colors font-bold"
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '11px',
+                  letterSpacing: '1px'
+                }}
+              >
+                CLOSE
+              </motion.button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

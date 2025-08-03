@@ -650,39 +650,53 @@ function HorseMazeGame({ onBack }) {
   };
 
   const getCellDisplay = (cell, x, y) => {
+    const baseStyle = {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      imageRendering: 'pixelated',
+      display: 'block',
+      lineHeight: 0,
+      verticalAlign: 'top'
+    };
+
     if (horsePos.x === x && horsePos.y === y && minotaurPos.x === x && minotaurPos.y === y) {
-      return '💥';
+      return <img src="/maze/collision.png" alt="Collision" style={baseStyle} />;
     }
-    if (horsePos.x === x && horsePos.y === y) return '🐎';
+    if (horsePos.x === x && horsePos.y === y) {
+      return <img src="/maze/horse_player.png" alt="Horse" style={baseStyle} />;
+    }
     if (minotaurPos.x === x && minotaurPos.y === y) {
-      if (minotaurStunned > 0) return '😵';
-      if (minotaurLostTrack > 0) return '❓';
-      return '👹';
+      if (minotaurStunned > 0) return <img src="/maze/minotaur_stunned.png" alt="Stunned Minotaur" style={baseStyle} />;
+      if (minotaurLostTrack > 0) return <img src="/maze/minotaur_lost.png" alt="Lost Minotaur" style={baseStyle} />;
+      return <img src="/maze/minotaur.png" alt="Minotaur" style={baseStyle} />;
     }
     
     // Check moving walls
     const movingWall = movingWalls.find(w => w.x === x && w.y === y);
     if (movingWall) {
-      return movingWall.closed ? '🚪' : '🔓';
+      return movingWall.closed ? 
+        <img src="/maze/door_closed.png" alt="Closed Door" style={baseStyle} /> : 
+        <img src="/maze/door_open.png" alt="Open Door" style={baseStyle} />;
     }
     
     switch (cell) {
-      case CELL_WALL: return '⬛';
-      case CELL_EMPTY: return '⬜';
-      case CELL_START: return '🏠';
-      case CELL_REWARD: return '✨';
-      case CELL_TRAP: return '❌';
-      case CELL_POWERUP: return '🔮';
-      case CELL_ONEWAY_N: return '⬆️';
-      case CELL_ONEWAY_S: return '⬇️';
-      case CELL_ONEWAY_E: return '➡️';
-      case CELL_ONEWAY_W: return '⬅️';
-      case CELL_PORTAL_A: return '🌀';
-      case CELL_PORTAL_B: return '🌀';
-      case CELL_DARK_ZONE: return '🌑';
-      case CELL_VAULT: return '🏛️';
-      case CELL_KEY: return '🗝️';
-      default: return '⬜';
+      case CELL_WALL: return <img src="/maze/wall.png" alt="Wall" style={baseStyle} />;
+      case CELL_EMPTY: return <img src="/maze/path.png" alt="Path" style={baseStyle} />;
+      case CELL_START: return <img src="/maze/start.png" alt="Start" style={baseStyle} />;
+      case CELL_REWARD: return <img src="/maze/treasure.png" alt="Treasure" style={baseStyle} />;
+      case CELL_TRAP: return <img src="/maze/trap.png" alt="Trap" style={baseStyle} />;
+      case CELL_POWERUP: return <img src="/maze/powerup.png" alt="Power-up" style={baseStyle} />;
+      case CELL_ONEWAY_N: return <img src="/maze/arrow_up.png" alt="One-way Up" style={baseStyle} />;
+      case CELL_ONEWAY_S: return <img src="/maze/arrow_down.png" alt="One-way Down" style={baseStyle} />;
+      case CELL_ONEWAY_E: return <img src="/maze/arrow_right.png" alt="One-way Right" style={baseStyle} />;
+      case CELL_ONEWAY_W: return <img src="/maze/arrow_left.png" alt="One-way Left" style={baseStyle} />;
+      case CELL_PORTAL_A: return <img src="/maze/portal.png" alt="Portal A" style={baseStyle} />;
+      case CELL_PORTAL_B: return <img src="/maze/portal.png" alt="Portal B" style={baseStyle} />;
+      case CELL_DARK_ZONE: return <img src="/maze/darkzone.png" alt="Dark Zone" style={baseStyle} />;
+      case CELL_VAULT: return <img src="/maze/vault.png" alt="Vault" style={baseStyle} />;
+      case CELL_KEY: return <img src="/maze/key.png" alt="Key" style={baseStyle} />;
+      default: return <img src="/maze/path.png" alt="Path" style={baseStyle} />;
     }
   };
 
@@ -698,70 +712,99 @@ function HorseMazeGame({ onBack }) {
     .sort((a, b) => b.count - a.count);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-100 to-green-200 p-4">
+    <div className="min-h-screen bg-gradient-to-b from-green-100 to-green-200 p-2 sm:p-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           {onBack && (
             <button
               onClick={onBack}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+              className="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm"
             >
               ← Back
             </button>
           )}
-          <h1 className="text-4xl font-bold text-center flex-1 text-green-800">
-            🐎 Horse Maze Explorer
+          <h1 className="text-2xl sm:text-4xl font-bold text-center flex-1 text-green-800">
+            🐎 Horse Maze
           </h1>
-          <div className="w-20" />
+          <div className="w-16 sm:w-20" />
         </div>
-        <p className="text-center text-green-700 mb-6">
+        <p className="text-center text-green-700 mb-4 text-sm sm:text-base hidden sm:block">
           Watch your brave horse explore mysterious mazes and collect treasures!
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-lg p-6 shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">Maze Explorer</h2>
-              <div className="text-sm text-gray-600 space-x-4">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6">
+          <div className="lg:col-span-2 bg-white rounded-lg p-3 sm:p-6 shadow-lg order-1">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Maze Explorer</h2>
+              <div className="text-xs sm:text-sm text-gray-600 flex gap-2 sm:gap-4">
                 <span>Run #{totalRuns}</span>
-                <span className="text-purple-600">💎 {skillPoints} Skill Points</span>
+                <span className="text-purple-600">💎 {skillPoints} Points</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-0 mb-4 border-2 border-gray-400 inline-block">
-              {maze.map((row, y) =>
-                row.map((cell, x) => (
-                  <div
-                    key={`${x}-${y}`}
-                    className="w-6 h-6 flex items-center justify-center text-xs"
-                  >
-                    {getCellDisplay(cell, x, y)}
-                  </div>
-                ))
-              )}
+            <div 
+              className="mb-4 border-2 border-gray-800 bg-gray-900 w-full max-w-full overflow-hidden"
+              style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                lineHeight: 0,
+                aspectRatio: '1/1'
+              }}
+            >
+              {maze.map((row, y) => (
+                <div 
+                  key={y}
+                  style={{ 
+                    display: 'flex',
+                    lineHeight: 0,
+                    flex: '1',
+                    width: '100%'
+                  }}
+                >
+                  {row.map((cell, x) => (
+                    <div
+                      key={`${x}-${y}`}
+                      style={{ 
+                        flex: '1',
+                        aspectRatio: '1/1',
+                        background: 'transparent',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: 0,
+                        padding: 0,
+                        margin: 0
+                      }}
+                    >
+                      {getCellDisplay(cell, x, y)}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
 
-            <div className="space-y-3">
-              <div className="flex gap-2 flex-wrap">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex gap-1 sm:gap-2 flex-wrap">
                 <button
                   onClick={startGame}
                   disabled={gameState === 'exploring'}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                 >
-                  {gameState === 'waiting' ? 'Start Adventure' : 'New Adventure'}
+                  {gameState === 'waiting' ? 'Start' : 'New Game'}
                 </button>
                 
                 <button
                   onClick={() => setShowSkillTree(!showSkillTree)}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
                 >
-                  Skills ({skillPoints} 💎)
+                  Skills ({skillPoints}💎)
                 </button>
                 
                 <select
                   value={gameSpeed}
                   onChange={(e) => setGameSpeed(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg"
+                  className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
                   disabled={gameState === 'exploring'}
                 >
                   <option value={1200}>Slow</option>
@@ -853,7 +896,7 @@ function HorseMazeGame({ onBack }) {
           </div>
 
           {showSkillTree && (
-            <div className="bg-white rounded-lg p-6 shadow-lg">
+            <div className="bg-white rounded-lg p-3 sm:p-6 shadow-lg order-2 lg:order-none">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 Skill Tree (💎 {skillPoints} points available)
               </h2>
@@ -905,9 +948,9 @@ function HorseMazeGame({ onBack }) {
             </div>
           )}
 
-          <div className="bg-white rounded-lg p-6 shadow-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Treasure Inventory ({inventory.length} items)
+          <div className="bg-white rounded-lg p-3 sm:p-6 shadow-lg order-3 lg:order-none">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
+              Inventory ({inventory.length})
             </h2>
             
             {inventory.length === 0 ? (
@@ -941,66 +984,54 @@ function HorseMazeGame({ onBack }) {
           </div>
         </div>
 
-        <div className="mt-6 bg-white rounded-lg p-4 shadow-lg">
-          <h3 className="font-semibold mb-2">Legend:</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-3">
-            <div>🐎 Your Horse</div>
-            <div>👹 Minotaur</div>
-            <div>🏠 Start</div>
-            <div>✨ Treasure</div>
-            <div>❌ Trap</div>
-            <div>🔮 Power-up</div>
-            <div>🗝️ Key</div>
-            <div>🏛️ Vault</div>
-          </div>
-          
-          <div className="border-t pt-3 mb-3">
-            <h4 className="font-semibold mb-2">Advanced Features:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-              <div>🚪 Moving Wall (Closed)</div>
-              <div>🔓 Moving Wall (Open)</div>
-              <div>⬆️⬇️➡️⬅️ One-way Doors</div>
+        <div className="mt-4 lg:mt-6 bg-white rounded-lg p-3 sm:p-4 shadow-lg">
+          <details className="lg:open">
+            <summary className="font-semibold mb-2 cursor-pointer lg:cursor-default">Legend & Guide</summary>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-2 text-xs sm:text-sm mb-3">
+              <div>🐎 Horse</div>
+              <div>👹 Minotaur</div>
+              <div>🏠 Start</div>
+              <div>✨ Treasure</div>
+              <div>❌ Trap</div>
+              <div>🔮 Power-up</div>
+              <div>🗝️ Key</div>
+              <div>🏛️ Vault</div>
+              <div>🚪 Door</div>
               <div>🌀 Portal</div>
-              <div>🌑 Dark Zone</div>
-              <div>🌫️ Fog of War</div>
-              <div>⬜ Path</div>
-              <div>⬛ Wall</div>
+              <div>⬆️ One-way</div>
+              <div>🌑 Dark</div>
             </div>
-          </div>
-          
-          <div className="border-t pt-3">
-            <h4 className="font-semibold mb-2">Power-ups:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-              <div className="bg-gray-50 p-2 rounded">
-                <div className="font-semibold">⚡ Speed Boost</div>
-                <div>Horse moves twice per turn</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded">
-                <div className="font-semibold">👻 Invisibility</div>
-                <div>Minotaur wanders randomly</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded">
-                <div className="font-semibold">🌀 Teleport</div>
-                <div>Jump to random safe location</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded">
-                <div className="font-semibold">🔨 Wall Breaker</div>
-                <div>Move through walls</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded">
-                <div className="font-semibold">💣 Stun Bomb</div>
-                <div>Freeze minotaur in place</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded">
-                <div className="font-semibold">🧲 Magnet</div>
-                <div>Auto-collect nearby treasures</div>
+            
+            <div className="border-t pt-2 hidden sm:block">
+              <h4 className="font-semibold mb-2 text-sm">Power-ups:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2 text-xs">
+                <div className="bg-gray-50 p-1 sm:p-2 rounded">
+                  <div className="font-semibold">⚡ Speed Boost</div>
+                  <div className="hidden sm:block">Horse moves twice per turn</div>
+                </div>
+                <div className="bg-gray-50 p-1 sm:p-2 rounded">
+                  <div className="font-semibold">👻 Invisibility</div>
+                  <div className="hidden sm:block">Minotaur wanders randomly</div>
+                </div>
+                <div className="bg-gray-50 p-1 sm:p-2 rounded">
+                  <div className="font-semibold">🌀 Teleport</div>
+                  <div className="hidden sm:block">Jump to random safe location</div>
+                </div>
+                <div className="bg-gray-50 p-1 sm:p-2 rounded">
+                  <div className="font-semibold">🔨 Wall Breaker</div>
+                  <div className="hidden sm:block">Move through walls</div>
+                </div>
+                <div className="bg-gray-50 p-1 sm:p-2 rounded">
+                  <div className="font-semibold">💣 Stun Bomb</div>
+                  <div className="hidden sm:block">Freeze minotaur in place</div>
+                </div>
+                <div className="bg-gray-50 p-1 sm:p-2 rounded">
+                  <div className="font-semibold">🧲 Magnet</div>
+                  <div className="hidden sm:block">Auto-collect nearby treasures</div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <p className="text-xs text-gray-600 mt-2">
-            Navigate advanced maze features! Moving walls open/close periodically, one-way doors restrict movement direction, portals teleport you instantly, dark zones add atmospheric challenge, and vaults require keys for legendary treasures!
-          </p>
+          </details>
         </div>
       </div>
     </div>
