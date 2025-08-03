@@ -18,14 +18,14 @@ export default function RandomPicker() {
   const [showBattleship, setShowBattleship] = useState(false);
   const [showLabyrinth, setShowLabyrinth] = useState(false);
   const [showLockedHorses, setShowLockedHorses] = useState(false);
-  const [itemCount, setItemCount] = useState(0);
-  const [items, setItems] = useState([]);
+  const [itemCount, setItemCount] = useState(5);
+  const [items, setItems] = useState(Array(5).fill(""));
   const [isRacing, setIsRacing] = useState(false);
   const [winner, setWinner] = useState(null);
   const [winnerIndex, setWinnerIndex] = useState(null);
   const [commentary, setCommentary] = useState("");
   const [history, setHistory] = useState([]);
-  const [positions, setPositionsState] = useState([]);
+  const [positions, setPositionsState] = useState(Array(5).fill(0));
   const positionsRef = useRef(positions);
   const setPositions = (value) => {
     if (typeof value === "function") {
@@ -1249,9 +1249,14 @@ const horsePersonalities = [
           <motion.div
             animate={{ rotate: [0, 5, -5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="text-6xl mb-4"
+            className="mb-4"
           >
-            🏇
+            <img 
+              src={horseAvatars[Math.floor(Math.random() * horseAvatars.length)]}
+              alt="Random Horse"
+              className="w-48 h-48 object-contain rounded-lg shadow-lg"
+              style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+            />
           </motion.div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl bg-gradient-to-r from-yellow-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
             Horse Race Picker
@@ -1260,24 +1265,26 @@ const horsePersonalities = [
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-lg sm:text-xl text-yellow-200 mb-8 max-w-md"
+            className="text-lg sm:text-xl text-yellow-200 mb-6 max-w-md"
           >
             The ultimate way to make decisions! Add your options and watch them
             race to victory!
           </motion.p>
+          
+          <motion.button
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTitle(false)}
+            className="px-8 py-4 btn-retro btn-retro-green font-bold text-lg"
+          >
+            Start Racing!
+          </motion.button>
         </motion.div>
 
-        <motion.button
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowTitle(false)}
-          className="relative z-10 self-center mb-8 mx-4 px-8 py-4 btn-retro btn-retro-green font-bold text-lg"
-        >
-          🚀 Start Racing!
-        </motion.button>
+        <div className="h-8"></div>
       </div>
     );
   }
@@ -1461,7 +1468,7 @@ const horsePersonalities = [
                   onClick={() => startCountdown()}
                   className="px-8 py-4 btn-retro btn-retro-green text-white font-bold text-lg"
                 >
-                  🚀 Start {distanceInfo.name} Race!
+                  Start {distanceInfo.name} Race!
                 </motion.button>
               </motion.div>
             )}
@@ -1558,8 +1565,8 @@ const horsePersonalities = [
 
   // SETUP SCREEN
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-cyan-50 to-blue-50 w-full overflow-x-hidden">
-      <div className="w-full max-w-none bg-white bg-opacity-95 backdrop-blur-md shadow-2xl min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 w-full overflow-x-hidden">
+      <div className="w-full max-w-none bg-gray-800 bg-opacity-95 backdrop-blur-md shadow-2xl min-h-screen">
         <div className="p-3 sm:p-4 md:p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
@@ -1569,9 +1576,9 @@ const horsePersonalities = [
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🏇
+                
               </motion.span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Horse Race Picker
               </h1>
             </div>
@@ -1602,7 +1609,7 @@ const horsePersonalities = [
 
           {/* Number Input */}
           <div className="mb-4">
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">
+            <label className="block mb-2 font-semibold text-gray-200 text-sm">
               Number of Contestants (1-{maxItems})
             </label>
             <input
@@ -1612,6 +1619,7 @@ const horsePersonalities = [
               className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all focus:shadow-lg"
               onChange={handleCountChange}
               value={itemCount || ""}
+              defaultValue="5"
               placeholder="Enter number..."
             />
           </div>
@@ -1619,7 +1627,7 @@ const horsePersonalities = [
           {/* Theme Selection and Randomize Button */}
           {items.length > 0 && (
             <div className="mb-4">
-              <label className="block font-semibold text-gray-700 text-sm mb-2">
+              <label className="block font-semibold text-gray-200 text-sm mb-2">
                 Theme
               </label>
               <div className="flex gap-2">
@@ -1649,7 +1657,7 @@ const horsePersonalities = [
 
           {/* Race Length Selector */}
           <div className="mb-4">
-            <label className="block font-semibold text-gray-700 text-sm mb-2">
+            <label className="block font-semibold text-gray-200 text-sm mb-2">
               Race Length
             </label>
             <div className="flex gap-2">
@@ -1662,15 +1670,15 @@ const horsePersonalities = [
                     onClick={() => setRaceDistance(dist)}
                     className={`flex-1 px-4 py-3 text-sm font-semibold ${
                       isSelected
-                        ? "btn-retro btn-retro-blue text-white"
-                        : "btn-retro bg-white text-gray-700"
+                        ? "btn-retro btn-retro-blue"
+                        : "btn-retro btn-retro-purple"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
                       <span>{info.emoji}</span>
                       <span>{info.name}</span>
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-sm mt-1">
                       {info.description}
                     </div>
                   </button>
@@ -1682,7 +1690,7 @@ const horsePersonalities = [
           {/* Contestant Inputs */}
           {items.length > 0 && (
             <div className="mb-4">
-              <h3 className="font-semibold text-gray-700 mb-3 text-sm">
+              <h3 className="font-semibold text-gray-200 mb-3 text-sm">
                 Contestants:
               </h3>
               <div className="grid grid-cols-1 gap-2">
@@ -1703,13 +1711,13 @@ const horsePersonalities = [
                       }`}
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
-                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-16 pr-12 focus:shadow-lg contestant-input"
+                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-24 pr-12 focus:shadow-lg contestant-input"
                     />
                     <FadeInImage
                       src={shuffledAvatars[index % shuffledAvatars.length]}
                       alt="Horse avatar"
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 object-contain rounded-md"
-                      style={{ width: "2.5rem", height: "2.5rem" }}
+                      style={{ width: "5rem", height: "5rem" }}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
                       #{index + 1}
@@ -1724,10 +1732,10 @@ const horsePersonalities = [
           {items.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="font-semibold text-gray-700 text-sm">
+                <label className="font-semibold text-gray-200 text-sm">
                   Place Your Bet (Coins: {coins})
                 </label>
-                <label className="flex items-center text-xs">
+                <label className="flex items-center text-xs text-gray-300">
                   <input
                     type="checkbox"
                     className="mr-1"
@@ -1795,7 +1803,7 @@ const horsePersonalities = [
                 }`}
                 disabled={isStartDisabled}
               >
-                🚀 Start Race!
+                Start Race!
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -1803,7 +1811,7 @@ const horsePersonalities = [
                 onClick={resetRace}
                 className="w-full sm:w-auto px-6 btn-retro btn-retro-red text-white font-semibold py-4 text-sm"
               >
-                🔄 Reset
+                Reset
               </motion.button>
             </div>
           )}
@@ -1816,7 +1824,7 @@ const horsePersonalities = [
               animate={{ opacity: 1, y: 0 }}
             >
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                <h3 className="font-bold text-gray-200 text-sm flex items-center gap-2">
                   🏁 Race History
                 </h3>
                 <motion.button

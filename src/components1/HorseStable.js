@@ -24,6 +24,7 @@ const HorseStable = ({
   const [showMusicLibrary, setShowMusicLibrary] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSong, setCurrentSong] = useState(null);
   
   // Pan/drag state
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -264,11 +265,16 @@ const HorseStable = ({
           animate={{ opacity: 1 }}
         >
           <motion.div
-            className="text-6xl mb-4"
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="mb-4 flex justify-center"
           >
-            🏇
+            <img 
+              src={horseAvatars[Math.floor(Math.random() * horseAvatars.length)]}
+              alt="Loading Horse"
+              className="w-24 h-24 object-contain rounded-lg shadow-lg"
+              style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+            />
           </motion.div>
           <p className="text-2xl font-bold text-amber-800 mb-2">
             Preparing the stable...
@@ -784,7 +790,7 @@ const HorseStable = ({
           </motion.div>
 
           {/* Now Playing indicator */}
-          {isPlaying && (
+          {isPlaying && currentSong && (
             <div className="absolute bottom-4 left-4 border-2"
               style={{
                 color: '#92400e',
@@ -798,8 +804,8 @@ const HorseStable = ({
               }}>
               <div className="flex items-center gap-2">
                 <img 
-                  src="/record collection/theme song.png"
-                  alt="Theme Song Album Cover"
+                  src={currentSong.image}
+                  alt={`${currentSong.name} Album Cover`}
                   style={{
                     width: '70px',
                     height: '70px',
@@ -812,7 +818,7 @@ const HorseStable = ({
                   animate={{ opacity: [1, 0.3, 1] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 />
-                <span style={{ fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important' }}>NOW PLAYING: THEME SONG</span>
+                <span style={{ fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important' }}>NOW PLAYING: {currentSong.name}</span>
                 <button
                   className="ml-2 px-2 py-1 bg-amber-700 border border-amber-600 text-amber-100 hover:bg-amber-600 transition-colors"
                   style={{
@@ -826,6 +832,7 @@ const HorseStable = ({
                       currentAudio.currentTime = 0;
                       setIsPlaying(false);
                       setCurrentAudio(null);
+                      setCurrentSong(null);
                     }
                   }}
                 >
@@ -913,27 +920,85 @@ const HorseStable = ({
                   const audio = new Audio('/sounds/Gallop to Glory.mp3');
                   setCurrentAudio(audio);
                   setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'THEME SONG',
+                    image: '/record collection/theme song.png'
+                  });
                   
                   // Set up event listeners
                   audio.addEventListener('ended', () => {
                     setIsPlaying(false);
                     setCurrentAudio(null);
+                    setCurrentSong(null);
                   });
                   
                   audio.addEventListener('error', () => {
                     setIsPlaying(false);
                     setCurrentAudio(null);
+                    setCurrentSong(null);
                     console.log('Audio play failed');
                   });
                   
                   audio.play().catch(err => {
                     setIsPlaying(false);
                     setCurrentAudio(null);
+                    setCurrentSong(null);
                     console.log('Audio play failed:', err);
                   });
                 }}
               >
                 <span className="text-amber-100">♪ THEME SONG</span>
+              </div>
+              
+              <div 
+                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '11px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (isPlaying) {
+                    return; // Don't start playing if already playing
+                  }
+                  
+                  // Stop any currently playing audio
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Wild Mane.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'WILD MANE',
+                    image: '/record collection/Wild Mane.png'
+                  });
+                  
+                  // Set up event listeners
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                  });
+                  
+                  audio.addEventListener('error', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                    console.log('Audio play failed');
+                  });
+                  
+                  audio.play().catch(err => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                    console.log('Audio play failed:', err);
+                  });
+                }}
+              >
+                <span className="text-amber-100">♪ WILD MANE</span>
               </div>
             </div>
             <div className="text-right mt-4">
