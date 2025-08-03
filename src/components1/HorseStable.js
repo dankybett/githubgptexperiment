@@ -982,6 +982,57 @@ const HorseStable = ({
               >
                 <span className="text-amber-100">♪ WILD MANE</span>
               </div>
+              
+              <div 
+                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '11px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (isPlaying) {
+                    return; // Don't start playing if already playing
+                  }
+                  
+                  // Stop any currently playing audio
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Wild and Unbridled.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'WILD AND UNBRIDLED',
+                    image: '/record collection/Wild and Unbridled.png'
+                  });
+                  
+                  // Set up event listeners
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                  });
+                  
+                  audio.addEventListener('error', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                    console.log('Audio play failed');
+                  });
+                  
+                  audio.play().catch(err => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                    console.log('Audio play failed:', err);
+                  });
+                }}
+              >
+                <span className="text-amber-100">♪ WILD AND UNBRIDLED</span>
+              </div>
             </div>
             <div className="text-right mt-4">
               <motion.button
