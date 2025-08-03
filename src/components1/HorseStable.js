@@ -20,6 +20,7 @@ const HorseStable = ({
   const [availableHorses, setAvailableHorses] = useState([]);
   const [selectedHorseIds, setSelectedHorseIds] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
+  const [showNameTags, setShowNameTags] = useState(true);
   
   // Pan/drag state
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -450,31 +451,25 @@ const HorseStable = ({
                 Unlock
               </motion.button>
             )}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowNameTags(!showNameTags)}
+              className={`btn-retro ${showNameTags ? 'btn-retro-orange' : 'btn-retro-gray'}`}
+              style={{
+                padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
+                fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                flex: window.innerWidth < 640 ? '1' : 'none',
+                minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+              }}
+            >
+              {window.innerWidth < 640 ? 'Tags' : showNameTags ? 'Hide Names' : 'Show Names'}
+            </motion.button>
           </div>
         </div>
       </div>
 
-      {/* Stable Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Hay bales */}
-        <div className="absolute bottom-10 left-10 w-16 h-12 bg-yellow-600 rounded-lg opacity-60"></div>
-        <div className="absolute bottom-8 right-20 w-20 h-14 bg-yellow-700 rounded-lg opacity-50"></div>
-        <div className="absolute top-32 left-1/4 w-12 h-10 bg-yellow-600 rounded-lg opacity-40"></div>
-        {/* Fence posts */}
-        <div className="absolute bottom-0 left-0 w-full h-8 bg-amber-800 opacity-30"></div>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute bottom-0 w-2 h-20 bg-amber-700 opacity-50"
-            style={{ left: `${i * 12.5}%` }}
-          ></div>
-        ))}
-        {/* Water trough */}
-        <div className="absolute bottom-16 right-10 w-24 h-8 bg-blue-400 rounded-full opacity-60 shadow-lg"></div>
-        {/* Stable doors in background */}
-        <div className="absolute top-20 left-5 w-16 h-32 bg-amber-800 rounded-t-lg opacity-30"></div>
-        <div className="absolute top-20 right-5 w-16 h-32 bg-amber-800 rounded-t-lg opacity-30"></div>
-      </div>
 
       {/* Floating particles (hay dust) */}
       <div className="absolute inset-0 pointer-events-none">
@@ -531,255 +526,109 @@ const HorseStable = ({
             position: 'relative',
             width: '800px',
             height: '600px',
-            backgroundColor: 'rgba(187, 247, 208, 0.4)',
-            borderRadius: '24px',
-            border: '4px solid rgba(217, 119, 6, 0.5)',
+            backgroundImage: 'url(/stable/backgroundpasture.png)',
+            backgroundRepeat: 'repeat',
+            backgroundSize: 'auto',
             overflow: 'hidden',
-            boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
             transformOrigin: 'center center',
             transform: 'scale(1)',
             fontSize: '14px',
             fontFamily: 'system-ui, sans-serif'
           }}
         >
-          {/* Grass texture overlay */}
-          <div 
-            style={{
-              position: 'absolute',
-              top: '0',
-              left: '0',
-              right: '0',
-              bottom: '0',
-              background: 'linear-gradient(to bottom right, #86efac, #bbf7d0, #fef08a)',
-              opacity: '0.3'
-            }}
-          ></div>
           
           {/* Decorative Assets */}
           {/* Farm Building */}
           <div 
             style={{
               position: 'absolute',
-              top: '16px',
-              left: '16px',
-              width: '96px',
-              height: '80px',
-              backgroundColor: '#b91c1c',
-              borderRadius: '12px 12px 0 0',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              top: '-100px',
+              left: '-50px',
+              width: '480px',
+              height: '400px',
               zIndex: '10'
             }}
           >
-            <div 
+            <img 
+              src="/stable/house.png" 
+              alt="Stable House" 
               style={{
-                position: 'absolute',
-                left: '0',
-                right: '0',
-                top: '0',
-                height: '16px',
-                backgroundColor: '#991b1b',
-                borderRadius: '12px 12px 0 0'
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))'
               }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '24px',
-                left: '8px',
-                width: '16px',
-                height: '24px',
-                backgroundColor: '#d97706',
-                borderRadius: '4px'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '24px',
-                right: '8px',
-                width: '24px',
-                height: '32px',
-                backgroundColor: '#60a5fa',
-                borderRadius: '4px',
-                opacity: '0.8'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '-8px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                fontSize: '32px'
-              }}
-            >🏚️</div>
+            />
           </div>
           
-          {/* Car */}
+          {/* Truck */}
           <div 
             style={{
               position: 'absolute',
               bottom: '32px',
               right: '32px',
-              width: '80px',
-              height: '48px',
-              backgroundColor: '#2563eb',
-              borderRadius: '8px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              width: '320px',
+              height: '192px',
               zIndex: '10'
             }}
           >
-            <div 
+            <img 
+              src="/stable/truck.png" 
+              alt="Truck" 
               style={{
-                position: 'absolute',
-                top: '4px',
-                left: '8px',
-                width: '48px',
-                height: '24px',
-                backgroundColor: '#3b82f6',
-                borderRadius: '4px'
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))'
               }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                bottom: '4px',
-                left: '4px',
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#1f2937',
-                borderRadius: '50%'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                bottom: '4px',
-                right: '4px',
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#1f2937',
-                borderRadius: '50%'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '-12px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                fontSize: '24px'
-              }}
-            >🚗</div>
+            />
           </div>
           
-          {/* Record Player */}
+          {/* Turntable */}
           <div 
             style={{
               position: 'absolute',
-              top: '200px',
-              right: '48px',
+              top: '150px',
+              right: '348px',
               width: '64px',
               height: '64px',
-              backgroundColor: '#d97706',
-              borderRadius: '8px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
               zIndex: '10'
             }}
           >
-            <div 
+            <img 
+              src="/stable/turntable.png" 
+              alt="Turntable" 
               style={{
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                width: '48px',
-                height: '48px',
-                backgroundColor: '#111827',
-                borderRadius: '50%'
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))'
               }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#ef4444',
-                borderRadius: '50%'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '-12px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                fontSize: '24px'
-              }}
-            >🎵</div>
+            />
           </div>
           
           {/* Pond */}
           <div 
             style={{
               position: 'absolute',
-              bottom: '150px',
-              left: '200px',
-              width: '128px',
-              height: '80px',
-              backgroundColor: '#60a5fa',
-              borderRadius: '50%',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-              opacity: '0.8',
+              bottom: '100px',
+              left: '150px',
+              width: '320px',
+              height: '200px',
               zIndex: '10'
             }}
           >
-            <div 
+            <img 
+              src="/stable/pond.png" 
+              alt="Pond" 
               style={{
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                right: '8px',
-                bottom: '8px',
-                backgroundColor: '#93c5fd',
-                borderRadius: '50%'
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
+                opacity: '0.9'
               }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '8px',
-                right: '8px',
-                width: '12px',
-                height: '12px',
-                backgroundColor: '#dbeafe',
-                borderRadius: '50%',
-                opacity: '0.6'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                bottom: '12px',
-                left: '12px',
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#dbeafe',
-                borderRadius: '50%',
-                opacity: '0.6'
-              }}
-            ></div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '-16px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                fontSize: '24px'
-              }}
-            >💧</div>
+            />
           </div>
 
           {/* Roaming Horses */}
@@ -813,7 +662,7 @@ const HorseStable = ({
                 <FadeInImage
                   src={horse.avatar}
                   alt={horse.name}
-                  className="w-20 h-20 object-contain rounded-lg"
+                  className="w-40 h-40 object-contain rounded-lg"
                   style={{
                     transform:
                       horse.direction > -90 && horse.direction < 90
@@ -822,14 +671,25 @@ const HorseStable = ({
                     filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
                   }}
                 />
-                <motion.div
-                  className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-amber-800 text-amber-100 px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap shadow-lg"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: horse.id * 0.2 }}
-                >
-                  {horse.name}
-                </motion.div>
+                {showNameTags && (
+                  <motion.div
+                    className="absolute bg-amber-800 text-amber-100 px-2 py-1 border border-amber-600 text-xs whitespace-nowrap"
+                    style={{
+                      top: '50px',
+                      left: '0%',
+                      transform: 'translateX(-50%)',
+                      fontFamily: 'monospace',
+                      fontWeight: 'bold',
+                      fontSize: '10px',
+                      letterSpacing: '0.5px'
+                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: horse.id * 0.2 }}
+                  >
+                    {horse.name.toUpperCase()}
+                  </motion.div>
+                )}
                 {horse.isResting && (
                   <motion.div
                     className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xl"
@@ -845,32 +705,53 @@ const HorseStable = ({
 
           {/* Stable Info Panel */}
           <motion.div
-            className="absolute top-4 right-4 bg-amber-800 bg-opacity-90 text-amber-100 p-4 rounded-xl shadow-lg"
+            className="absolute top-4 right-4 bg-amber-800 bg-opacity-90 text-amber-100 p-4 border-2 border-amber-600"
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '12px',
+              letterSpacing: '1px'
+            }}
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <h3 className="font-bold mb-2 flex items-center gap-2">
+            <h3 style={{
+              fontWeight: 'bold',
+              marginBottom: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontFamily: 'monospace'
+            }}>
               <span>🏠</span>
-              Stable Status
+              STABLE STATUS
             </h3>
-            <div className="text-sm space-y-1">
-              <p>🐎 Horses: {stableHorses.length}</p>
-              <p>🌱 Pasture: Healthy</p>
-              <p>💧 Water: Fresh</p>
-              <p>🌾 Feed: Stocked</p>
+            <div style={{
+              fontSize: '11px',
+              fontFamily: 'monospace',
+              lineHeight: '1.4'
+            }}>
+              <p>🐎 HORSES: {stableHorses.length}</p>
+              <p>🌱 PASTURE: HEALTHY</p>
+              <p>💧 WATER: FRESH</p>
+              <p>🌾 FEED: STOCKED</p>
             </div>
           </motion.div>
 
           {/* Activity indicator */}
-          <div className="absolute bottom-4 left-4 text-sm text-amber-800 bg-amber-100 bg-opacity-80 px-3 py-2 rounded-lg">
+          <div className="absolute bottom-4 left-4 text-amber-800 bg-amber-100 bg-opacity-80 px-3 py-2 border-2 border-amber-700"
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              letterSpacing: '1px'
+            }}>
             <div className="flex items-center gap-2">
               <motion.div
-                className="w-2 h-2 bg-green-500 rounded-full"
+                className="w-2 h-2 bg-green-500"
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              <span>Horses are roaming peacefully</span>
+              <span>HORSES ROAMING PEACEFULLY</span>
             </div>
           </div>
         </div>
