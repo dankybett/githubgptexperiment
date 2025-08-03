@@ -20,6 +20,111 @@ const HorseStable = ({
   const [availableHorses, setAvailableHorses] = useState([]);
   const [selectedHorseIds, setSelectedHorseIds] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
+  
+  // Pan/drag state
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastPanOffset, setLastPanOffset] = useState({ x: 0, y: 0 });
+  const [velocity, setVelocity] = useState({ x: 0, y: 0 });
+  const [lastMoveTime, setLastMoveTime] = useState(0);
+
+  // Calculate viewport bounds for panning
+  const getViewportBounds = () => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const stableWidth = 800;
+    const stableHeight = 600;
+    
+    // Allow generous panning - stable can move up to half its size in any direction
+    const maxPanX = stableWidth / 2;
+    const maxPanY = stableHeight / 2;
+    
+    return { maxPanX, maxPanY };
+  };
+
+  // Pan/drag handlers
+  const handlePanStart = (event) => {
+    setIsDragging(true);
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    setDragStart({ x: clientX, y: clientY });
+    setLastPanOffset(panOffset);
+    setVelocity({ x: 0, y: 0 }); // Reset velocity
+    setLastMoveTime(Date.now());
+  };
+
+  const handlePanMove = (event) => {
+    if (!isDragging) return;
+    
+    event.preventDefault();
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    
+    const deltaX = clientX - dragStart.x;
+    const deltaY = clientY - dragStart.y;
+    
+    const newPanX = lastPanOffset.x + deltaX;
+    const newPanY = lastPanOffset.y + deltaY;
+    
+    // Calculate velocity for momentum with dampening
+    const currentTime = Date.now();
+    const timeDelta = currentTime - lastMoveTime;
+    if (timeDelta > 0 && timeDelta < 100) { // Only calculate for reasonable time deltas
+      const velX = (deltaX / timeDelta) * 0.1; // Scale down velocity significantly
+      const velY = (deltaY / timeDelta) * 0.1;
+      setVelocity({ x: velX, y: velY });
+    }
+    setLastMoveTime(currentTime);
+    
+    // Apply bounds
+    const { maxPanX, maxPanY } = getViewportBounds();
+    const boundedPanX = Math.max(-maxPanX, Math.min(maxPanX, newPanX));
+    const boundedPanY = Math.max(-maxPanY, Math.min(maxPanY, newPanY));
+    
+    setPanOffset({ x: boundedPanX, y: boundedPanY });
+  };
+
+  const handlePanEnd = () => {
+    setIsDragging(false);
+    
+    // Apply momentum when drag ends with much lower threshold
+    if (Math.abs(velocity.x) > 0.05 || Math.abs(velocity.y) > 0.05) {
+      applyMomentum();
+    }
+  };
+
+  const applyMomentum = () => {
+    const friction = 0.85; // Higher friction for faster stopping
+    const minVelocity = 0.005; // Lower minimum for more control
+    const velocityScale = 0.3; // Scale down velocity significantly
+    
+    const animate = () => {
+      setVelocity(currentVel => {
+        const newVelX = currentVel.x * friction;
+        const newVelY = currentVel.y * friction;
+        
+        // Stop if velocity is too small
+        if (Math.abs(newVelX) < minVelocity && Math.abs(newVelY) < minVelocity) {
+          return { x: 0, y: 0 };
+        }
+        
+        // Apply momentum to pan offset with much gentler scaling
+        setPanOffset(currentPan => {
+          const { maxPanX, maxPanY } = getViewportBounds();
+          const newPanX = Math.max(-maxPanX, Math.min(maxPanX, currentPan.x + newVelX * velocityScale * 16));
+          const newPanY = Math.max(-maxPanY, Math.min(maxPanY, currentPan.y + newVelY * velocityScale * 16));
+          return { x: newPanX, y: newPanY };
+        });
+        
+        // Continue animation
+        requestAnimationFrame(animate);
+        return { x: newVelX, y: newVelY };
+      });
+    };
+    
+    requestAnimationFrame(animate);
+  };
 
   const createHorseData = (horse) => ({
     ...horse,
@@ -178,55 +283,154 @@ const HorseStable = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 relative overflow-hidden">
+    <div 
+      style={{
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: '100vh',
+        background: 'linear-gradient(to bottom right, #fef3c7, #fefce8, #fed7aa)',
+        overflow: 'hidden',
+        zIndex: '1000'
+      }}
+    >
       {/* Stable Header */}
-      <div className="bg-amber-900 bg-opacity-90 backdrop-blur-md shadow-lg p-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <motion.span
-              className="text-3xl"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
+      <div 
+        style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          right: '0',
+          backgroundColor: 'rgba(120, 53, 15, 0.9)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          padding: '16px',
+          zIndex: '20'
+        }}
+      >
+        <div 
+          style={{
+            display: 'flex',
+            flexDirection: window.innerWidth < 640 ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: window.innerWidth < 640 ? 'stretch' : 'center',
+            gap: window.innerWidth < 640 ? '8px' : '16px'
+          }}
+        >
+          {/* Title Row */}
+          <div 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px'
+            }}
+          >
+            <div 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: window.innerWidth < 640 ? '6px' : '12px'
+              }}
             >
-              🏇
-            </motion.span>
-            <div>
-              <h1 className="text-2xl font-bold text-amber-100">
-                🏠 Horse Stable
-              </h1>
-              <p className="text-amber-200 text-sm">
-                Watch your horses roam freely in their home
-              </p>
+              <motion.span
+                style={{ fontSize: window.innerWidth < 640 ? '20px' : '32px' }}
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                🏇
+              </motion.span>
+              <div>
+                <h1 
+                  style={{
+                    fontSize: window.innerWidth < 640 ? '14px' : '24px',
+                    fontWeight: 'bold',
+                    color: '#fef3c7',
+                    margin: '0',
+                    lineHeight: '1.2'
+                  }}
+                >
+                  🏠 Horse Stable
+                </h1>
+                {window.innerWidth >= 640 && (
+                  <p 
+                    style={{
+                      color: '#fed7aa',
+                      fontSize: '14px',
+                      margin: '0'
+                    }}
+                  >
+                    Watch your horses roam freely in their home
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-amber-100 font-semibold">
+            <div 
+              style={{
+                color: '#fef3c7',
+                fontWeight: 'bold',
+                fontSize: window.innerWidth < 640 ? '12px' : '16px'
+              }}
+            >
               💰 {coins}
             </div>
-             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSelector(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow-lg"
-            >
-              Manage Grazing Horses
-            </motion.button>
+          </div>
+          
+          {/* Button Row */}
+          <div 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: window.innerWidth < 640 ? '4px' : '12px',
+              flexWrap: 'wrap'
+            }}
+          >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onBack}
-              className="px-4 py-2 bg-amber-600 text-amber-100 rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow-lg"
+              className="btn-retro btn-retro-yellow"
+              style={{
+                padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
+                fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                flex: window.innerWidth < 640 ? '1' : 'none',
+                minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+              }}
             >
-              ← Back to Race Setup
+              ← Back
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowSelector(true)}
+              className="btn-retro btn-retro-purple"
+              style={{
+                padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
+                fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                flex: window.innerWidth < 640 ? '1' : 'none',
+                minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+              }}
+            >
+              {window.innerWidth < 640 ? 'Manage' : 'Manage Horses'}
             </motion.button>
             {onPlayMinigame && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onPlayMinigame}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-lg"
+                className="btn-retro btn-retro-blue"
+                style={{
+                  padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
+                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                  flex: window.innerWidth < 640 ? '1' : 'none',
+                  minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                  letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+                }}
               >
-                Play Minigame
+                Game
               </motion.button>
             )}
             {onShowLockedHorses && (
@@ -234,9 +438,16 @@ const HorseStable = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onShowLockedHorses}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-lg"
+                className="btn-retro btn-retro-green"
+                style={{
+                  padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
+                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                  flex: window.innerWidth < 640 ? '1' : 'none',
+                  minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                  letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+                }}
               >
-                Unlock Horses
+                Unlock
               </motion.button>
             )}
           </div>
@@ -291,10 +502,285 @@ const HorseStable = ({
       </div>
 
       {/* Main Stable Area */}
-      <div className="p-8 h-screen relative">
-        <div className="relative h-full bg-green-200 bg-opacity-40 rounded-3xl border-4 border-amber-600 border-opacity-50 overflow-hidden shadow-inner">
+      <div 
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: `translate(calc(-50% + ${panOffset.x}px), calc(-50% + ${panOffset.y}px))`,
+          width: '800px',
+          height: '600px',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          minWidth: '800px',
+          minHeight: '600px',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none',
+          touchAction: 'none'
+        }}
+        onMouseDown={handlePanStart}
+        onMouseMove={handlePanMove}
+        onMouseUp={handlePanEnd}
+        onMouseLeave={handlePanEnd}
+        onTouchStart={handlePanStart}
+        onTouchMove={handlePanMove}
+        onTouchEnd={handlePanEnd}
+      >
+        <div 
+          style={{
+            position: 'relative',
+            width: '800px',
+            height: '600px',
+            backgroundColor: 'rgba(187, 247, 208, 0.4)',
+            borderRadius: '24px',
+            border: '4px solid rgba(217, 119, 6, 0.5)',
+            overflow: 'hidden',
+            boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+            transformOrigin: 'center center',
+            transform: 'scale(1)',
+            fontSize: '14px',
+            fontFamily: 'system-ui, sans-serif'
+          }}
+        >
           {/* Grass texture overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-green-300 via-green-200 to-yellow-200 opacity-30"></div>
+          <div 
+            style={{
+              position: 'absolute',
+              top: '0',
+              left: '0',
+              right: '0',
+              bottom: '0',
+              background: 'linear-gradient(to bottom right, #86efac, #bbf7d0, #fef08a)',
+              opacity: '0.3'
+            }}
+          ></div>
+          
+          {/* Decorative Assets */}
+          {/* Farm Building */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '16px',
+              left: '16px',
+              width: '96px',
+              height: '80px',
+              backgroundColor: '#b91c1c',
+              borderRadius: '12px 12px 0 0',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              zIndex: '10'
+            }}
+          >
+            <div 
+              style={{
+                position: 'absolute',
+                left: '0',
+                right: '0',
+                top: '0',
+                height: '16px',
+                backgroundColor: '#991b1b',
+                borderRadius: '12px 12px 0 0'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '24px',
+                left: '8px',
+                width: '16px',
+                height: '24px',
+                backgroundColor: '#d97706',
+                borderRadius: '4px'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '24px',
+                right: '8px',
+                width: '24px',
+                height: '32px',
+                backgroundColor: '#60a5fa',
+                borderRadius: '4px',
+                opacity: '0.8'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '-8px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontSize: '32px'
+              }}
+            >🏚️</div>
+          </div>
+          
+          {/* Car */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: '32px',
+              right: '32px',
+              width: '80px',
+              height: '48px',
+              backgroundColor: '#2563eb',
+              borderRadius: '8px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              zIndex: '10'
+            }}
+          >
+            <div 
+              style={{
+                position: 'absolute',
+                top: '4px',
+                left: '8px',
+                width: '48px',
+                height: '24px',
+                backgroundColor: '#3b82f6',
+                borderRadius: '4px'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                bottom: '4px',
+                left: '4px',
+                width: '16px',
+                height: '16px',
+                backgroundColor: '#1f2937',
+                borderRadius: '50%'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                bottom: '4px',
+                right: '4px',
+                width: '16px',
+                height: '16px',
+                backgroundColor: '#1f2937',
+                borderRadius: '50%'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '-12px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontSize: '24px'
+              }}
+            >🚗</div>
+          </div>
+          
+          {/* Record Player */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '200px',
+              right: '48px',
+              width: '64px',
+              height: '64px',
+              backgroundColor: '#d97706',
+              borderRadius: '8px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              zIndex: '10'
+            }}
+          >
+            <div 
+              style={{
+                position: 'absolute',
+                top: '8px',
+                left: '8px',
+                width: '48px',
+                height: '48px',
+                backgroundColor: '#111827',
+                borderRadius: '50%'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#ef4444',
+                borderRadius: '50%'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '-12px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontSize: '24px'
+              }}
+            >🎵</div>
+          </div>
+          
+          {/* Pond */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: '150px',
+              left: '200px',
+              width: '128px',
+              height: '80px',
+              backgroundColor: '#60a5fa',
+              borderRadius: '50%',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              opacity: '0.8',
+              zIndex: '10'
+            }}
+          >
+            <div 
+              style={{
+                position: 'absolute',
+                top: '8px',
+                left: '8px',
+                right: '8px',
+                bottom: '8px',
+                backgroundColor: '#93c5fd',
+                borderRadius: '50%'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                width: '12px',
+                height: '12px',
+                backgroundColor: '#dbeafe',
+                borderRadius: '50%',
+                opacity: '0.6'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                bottom: '12px',
+                left: '12px',
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#dbeafe',
+                borderRadius: '50%',
+                opacity: '0.6'
+              }}
+            ></div>
+            <div 
+              style={{
+                position: 'absolute',
+                top: '-16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontSize: '24px'
+              }}
+            >💧</div>
+          </div>
 
           {/* Roaming Horses */}
           {stableHorses.map((horse) => (
@@ -303,7 +789,13 @@ const HorseStable = ({
               className="absolute z-20 cursor-pointer"
               style={{ left: `${horse.x}%`, top: `${horse.y}%` }}
               transition={{ duration: 0.1, ease: "linear" }}
-              onClick={() => setSelectedHorse(horse)}
+              onClick={(e) => {
+                // Only open horse details if not dragging
+                if (!isDragging) {
+                  e.stopPropagation();
+                  setSelectedHorse(horse);
+                }
+              }}
             >
               <motion.div
                 className="relative"
