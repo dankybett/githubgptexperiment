@@ -12,6 +12,7 @@ const HorseStable = ({
   onBack,
   onShowLockedHorses,
   onSendToLabyrinth,
+  onUpdateCoins,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -32,6 +33,71 @@ const HorseStable = ({
   const [lastPanOffset, setLastPanOffset] = useState({ x: 0, y: 0 });
   const [velocity, setVelocity] = useState({ x: 0, y: 0 });
   const [lastMoveTime, setLastMoveTime] = useState(0);
+  
+  // Stable care resources state
+  const [stableResources, setStableResources] = useState({
+    feed: 85,
+    water: 92,
+    pasture: 88,
+    cleanliness: 78
+  });
+  const [lastCareTime, setLastCareTime] = useState(Date.now());
+  const [careActionFeedback, setCareActionFeedback] = useState(null);
+
+  // Care action costs
+  const careCosts = {
+    feed: 10,
+    water: 8,
+    pasture: 15,
+    cleanliness: 12
+  };
+
+  // Get resource status color based on level
+  const getResourceColor = (level) => {
+    if (level >= 70) return '#22c55e'; // Green
+    if (level >= 40) return '#eab308'; // Yellow
+    return '#ef4444'; // Red
+  };
+
+  // Get resource status text
+  const getResourceStatus = (level) => {
+    if (level >= 70) return 'GOOD';
+    if (level >= 40) return 'NEEDS ATTENTION';
+    return 'URGENT';
+  };
+
+  // Handle care actions
+  const handleCareAction = (resourceType) => {
+    const cost = careCosts[resourceType];
+    if (coins < cost) {
+      // Show insufficient funds feedback
+      setCareActionFeedback({ type: 'error', message: 'NOT ENOUGH COINS!' });
+      setTimeout(() => setCareActionFeedback(null), 2000);
+      return;
+    }
+    
+    // Update coins if callback provided
+    if (onUpdateCoins) {
+      onUpdateCoins(coins - cost);
+    }
+    
+    // Update resource
+    setStableResources(prev => ({
+      ...prev,
+      [resourceType]: Math.min(100, prev[resourceType] + 25)
+    }));
+    
+    // Show success feedback
+    const actionNames = {
+      feed: 'FED HORSES',
+      water: 'REFILLED WATER',
+      pasture: 'MAINTAINED PASTURE',
+      cleanliness: 'CLEANED STABLE'
+    };
+    
+    setCareActionFeedback({ type: 'success', message: actionNames[resourceType] });
+    setTimeout(() => setCareActionFeedback(null), 2000);
+  };
 
   // Calculate viewport bounds for panning
   const getViewportBounds = () => {
@@ -161,6 +227,10 @@ const HorseStable = ({
       setSelectedHorseIds((prev) => prev.filter((hid) => hid !== id));
       setStableHorses((prev) => prev.filter((horse) => horse.id !== id));
     } else {
+      // Check if we're at the limit of 5 horses
+      if (selectedHorseIds.length >= 5) {
+        return; // Don't allow more than 5 horses to graze
+      }
       setSelectedHorseIds((prev) => [...prev, id]);
       const horseData = availableHorses.find((h) => h.id === id);
       if (horseData) {
@@ -182,11 +252,35 @@ const HorseStable = ({
       }));
 
     setAvailableHorses(available);
-    setSelectedHorseIds(available.map((h) => h.id));
-    setStableHorses(available.map((h) => createHorseData(h)));
+    // Only auto-select up to 5 horses for grazing
+    const horsesToGraze = available.slice(0, 5);
+    setSelectedHorseIds(horsesToGraze.map((h) => h.id));
+    setStableHorses(horsesToGraze.map((h) => createHorseData(h)));
 
     setTimeout(() => setStableLoaded(true), 1000);
     }, [horseAvatars, horseNames, horsePersonalities, unlockedHorses]);
+
+  // Resource decay system
+  useEffect(() => {
+    if (!stableLoaded) return;
+
+    const decayInterval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastCare = now - lastCareTime;
+      const decayRate = Math.max(1, stableHorses.length * 0.5); // More horses = faster decay
+      
+      setStableResources(prev => ({
+        feed: Math.max(0, prev.feed - (decayRate * 0.8)),
+        water: Math.max(0, prev.water - (decayRate * 0.6)),
+        pasture: Math.max(0, prev.pasture - (decayRate * 0.3)),
+        cleanliness: Math.max(0, prev.cleanliness - (decayRate * 1.0))
+      }));
+      
+      setLastCareTime(now);
+    }, 30000); // Decay every 30 seconds
+
+    return () => clearInterval(decayInterval);
+  }, [stableLoaded, stableHorses.length, lastCareTime]);
 
   // Animation loop for horse movement
   useEffect(() => {
@@ -764,12 +858,133 @@ const HorseStable = ({
               fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
               lineHeight: '1.4'
             }}>
-              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>🐎 HORSES: {stableHorses.length}</p>
-              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>🌱 PASTURE: HEALTHY</p>
-              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>💧 WATER: FRESH</p>
-              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px' }}>🌾 FEED: STOCKED</p>
+              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px', marginBottom: '4px' }}>
+                🐎 HORSES: {stableHorses.length}/5
+              </p>
+              
+              {/* Interactive Feed Status */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  marginBottom: '2px',
+                  cursor: coins >= careCosts.feed ? 'pointer' : 'not-allowed',
+                  opacity: coins >= careCosts.feed ? 1 : 0.6
+                }}
+                onClick={() => handleCareAction('feed')}
+                title={`Feed horses (${careCosts.feed} coins)`}
+              >
+                <span style={{ 
+                  color: getResourceColor(stableResources.feed),
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                  fontSize: '7px'
+                }}>
+                  🌾 FEED: {Math.round(stableResources.feed)}%
+                </span>
+              </div>
+              
+              {/* Interactive Water Status */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  marginBottom: '2px',
+                  cursor: coins >= careCosts.water ? 'pointer' : 'not-allowed',
+                  opacity: coins >= careCosts.water ? 1 : 0.6
+                }}
+                onClick={() => handleCareAction('water')}
+                title={`Refill water (${careCosts.water} coins)`}
+              >
+                <span style={{ 
+                  color: getResourceColor(stableResources.water),
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                  fontSize: '7px'
+                }}>
+                  💧 WATER: {Math.round(stableResources.water)}%
+                </span>
+              </div>
+              
+              {/* Interactive Pasture Status */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  marginBottom: '2px',
+                  cursor: coins >= careCosts.pasture ? 'pointer' : 'not-allowed',
+                  opacity: coins >= careCosts.pasture ? 1 : 0.6
+                }}
+                onClick={() => handleCareAction('pasture')}
+                title={`Maintain pasture (${careCosts.pasture} coins)`}
+              >
+                <span style={{ 
+                  color: getResourceColor(stableResources.pasture),
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                  fontSize: '7px'
+                }}>
+                  🌱 PASTURE: {Math.round(stableResources.pasture)}%
+                </span>
+              </div>
+              
+              {/* Interactive Cleanliness Status */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  marginBottom: '2px',
+                  cursor: coins >= careCosts.cleanliness ? 'pointer' : 'not-allowed',
+                  opacity: coins >= careCosts.cleanliness ? 1 : 0.6
+                }}
+                onClick={() => handleCareAction('cleanliness')}
+                title={`Clean stable (${careCosts.cleanliness} coins)`}
+              >
+                <span style={{ 
+                  color: getResourceColor(stableResources.cleanliness),
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                  fontSize: '7px'
+                }}>
+                  🧼 CLEAN: {Math.round(stableResources.cleanliness)}%
+                </span>
+              </div>
+              
+              <div style={{ 
+                marginTop: '6px', 
+                paddingTop: '4px', 
+                borderTop: '1px solid #d97706',
+                fontSize: '6px',
+                color: '#fed7aa'
+              }}>
+                CLICK TO CARE FOR HORSES
+              </div>
             </div>
           </motion.div>
+
+          {/* Care Action Feedback */}
+          {careActionFeedback && (
+            <motion.div
+              className="absolute top-4 right-4"
+              style={{
+                backgroundColor: careActionFeedback.type === 'success' ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)',
+                borderColor: careActionFeedback.type === 'success' ? '#16a34a' : '#dc2626',
+                border: '2px solid',
+                color: '#ffffff',
+                padding: '8px 12px',
+                fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                fontSize: '8px',
+                letterSpacing: '1px',
+                zIndex: '25',
+                transform: 'translateY(-80px)'
+              }}
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            >
+              {careActionFeedback.message}
+            </motion.div>
+          )}
 
           {/* Now Playing indicator */}
           {isPlaying && currentSong && (
@@ -829,17 +1044,24 @@ const HorseStable = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
           <div className="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Grazing Horses</h2>
+            <p className="text-sm text-gray-600 mb-3">Maximum 5 horses can graze at once ({selectedHorseIds.length}/5)</p>
             <div className="space-y-2">
-              {availableHorses.map((horse) => (
-                <label key={horse.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedHorseIds.includes(horse.id)}
-                    onChange={() => toggleHorseRoaming(horse.id)}
-                  />
-                  <span>{horse.name}</span>
-                </label>
-              ))}
+              {availableHorses.map((horse) => {
+                const isChecked = selectedHorseIds.includes(horse.id);
+                const isDisabled = !isChecked && selectedHorseIds.length >= 5;
+                return (
+                  <label key={horse.id} className={`flex items-center gap-2 ${isDisabled ? 'opacity-50' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleHorseRoaming(horse.id)}
+                      disabled={isDisabled}
+                    />
+                    <span>{horse.name}</span>
+                    {isDisabled && <span className="text-xs text-gray-500">(limit reached)</span>}
+                  </label>
+                );
+              })}
             </div>
             <div className="text-right mt-4">
               <motion.button

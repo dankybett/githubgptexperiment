@@ -1567,6 +1567,7 @@ const horsePersonalities = [
           setShowStable(false);
           setShowLabyrinth(true);
         }}
+        onUpdateCoins={setCoins}
       />
     );
   }
