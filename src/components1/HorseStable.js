@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
@@ -50,6 +50,13 @@ const HorseStable = ({
     water: 8,
     pasture: 15,
     cleanliness: 12
+  };
+
+  // Individual horse care action costs
+  const individualCareCosts = {
+    groom: 5,
+    apple: 3,
+    carrot: 2
   };
 
   // Get resource status color based on level
@@ -109,6 +116,8 @@ const HorseStable = ({
     return indicators;
   };
 
+  // Remove all the complex logic for now
+
   // Handle care actions
   const handleCareAction = (resourceType) => {
     const cost = careCosts[resourceType];
@@ -140,6 +149,81 @@ const HorseStable = ({
     
     setCareActionFeedback({ type: 'success', message: actionNames[resourceType] });
     setTimeout(() => setCareActionFeedback(null), 2000);
+  };
+
+  // Handle individual horse care actions
+  const handleIndividualCareAction = (horseId, actionType) => {
+    const cost = individualCareCosts[actionType];
+    if (coins < cost) {
+      setCareActionFeedback({ type: 'error', message: 'NOT ENOUGH COINS!' });
+      setTimeout(() => setCareActionFeedback(null), 2000);
+      return;
+    }
+
+    // Update coins if callback provided
+    if (onUpdateCoins) {
+      onUpdateCoins(coins - cost);
+    }
+
+    // Find the horse to get its name for the feedback message
+    const targetHorse = stableHorses.find(horse => horse.id === horseId);
+    const horseName = targetHorse ? targetHorse.name.toUpperCase() : 'HORSE';
+
+    // Show success feedback with horse name
+    let feedbackMessage = '';
+    switch (actionType) {
+      case 'groom':
+        feedbackMessage = `GROOMED ${horseName}`;
+        break;
+      case 'apple':
+        feedbackMessage = `FED ${horseName} AN APPLE`;
+        break;
+      case 'carrot':
+        feedbackMessage = `FED ${horseName} A CARROT`;
+        break;
+    }
+    setCareActionFeedback({ type: 'success', message: feedbackMessage });
+    setTimeout(() => setCareActionFeedback(null), 2000);
+
+    // SIMPLEST POSSIBLE APPROACH - Just update the horse directly
+    setStableHorses(prevHorses => 
+      prevHorses.map(horse => {
+        if (horse.id !== horseId) {
+          return horse; // Return exact same reference for unchanged horses
+        }
+
+        // Only update the target horse
+        const now = Date.now();
+        let updates = {};
+
+        switch (actionType) {
+          case 'groom':
+            updates.cleanliness = Math.min(100, horse.cleanliness + 20);
+            updates.happiness = Math.min(100, horse.happiness + 10);
+            updates.isBeingGroomed = true;
+            updates.careAnimationEnd = now + 3000;
+            break;
+          case 'apple':
+            updates.health = Math.min(100, horse.health + 15);
+            updates.happiness = Math.min(100, horse.happiness + 15);
+            updates.energy = Math.min(100, horse.energy + 10);
+            updates.isEatingApple = true;
+            updates.careAnimationEnd = now + 3000;
+            break;
+          case 'carrot':
+            updates.health = Math.min(100, horse.health + 10);
+            updates.happiness = Math.min(100, horse.happiness + 8);
+            updates.energy = Math.min(100, horse.energy + 12);
+            updates.isEatingCarrot = true;
+            updates.careAnimationEnd = now + 3000;
+            break;
+          default:
+            return horse;
+        }
+
+        return { ...horse, ...updates };
+      })
+    );
   };
 
   // Calculate viewport bounds for panning
@@ -250,12 +334,17 @@ const HorseStable = ({
     restTime: 0,
     isResting: false,
     lastMoveTime: Date.now(),
-    // Individual care stats
+    // Individual care stats (base values)
     happiness: 80 + Math.random() * 20, // 80-100
     health: 75 + Math.random() * 25,    // 75-100
     cleanliness: 70 + Math.random() * 30, // 70-100
     energy: 85 + Math.random() * 15,    // 85-100
     lastCareUpdate: Date.now(),
+    // Care animations
+    isBeingGroomed: false,
+    isEatingApple: false,
+    isEatingCarrot: false,
+    careAnimationEnd: 0,
   });
 
   const handleRename = (id, newName) => {
@@ -288,7 +377,7 @@ const HorseStable = ({
     }
   };
 
-  // Initialize available and roaming horses based on unlocked list
+  // Initialize available and roaming horses based on unlocked list - RUN ONLY ONCE
   useEffect(() => {
       const available = horseAvatars
       .map((avatar, index) => ({ avatar, index }))
@@ -307,56 +396,18 @@ const HorseStable = ({
     setStableHorses(horsesToGraze.map((h) => createHorseData(h)));
 
     setTimeout(() => setStableLoaded(true), 1000);
-    }, [horseAvatars, horseNames, horsePersonalities, unlockedHorses]);
+    }, []); // EMPTY DEPENDENCY ARRAY - RUN ONLY ONCE ON MOUNT
 
-  // Resource decay system
-  useEffect(() => {
-    if (!stableLoaded) return;
+  // DISABLED - Resource decay system (causing re-render issues)
+  // useEffect(() => {
+  //   if (!stableLoaded) return;
+  //   const decayInterval = setInterval(() => {
+  //     // Resource decay logic disabled to prevent re-renders
+  //   }, 30000);
+  //   return () => clearInterval(decayInterval);
+  // }, [stableLoaded, stableHorses.length, lastCareTime]);
 
-    const decayInterval = setInterval(() => {
-      const now = Date.now();
-      const timeSinceLastCare = now - lastCareTime;
-      const decayRate = Math.max(1, stableHorses.length * 0.5); // More horses = faster decay
-      
-      setStableResources(prev => ({
-        feed: Math.max(0, prev.feed - (decayRate * 0.8)),
-        water: Math.max(0, prev.water - (decayRate * 0.6)),
-        pasture: Math.max(0, prev.pasture - (decayRate * 0.3)),
-        cleanliness: Math.max(0, prev.cleanliness - (decayRate * 1.0))
-      }));
-      
-      // Update individual horse care stats based on stable resources
-      setStableHorses(prevHorses => 
-        prevHorses.map(horse => {
-          const timeSinceLastUpdate = now - horse.lastCareUpdate;
-          const hoursSinceUpdate = timeSinceLastUpdate / (1000 * 60 * 60); // Convert to hours
-          
-          // Calculate decay multipliers based on stable resource levels
-          const feedMultiplier = stableResources.feed < 30 ? 2.0 : stableResources.feed < 60 ? 1.5 : 1.0;
-          const waterMultiplier = stableResources.water < 30 ? 2.0 : stableResources.water < 60 ? 1.5 : 1.0;
-          const pastureMultiplier = stableResources.pasture < 30 ? 1.8 : stableResources.pasture < 60 ? 1.3 : 1.0;
-          const cleanMultiplier = stableResources.cleanliness < 30 ? 2.5 : stableResources.cleanliness < 60 ? 1.7 : 1.0;
-          
-          return {
-            ...horse,
-            // Health affected by feed and water
-            health: Math.max(0, horse.health - (2 * feedMultiplier * waterMultiplier)),
-            // Energy affected by feed and pasture quality
-            energy: Math.max(0, horse.energy - (3 * feedMultiplier * pastureMultiplier)),
-            // Cleanliness affected by stable cleanliness
-            cleanliness: Math.max(0, horse.cleanliness - (4 * cleanMultiplier)),
-            // Happiness affected by all factors (overall well-being)
-            happiness: Math.max(0, horse.happiness - (1.5 * (feedMultiplier + waterMultiplier + pastureMultiplier + cleanMultiplier) / 4)),
-            lastCareUpdate: now
-          };
-        })
-      );
-      
-      setLastCareTime(now);
-    }, 30000); // Decay every 30 seconds
-
-    return () => clearInterval(decayInterval);
-  }, [stableLoaded, stableHorses.length, lastCareTime]);
+  // Remove all complex logic
 
   // Animation loop for horse movement
   useEffect(() => {
@@ -367,6 +418,17 @@ const HorseStable = ({
         prevHorses.map((horse) => {
           const now = Date.now();
           const deltaTime = (now - horse.lastMoveTime) / 1000;
+
+          // Clear care animations if expired
+          let careAnimationUpdates = {};
+          if (horse.careAnimationEnd && now > horse.careAnimationEnd) {
+            careAnimationUpdates = {
+              isBeingGroomed: false,
+              isEatingApple: false,
+              isEatingCarrot: false,
+              careAnimationEnd: 0
+            };
+          }
 
           // Calculate behavior modifiers based on care stats
           const energyModifier = horse.energy / 100; // 0-1 multiplier
@@ -383,6 +445,7 @@ const HorseStable = ({
             if (newRestTime <= 0) {
               return {
                 ...horse,
+                ...careAnimationUpdates,
                 isResting: false,
                 restTime: 0,
                 targetX: Math.random() * 70 + 10,
@@ -390,7 +453,7 @@ const HorseStable = ({
                 lastMoveTime: now,
               };
             }
-            return { ...horse, restTime: newRestTime, lastMoveTime: now };
+            return { ...horse, ...careAnimationUpdates, restTime: newRestTime, lastMoveTime: now };
           }
 
           // Calculate distance to target
@@ -403,6 +466,7 @@ const HorseStable = ({
             if (Math.random() < restChance) {
               return {
                 ...horse,
+                ...careAnimationUpdates,
                 isResting: true,
                 restTime: restDuration,
                 lastMoveTime: now,
@@ -412,6 +476,7 @@ const HorseStable = ({
               const movementRange = happinessModifier * 60 + 10; // 10-70 based on happiness
               return {
                 ...horse,
+                ...careAnimationUpdates,
                 targetX: Math.random() * movementRange + (85 - movementRange) / 2,
                 targetY: Math.random() * (movementRange * 0.8) + 20,
                 lastMoveTime: now,
@@ -426,6 +491,7 @@ const HorseStable = ({
 
           return {
             ...horse,
+            ...careAnimationUpdates,
             x: Math.max(5, Math.min(85, horse.x + moveX)),
             y: Math.max(15, Math.min(75, horse.y + moveY)),
             direction: Math.atan2(dy, dx) * (180 / Math.PI),
@@ -896,6 +962,70 @@ const HorseStable = ({
                   {getHorseMoodIndicator(horse)}
                 </motion.div>
                 
+                {/* Care Action Visual Effects */}
+                {horse.isBeingGroomed && (
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {/* Grooming sparkles */}
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute text-yellow-400"
+                        style={{
+                          left: `${20 + Math.random() * 60}%`,
+                          top: `${20 + Math.random() * 60}%`,
+                        }}
+                        animate={{
+                          opacity: [0, 1, 0],
+                          scale: [0.5, 1, 0.5],
+                          rotate: [0, 180, 360],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          delay: i * 0.2,
+                        }}
+                      >
+                        ✨
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+                
+                {horse.isEatingApple && (
+                  <motion.div
+                    className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-2xl"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: [1, 1, 0],
+                      y: [0, -10, -20],
+                      scale: [1, 1.2, 0.8]
+                    }}
+                    transition={{ duration: 2, repeat: 1 }}
+                  >
+                    🍎
+                  </motion.div>
+                )}
+                
+                {horse.isEatingCarrot && (
+                  <motion.div
+                    className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-2xl"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: [1, 1, 0],
+                      y: [0, -10, -20],
+                      scale: [1, 1.2, 0.8]
+                    }}
+                    transition={{ duration: 2, repeat: 1 }}
+                  >
+                    🥕
+                  </motion.div>
+                )}
+                
                 {/* Horse Status Indicators */}
                 {getHorseStatusIndicators(horse).map((indicator, index) => (
                   <motion.div
@@ -1215,6 +1345,12 @@ const HorseStable = ({
             setSelectedHorse(null);
             onSendToLabyrinth();
           }}
+          onCareAction={(horseId, actionType) => {
+            handleIndividualCareAction(horseId, actionType);
+            setSelectedHorse(null); // Close modal to see animation effects
+          }}
+          coins={coins}
+          careCosts={individualCareCosts}
         />
       )}
       {showMusicLibrary && (
