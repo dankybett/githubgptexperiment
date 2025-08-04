@@ -39,6 +39,95 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
             />
           </div>
           <p className="text-sm">Personality: {horse.personality}</p>
+          
+          {/* Care Stats Section */}
+          {horse.happiness !== undefined && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <h3 className="text-sm font-semibold mb-2 text-center">Care Status</h3>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span>😊 Happiness:</span>
+                  <span 
+                    style={{ 
+                      color: horse.happiness >= 70 ? '#10b981' : horse.happiness >= 40 ? '#f59e0b' : '#ef4444',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {Math.round(horse.happiness)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>❤️ Health:</span>
+                  <span 
+                    style={{ 
+                      color: horse.health >= 70 ? '#10b981' : horse.health >= 40 ? '#f59e0b' : '#ef4444',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {Math.round(horse.health)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>⚡ Energy:</span>
+                  <span 
+                    style={{ 
+                      color: horse.energy >= 70 ? '#10b981' : horse.energy >= 40 ? '#f59e0b' : '#ef4444',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {Math.round(horse.energy)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>🧼 Clean:</span>
+                  <span 
+                    style={{ 
+                      color: horse.cleanliness >= 70 ? '#10b981' : horse.cleanliness >= 40 ? '#f59e0b' : '#ef4444',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {Math.round(horse.cleanliness)}%
+                  </span>
+                </div>
+              </div>
+              
+              {/* Overall Status */}
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xs">Overall Status:</span>
+                  <span className="text-lg">
+                    {(() => {
+                      const avgCare = (horse.happiness + horse.health + horse.cleanliness + horse.energy) / 4;
+                      if (avgCare >= 80) return '😊';
+                      if (avgCare >= 60) return '😐';
+                      if (avgCare >= 40) return '😟';
+                      return '😢';
+                    })()}
+                  </span>
+                  <span 
+                    className="text-xs font-semibold"
+                    style={{ 
+                      color: (() => {
+                        const avgCare = (horse.happiness + horse.health + horse.cleanliness + horse.energy) / 4;
+                        if (avgCare >= 80) return '#10b981';
+                        if (avgCare >= 60) return '#3b82f6';
+                        if (avgCare >= 40) return '#f59e0b';
+                        return '#ef4444';
+                      })()
+                    }}
+                  >
+                    {(() => {
+                      const avgCare = (horse.happiness + horse.health + horse.cleanliness + horse.energy) / 4;
+                      if (avgCare >= 80) return 'Excellent';
+                      if (avgCare >= 60) return 'Good';
+                      if (avgCare >= 40) return 'Needs Care';
+                      return 'Poor';
+                    })()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div className="mt-4 space-y-2">
           <button

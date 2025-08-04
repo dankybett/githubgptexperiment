@@ -66,6 +66,49 @@ const HorseStable = ({
     return 'URGENT';
   };
 
+  // Get horse mood indicator based on care stats
+  const getHorseMoodIndicator = (horse) => {
+    const avgCare = (horse.happiness + horse.health + horse.cleanliness + horse.energy) / 4;
+    if (avgCare >= 80) return '😊'; // Happy
+    if (avgCare >= 60) return '😐'; // Neutral
+    if (avgCare >= 40) return '😟'; // Concerned
+    return '😢'; // Sad
+  };
+
+  // Get horse health visual effects
+  const getHorseHealthEffects = (horse) => {
+    const effects = {
+      filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
+      opacity: 1
+    };
+    
+    // Health affects overall appearance
+    if (horse.health < 30) {
+      effects.opacity = 0.7; // Sick horses look faded
+      effects.filter += " sepia(0.3)"; // Slight sepia for sickness
+    }
+    
+    // Cleanliness affects visual state
+    if (horse.cleanliness < 40) {
+      effects.filter += " brightness(0.8) contrast(0.9)"; // Dirty/muddy look
+    }
+    
+    // Energy affects posture (handled in animation)
+    return effects;
+  };
+
+  // Get horse status indicators (for floating icons)
+  const getHorseStatusIndicators = (horse) => {
+    const indicators = [];
+    
+    if (horse.health < 40) indicators.push('🤒'); // Sick
+    if (horse.cleanliness < 30) indicators.push('💩'); // Dirty
+    if (horse.energy < 25) indicators.push('💤'); // Tired
+    if (horse.happiness < 30) indicators.push('💔'); // Unhappy
+    
+    return indicators;
+  };
+
   // Handle care actions
   const handleCareAction = (resourceType) => {
     const cost = careCosts[resourceType];
@@ -207,6 +250,12 @@ const HorseStable = ({
     restTime: 0,
     isResting: false,
     lastMoveTime: Date.now(),
+    // Individual care stats
+    happiness: 80 + Math.random() * 20, // 80-100
+    health: 75 + Math.random() * 25,    // 75-100
+    cleanliness: 70 + Math.random() * 30, // 70-100
+    energy: 85 + Math.random() * 15,    // 85-100
+    lastCareUpdate: Date.now(),
   });
 
   const handleRename = (id, newName) => {
@@ -276,6 +325,33 @@ const HorseStable = ({
         cleanliness: Math.max(0, prev.cleanliness - (decayRate * 1.0))
       }));
       
+      // Update individual horse care stats based on stable resources
+      setStableHorses(prevHorses => 
+        prevHorses.map(horse => {
+          const timeSinceLastUpdate = now - horse.lastCareUpdate;
+          const hoursSinceUpdate = timeSinceLastUpdate / (1000 * 60 * 60); // Convert to hours
+          
+          // Calculate decay multipliers based on stable resource levels
+          const feedMultiplier = stableResources.feed < 30 ? 2.0 : stableResources.feed < 60 ? 1.5 : 1.0;
+          const waterMultiplier = stableResources.water < 30 ? 2.0 : stableResources.water < 60 ? 1.5 : 1.0;
+          const pastureMultiplier = stableResources.pasture < 30 ? 1.8 : stableResources.pasture < 60 ? 1.3 : 1.0;
+          const cleanMultiplier = stableResources.cleanliness < 30 ? 2.5 : stableResources.cleanliness < 60 ? 1.7 : 1.0;
+          
+          return {
+            ...horse,
+            // Health affected by feed and water
+            health: Math.max(0, horse.health - (2 * feedMultiplier * waterMultiplier)),
+            // Energy affected by feed and pasture quality
+            energy: Math.max(0, horse.energy - (3 * feedMultiplier * pastureMultiplier)),
+            // Cleanliness affected by stable cleanliness
+            cleanliness: Math.max(0, horse.cleanliness - (4 * cleanMultiplier)),
+            // Happiness affected by all factors (overall well-being)
+            happiness: Math.max(0, horse.happiness - (1.5 * (feedMultiplier + waterMultiplier + pastureMultiplier + cleanMultiplier) / 4)),
+            lastCareUpdate: now
+          };
+        })
+      );
+      
       setLastCareTime(now);
     }, 30000); // Decay every 30 seconds
 
@@ -292,9 +368,18 @@ const HorseStable = ({
           const now = Date.now();
           const deltaTime = (now - horse.lastMoveTime) / 1000;
 
-          // If horse is resting, decrease rest time
+          // Calculate behavior modifiers based on care stats
+          const energyModifier = horse.energy / 100; // 0-1 multiplier
+          const healthModifier = horse.health / 100; // 0-1 multiplier
+          const happinessModifier = horse.happiness / 100; // 0-1 multiplier
+          
+          // Tired/sick horses rest more frequently and for longer
+          const restChance = horse.energy < 30 ? 0.7 : horse.energy < 60 ? 0.4 : 0.3;
+          const restDuration = horse.energy < 30 ? (6 + Math.random() * 6) : (2 + Math.random() * 4);
+          
+          // If horse is resting, decrease rest time (affected by energy)
           if (horse.isResting) {
-            const newRestTime = horse.restTime - deltaTime;
+            const newRestTime = horse.restTime - (deltaTime * energyModifier);
             if (newRestTime <= 0) {
               return {
                 ...horse,
@@ -315,25 +400,29 @@ const HorseStable = ({
 
           // If close to target, start resting or pick new target
           if (distance < 2) {
-            if (Math.random() < 0.3) {
+            if (Math.random() < restChance) {
               return {
                 ...horse,
                 isResting: true,
-                restTime: 2 + Math.random() * 4,
+                restTime: restDuration,
                 lastMoveTime: now,
               };
             } else {
+              // Unhappy horses move less, happy horses explore more
+              const movementRange = happinessModifier * 60 + 10; // 10-70 based on happiness
               return {
                 ...horse,
-                targetX: Math.random() * 70 + 10,
-                targetY: Math.random() * 60 + 20,
+                targetX: Math.random() * movementRange + (85 - movementRange) / 2,
+                targetY: Math.random() * (movementRange * 0.8) + 20,
                 lastMoveTime: now,
               };
             }
           }
 
-          const moveX = (dx / distance) * horse.speed * deltaTime * 10;
-          const moveY = (dy / distance) * horse.speed * deltaTime * 10;
+          // Speed affected by energy and health
+          const effectiveSpeed = horse.speed * energyModifier * healthModifier;
+          const moveX = (dx / distance) * effectiveSpeed * deltaTime * 10;
+          const moveY = (dy / distance) * effectiveSpeed * deltaTime * 10;
 
           return {
             ...horse,
@@ -772,10 +861,14 @@ const HorseStable = ({
                 animate={
                   horse.isResting
                     ? { scale: [1, 1.02, 1], rotate: [0, 1, -1, 0] }
-                    : { y: [0, -2, 0], rotate: [0, 2, -2, 0] }
+                    : horse.energy < 30
+                    ? { y: [0, -1, 0], rotate: [0, 1, -1, 0] } // Tired animation
+                    : horse.happiness > 80
+                    ? { y: [0, -3, 0], rotate: [0, 3, -3, 0] } // Happy animation
+                    : { y: [0, -2, 0], rotate: [0, 2, -2, 0] } // Normal animation
                 }
                 transition={{
-                  duration: horse.isResting ? 3 : 1,
+                  duration: horse.isResting ? 3 : horse.energy < 30 ? 2 : horse.happiness > 80 ? 0.8 : 1,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
@@ -789,9 +882,45 @@ const HorseStable = ({
                       horse.direction > -90 && horse.direction < 90
                         ? "none"
                         : "scaleX(-1)",
-                    filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
+                    ...getHorseHealthEffects(horse),
                   }}
                 />
+                
+                {/* Horse Mood Indicator */}
+                <motion.div
+                  className="absolute -top-6 -right-2 text-2xl"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  {getHorseMoodIndicator(horse)}
+                </motion.div>
+                
+                {/* Horse Status Indicators */}
+                {getHorseStatusIndicators(horse).map((indicator, index) => (
+                  <motion.div
+                    key={indicator}
+                    className="absolute text-xl"
+                    style={{
+                      top: `-${20 + (index * 25)}px`,
+                      left: '50%',
+                      transform: 'translateX(-50%)'
+                    }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: [0.8, 1, 0.8], 
+                      y: [0, -5, 0],
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: index * 0.3
+                    }}
+                  >
+                    {indicator}
+                  </motion.div>
+                ))}
                 {showNameTags && (
                   <motion.div
                     className="absolute bg-amber-800 text-amber-100 px-2 py-1 border border-amber-600 text-xs whitespace-nowrap"
@@ -823,6 +952,7 @@ const HorseStable = ({
               </motion.div>
             </motion.div>
           ))}
+
 
           {/* Stable Info Panel */}
           <motion.div
