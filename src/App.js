@@ -183,9 +183,16 @@ const horsePersonalities = [
   const [unlockedHorses, setUnlockedHorses] = useState(
     horseAvatars.map((_, index) => index < 5)
   );
-  const [shuffledAvatars, setShuffledAvatars] = useState(() =>
-    horseAvatars.filter((_, index) => index < 5)
-  );
+  const [shuffledAvatars, setShuffledAvatars] = useState(() => {
+    const initialUnlocked = horseAvatars.filter((_, index) => index < 5);
+    // Inline shuffle since shuffleArray isn't defined yet at this point
+    const shuffled = [...initialUnlocked];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
 
   const handleUnlockHorse = (index, cost) => {
     if (unlockedHorses[index] || coins < cost) return;
@@ -1106,6 +1113,11 @@ const horsePersonalities = [
     setBetEnabled(false);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
+    
+    // Randomize horse avatars when returning to setup screen
+    const availableHorses = horseAvatars.filter((_, index) => unlockedHorses[index]);
+    setShuffledAvatars(shuffleArray(availableHorses));
+    
     if (cheerSoundRef.current) {
       cheerSoundRef.current.pause();
       cheerSoundRef.current.currentTime = 0;
@@ -1301,7 +1313,12 @@ const horsePersonalities = [
             transition={{ delay: 1, duration: 0.6 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowTitle(false)}
+            onClick={() => {
+              setShowTitle(false);
+              // Randomize horse avatars when entering from title screen
+              const availableHorses = horseAvatars.filter((_, index) => unlockedHorses[index]);
+              setShuffledAvatars(shuffleArray(availableHorses));
+            }}
             className="px-8 py-4 btn-retro btn-retro-green font-bold text-lg"
           >
             Start Racing!
@@ -1537,7 +1554,12 @@ const horsePersonalities = [
         horsePersonalities={horsePersonalities}
         unlockedHorses={unlockedHorses}
         coins={coins} 
-        onBack={() => setShowStable(false)}
+        onBack={() => {
+          setShowStable(false);
+          // Randomize horse avatars when returning from stable
+          const availableHorses = horseAvatars.filter((_, index) => unlockedHorses[index]);
+          setShuffledAvatars(shuffleArray(availableHorses));
+        }}
         onShowLockedHorses={() => {
           setShowStable(false);
           setShowLockedHorses(true);
