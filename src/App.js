@@ -422,28 +422,7 @@ const horsePersonalities = [
   };
 
   const horseNameCategories = {
-    Default: [
-      "Lightning Bolt",
-      "Thunder Strike",
-      "Midnight Runner",
-      "Golden Gallop",
-      "Storm Chaser",
-      "Fire Spirit",
-      "Wind Walker",
-      "Star Dancer",
-      "Thunder Hooves",
-      "Silver Arrow",
-      "Blazing Trail",
-      "Dream Catcher",
-      "Wild Thunder",
-      "Mystic Wind",
-      "Flash Gordon",
-      "Spirit Runner",
-      "Comet Tail",
-      "Moon Walker",
-      "Sky Dancer",
-      "Speed Demon",
-    ],
+    Default: horseNames,
     Takeaways: [
       "Fish & Chips",
       "Chinese",
@@ -536,7 +515,7 @@ const horsePersonalities = [
     const shuffled = Object.fromEntries(
       Object.entries(horseNameCategories).map(([key, names]) => [
         key,
-        shuffleArray(names),
+        key === "Default" ? names : shuffleArray(names), // Don't shuffle Default theme
       ])
     );
     setShuffledHorseNames(shuffled);
@@ -569,9 +548,21 @@ const horsePersonalities = [
   };
 
   const getHorseName = (item, index) => {
-    const categoryList =
-      shuffledHorseNames[nameCategory] || horseNameCategories["Default"];
-    return item.trim() || categoryList[index % categoryList.length];
+    // If user has entered a custom name, use that
+    if (item.trim()) {
+      return item.trim();
+    }
+    
+    // For Default theme, map avatar to its specific name
+    if (nameCategory === "Default") {
+      const currentAvatar = shuffledAvatars[index % shuffledAvatars.length];
+      const avatarIndex = horseAvatars.findIndex(avatar => avatar === currentAvatar);
+      return horseNames[avatarIndex] || horseNames[index % horseNames.length];
+    }
+    
+    // For other themes, use shuffled names
+    const categoryList = shuffledHorseNames[nameCategory] || horseNameCategories["Default"];
+    return categoryList[index % categoryList.length];
   };
 
   const goToRaceScreen = () => {
@@ -1137,11 +1128,15 @@ const horsePersonalities = [
   const randomizeHorseNames = () => {
     const categoryList =
       horseNameCategories[nameCategory] || horseNameCategories["Default"];
-    const shuffledNames = shuffleArray(categoryList);
-    setShuffledHorseNames((prev) => ({
-      ...prev,
-      [nameCategory]: shuffledNames,
-    }));
+    
+    // Don't shuffle Default theme names
+    if (nameCategory !== "Default") {
+      const shuffledNames = shuffleArray(categoryList);
+      setShuffledHorseNames((prev) => ({
+        ...prev,
+        [nameCategory]: shuffledNames,
+      }));
+    }
 
     const newItems = items.map((item, index) =>
       item.trim() === "" ? "" : item
@@ -1765,9 +1760,11 @@ const horsePersonalities = [
                     <input
                       type="text"
                       placeholder={`Or use: ${
-                        shuffledHorseNames[nameCategory][
-                          index % shuffledHorseNames[nameCategory].length
-                        ]
+                        nameCategory === "Default" 
+                          ? getHorseName("", index) // Use the proper avatar-to-name mapping
+                          : shuffledHorseNames[nameCategory][
+                              index % shuffledHorseNames[nameCategory].length
+                            ]
                       }`}
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
