@@ -115,7 +115,7 @@ export default function RaceTrack({
                   className="absolute top-0 h-full flex items-center z-30"
                   animate={{
                     x: positions[index]
-                      ? `${Math.min(positions[index], 1.1) * (trackLength - 200 - 150)}px`
+                      ? `${Math.min(positions[index], 1.1) * (trackLength - 200)}px`
                       : "0px",
                   }}
                   transition={{ 

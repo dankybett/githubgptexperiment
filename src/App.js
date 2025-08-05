@@ -481,6 +481,10 @@ const horsePersonalities = [
       "Amélie",
       "No Country for Old Men",
     ],
+    "Yes or No": [
+      "Yes",
+      "No",
+    ],
   };
 
   const shuffleArray = (array) => {
@@ -606,36 +610,36 @@ const horsePersonalities = [
         baseSpeed: 0.004,
         speedVariation: 0.001, // Reduced from 0.003 for closer racing
         surgeIntensity: 0.005,
-        surgeFrequency: 0.45, // Increased from 0.35 for more action
-        comebackChance: 0.35, // Increased from 0.15 for more lead changes
+        surgeFrequency: 0.15, // Reduced dramatically for more selective surging
+        comebackChance: 0.35, // Keep comeback chance high for tight racing
         dramaMoments: 2,
         hurdles: [], // No hurdles for sprint
         hurdlePixels: [], // Fixed pixel positions
-        staminaFactor: 0.1,
+        staminaFactor: 0.15, // Increased slightly to show more fatigue
         packTightness: 0.95,
       },
       medium: {
         baseSpeed: 0.002,
         speedVariation: 0.0008, // Reduced from 0.002 for closer racing
         surgeIntensity: 0.003,
-        surgeFrequency: 0.38, // Increased from 0.28 for more action
-        comebackChance: 0.4, // Increased from 0.25 for more lead changes
+        surgeFrequency: 0.18, // Reduced dramatically for more selective surging
+        comebackChance: 0.4, // Keep comeback chance high for tight racing
         dramaMoments: 3,
         hurdles: [0.3, 0.65], // Keep for backward compatibility
         hurdlePixels: [720, 1560], // Fixed pixel positions for 2400px track
-        staminaFactor: 0.2,
+        staminaFactor: 0.25, // Increased to show more fatigue
         packTightness: 0.97,
       },
       long: {
         baseSpeed: 0.0008,
         speedVariation: 0.0006, // Reduced from 0.0015 for closer racing
-        surgeIntensity: 0.004, // Doubled from 0.002 for bigger surges
-        surgeFrequency: 0.55, // Increased from 0.32 for constant action
-        comebackChance: 0.7, // Increased from 0.5 for frequent lead changes
-        dramaMoments: 8, // Increased from 5 for more excitement
+        surgeIntensity: 0.004, // Keep surge strength high when it happens
+        surgeFrequency: 0.22, // Reduced dramatically for more selective surging
+        comebackChance: 0.7, // Keep high for exciting lead changes
+        dramaMoments: 8, // Keep high for excitement
         hurdles: [0.15, 0.35, 0.55, 0.75, 0.9], // Keep for backward compatibility
         hurdlePixels: [720, 1680, 2640, 3600, 4320], // Fixed pixel positions for 4800px track
-        staminaFactor: 0.25, // Reduced from 0.35 to reduce fatigue effects
+        staminaFactor: 0.35, // Increased to show more fatigue in long races
         packTightness: 0.98,
       },
     };
@@ -786,6 +790,7 @@ const horsePersonalities = [
           hurdleSkill: 0.3 + rngRef.current() * 0.7,
           surgeCount: 0,
           lastSurge: 0,
+          lastSurgeTime: 0, // Track surge timing for cooldown
           isComingBack: false,
           hurdlesCrossed: [],
           isStunned: false,
@@ -793,6 +798,7 @@ const horsePersonalities = [
           isSurging: false,
           surgeEndTime: 0,
           isFatigued: false,
+          lastHurdleDistance: undefined, // Track distance to current hurdle for mobile collision detection
         };
       });
 
@@ -803,6 +809,15 @@ const horsePersonalities = [
           updatedPositions = prevPositions;
           return prevPositions;
         }
+
+        // Add frame rate protection for mobile devices
+        const currentTime = Date.now();
+        const deltaTime = currentTime - (updatePositions.lastUpdate || currentTime);
+        updatePositions.lastUpdate = currentTime;
+        
+        // Prevent huge time gaps that could cause collision skipping on mobile
+        const cappedDeltaTime = Math.min(deltaTime, 33); // Cap at ~30fps equivalent
+        const timeScale = cappedDeltaTime / 16.67; // Normalize to 60fps baseline
 
         const currentProgress = Math.max(...prevPositions);
         const currentLeader = prevPositions.indexOf(Math.max(...prevPositions));
@@ -827,8 +842,8 @@ const horsePersonalities = [
             1 - pos * (1 - profile.stamina) * settings.staminaFactor;
           speed *= Math.max(fatigueEffect, 0.3);
           
-          // Track if horse is heavily fatigued (fatigue effect below 0.7)
-          profile.isFatigued = fatigueEffect < 0.7;
+          // Track if horse is heavily fatigued - adjusted threshold for more visible fatigue
+          profile.isFatigued = fatigueEffect < 0.85;
 
           const averageProgress =
             prevPositions.reduce((a, b) => a + b, 0) / prevPositions.length;
@@ -859,36 +874,48 @@ const horsePersonalities = [
           }
 
           for (const hurdlePixelPos of settings.hurdlePixels) {
-            // Use fixed pixel positions directly
-            const horsePixelPos = pos * (trackLength - 200); // Adjusted buffer for fixed tracks
+            // Use consistent pixel positioning that matches the visual track
+            const horsePixelPos = pos * (trackLength - 200); // This matches the visual positioning in RaceTrack.js line 118
             const horseImageWidth = 64; // Horse image is w-16 h-16 (64px)
-            const hurdleWidth = 10; // Hurdle width in pixels
+            const hurdleWidth = 8; // Match actual hurdle width from RaceTrack.js (w-2 = 8px)
             
-            // Trigger collision when horse approaches hurdle (before visual contact)
-            const approachDistance = 80; // Trigger much earlier before visual contact
-            const horseFrontPixel = horsePixelPos + horseImageWidth;
-            const hurdleStartPixel = hurdlePixelPos - approachDistance;
-            const hurdleEndPixel = hurdlePixelPos + hurdleWidth;
+            // Define clear collision boundaries - horse center should align with hurdle center
+            const horseCenterPixel = horsePixelPos + (horseImageWidth / 2);
+            const hurdleCenterPixel = hurdlePixelPos + (hurdleWidth / 2);
+            const collisionTolerance = 15; // Small tolerance zone around hurdle center
             
-            if (
-              horseFrontPixel >= hurdleStartPixel &&
-              horsePixelPos <= hurdleEndPixel &&
-              !profile.hurdlesCrossed.some(
-                (stored) => Math.abs(stored - hurdlePixelPos) < 1e-4
-              )
-            ) {
+            // Check if horse center is within collision zone of hurdle center
+            const distanceToHurdle = Math.abs(horseCenterPixel - hurdleCenterPixel);
+            const isInCollisionZone = distanceToHurdle <= collisionTolerance;
+            const hasNotCrossedThisHurdle = !profile.hurdlesCrossed.some(
+              (stored) => Math.abs(stored - hurdlePixelPos) < 1e-4
+            );
+            
+            // Enhanced collision detection for mobile - check if horse is approaching hurdle
+            // to prevent skipping collision zone due to frame rate issues
+            const wasInZoneLastFrame = profile.lastHurdleDistance !== undefined && 
+                                     profile.lastHurdleDistance <= collisionTolerance;
+            const isApproaching = profile.lastHurdleDistance !== undefined && 
+                                 distanceToHurdle < profile.lastHurdleDistance;
+            
+            // Store distance for next frame
+            profile.lastHurdleDistance = distanceToHurdle;
+            
+            if ((isInCollisionZone || (wasInZoneLastFrame && isApproaching)) && hasNotCrossedThisHurdle) {
               profile.hurdlesCrossed.push(hurdlePixelPos);
 
-               const jumpSuccess = rngRef.current() < profile.hurdleSkill;
+              const jumpSuccess = rngRef.current() < profile.hurdleSkill;
 
               if (jumpSuccess) {
-                speed += settings.surgeIntensity * 0.4;
+                // Successful jump gives a small speed boost
+                speed += settings.surgeIntensity * 0.3;
                 dramaMomentRef.current = Math.max(dramaMomentRef.current, 1);
               } else {
-                const stunDuration = 400 + rngRef.current() * 600;
+                // Failed jump causes a brief slowdown rather than complete stop
+                const stunDuration = 300 + rngRef.current() * 300; // Reduced stun time
                 profile.isStunned = true;
                 profile.stunnedUntil = currentTime + stunDuration;
-                speed = 0;
+                speed *= 0.1; // Slow down significantly but don't stop completely
                 dramaMomentRef.current = 3;
               }
             }
@@ -896,15 +923,17 @@ const horsePersonalities = [
 
           const shouldSurge =
             rngRef.current() < settings.surgeFrequency &&
-            pos - profile.lastSurge > 0.12 &&
-            !profile.isStunned;
+            pos - profile.lastSurge > 0.15 && // Increased distance requirement
+            !profile.isStunned &&
+            (!profile.lastSurgeTime || Date.now() - profile.lastSurgeTime > 3000); // 3 second cooldown between surges
           if (shouldSurge) {
             const surgeStrength = 0.6 + rngRef.current() * 1.2;
             speed += settings.surgeIntensity * surgeStrength;
             profile.surgeCount++;
             profile.lastSurge = pos;
+            profile.lastSurgeTime = Date.now(); // Track when surge happened for cooldown
             profile.isSurging = true;
-            profile.surgeEndTime = Date.now() + 1500; // Surge effect lasts 1.5 seconds
+            profile.surgeEndTime = Date.now() + 800; // Surge effect lasts 0.8 seconds - shorter and more impactful
           }
           
           // Clear surge state if time has passed
@@ -1625,7 +1654,24 @@ const horsePersonalities = [
               <div className="flex gap-2">
                 <select
                   value={nameCategory}
-                  onChange={(e) => setNameCategory(e.target.value)}
+                  onChange={(e) => {
+                    const newCategory = e.target.value;
+                    setNameCategory(newCategory);
+                    // Auto-set contestant count to 2 for Yes or No theme
+                    if (newCategory === "Yes or No") {
+                      setItemCount(2);
+                      setItems(Array(2).fill(""));
+                      setPositions(Array(2).fill(0));
+                      setWinner(null);
+                      setWinnerIndex(null);
+                      setIsRacing(false);
+                      setCommentary("");
+                      setRaceTime(0);
+                      setBetHorse(null);
+                      setBetAmount(0);
+                      setBetEnabled(false);
+                    }
+                  }}
                   className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none text-sm bg-white shadow-md"
                 >
                   {Object.keys(horseNameCategories).map((cat) => (
