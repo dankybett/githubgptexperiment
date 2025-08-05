@@ -9,6 +9,7 @@ const HorseStable = ({
   horsePersonalities,
   unlockedHorses,
   coins,
+  horseInventories,
   onBack,
   onShowLockedHorses,
   onSendToLabyrinth,
@@ -33,6 +34,8 @@ const HorseStable = ({
   const [lastPanOffset, setLastPanOffset] = useState({ x: 0, y: 0 });
   const [velocity, setVelocity] = useState({ x: 0, y: 0 });
   const [lastMoveTime, setLastMoveTime] = useState(0);
+  const [dragStartTime, setDragStartTime] = useState(0);
+  const [potentialDrag, setPotentialDrag] = useState(false);
   
   // Stable care resources state
   const [stableResources, setStableResources] = useState({
@@ -240,23 +243,60 @@ const HorseStable = ({
     return { maxPanX, maxPanY };
   };
 
-  // Pan/drag handlers
+  // Pan/drag handlers with delay for horse clicks
   const handlePanStart = (event) => {
-    setIsDragging(true);
+    const target = event.target;
+    const isHorseElement = target.closest('[data-horse-clickable]') !== null;
+    
+    if (isHorseElement) {
+      // Don't interfere with horse clicks
+      return;
+    }
+    
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
     const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    const startTime = Date.now();
+    
+    // Start potential drag - but don't actually drag yet
+    setPotentialDrag(true);
     setDragStart({ x: clientX, y: clientY });
+    setDragStartTime(startTime);
     setLastPanOffset(panOffset);
-    setVelocity({ x: 0, y: 0 }); // Reset velocity
-    setLastMoveTime(Date.now());
+    setVelocity({ x: 0, y: 0 });
+    setLastMoveTime(startTime);
+    
+    // If user holds for 150ms without moving much, start dragging
+    setTimeout(() => {
+      if (potentialDrag && dragStartTime === startTime) {
+        setIsDragging(true);
+        setPotentialDrag(false);
+      }
+    }, 150);
   };
 
   const handlePanMove = (event) => {
+    if (!isDragging && !potentialDrag) return;
+    
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    
+    // If we're in potential drag mode, check if user moved significantly
+    if (potentialDrag && !isDragging) {
+      const deltaX = Math.abs(clientX - dragStart.x);
+      const deltaY = Math.abs(clientY - dragStart.y);
+      
+      // If moved more than 5 pixels, start dragging immediately
+      if (deltaX > 5 || deltaY > 5) {
+        setIsDragging(true);
+        setPotentialDrag(false);
+      } else {
+        return; // Still in potential drag, don't move yet
+      }
+    }
+    
     if (!isDragging) return;
     
     event.preventDefault();
-    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
     
     const deltaX = clientX - dragStart.x;
     const deltaY = clientY - dragStart.y;
@@ -284,6 +324,7 @@ const HorseStable = ({
 
   const handlePanEnd = () => {
     setIsDragging(false);
+    setPotentialDrag(false);
     
     // Apply momentum when drag ends with much lower threshold
     if (Math.abs(velocity.x) > 0.05 || Math.abs(velocity.y) > 0.05) {
@@ -323,29 +364,38 @@ const HorseStable = ({
     requestAnimationFrame(animate);
   };
 
-  const createHorseData = (horse) => ({
-    ...horse,
-    x: Math.random() * 70 + 10,
-    y: Math.random() * 60 + 20,
-    targetX: Math.random() * 70 + 10,
-    targetY: Math.random() * 60 + 20,
-    speed: 0.3 + Math.random() * 0.4,
-    direction: Math.random() * 360,
-    restTime: 0,
-    isResting: false,
-    lastMoveTime: Date.now(),
-    // Individual care stats (base values)
-    happiness: 80 + Math.random() * 20, // 80-100
-    health: 75 + Math.random() * 25,    // 75-100
-    cleanliness: 70 + Math.random() * 30, // 70-100
-    energy: 85 + Math.random() * 15,    // 85-100
-    lastCareUpdate: Date.now(),
-    // Care animations
-    isBeingGroomed: false,
-    isEatingApple: false,
-    isEatingCarrot: false,
-    careAnimationEnd: 0,
-  });
+  const createHorseData = (horse) => {
+    const inventory = horseInventories?.[horse.id] || horse.inventory || [];
+    console.log(`🏠 Stable - createHorseData for horse ${horse.id} (${horse.name}):`);
+    console.log('  - horseInventories:', horseInventories);
+    console.log('  - horseInventories[horse.id]:', horseInventories?.[horse.id]);
+    console.log('  - final inventory:', inventory);
+    
+    return {
+      ...horse,
+      x: Math.random() * 70 + 10,
+      y: Math.random() * 60 + 20,
+      targetX: Math.random() * 70 + 10,
+      targetY: Math.random() * 60 + 20,
+      speed: 0.3 + Math.random() * 0.4,
+      direction: Math.random() * 360,
+      restTime: 0,
+      isResting: false,
+      lastMoveTime: Date.now(),
+      inventory, // Use global inventory or fallback
+      // Individual care stats (base values)
+      happiness: 80 + Math.random() * 20, // 80-100
+      health: 75 + Math.random() * 25,    // 75-100
+      cleanliness: 70 + Math.random() * 30, // 70-100
+      energy: 85 + Math.random() * 15,    // 85-100
+      lastCareUpdate: Date.now(),
+      // Care animations
+      isBeingGroomed: false,
+      isEatingApple: false,
+      isEatingCarrot: false,
+      careAnimationEnd: 0,
+    };
+  };
 
   const handleRename = (id, newName) => {
     setStableHorses((prev) =>
@@ -379,7 +429,10 @@ const HorseStable = ({
 
   // Initialize available and roaming horses based on unlocked list - RUN ONLY ONCE
   useEffect(() => {
-      const available = horseAvatars
+    console.log('🏠 Stable - useEffect initializing horses');
+    console.log('  - horseInventories prop:', horseInventories);
+    
+    const available = horseAvatars
       .map((avatar, index) => ({ avatar, index }))
       .filter((_, index) => unlockedHorses[index])
       .map(({ avatar, index }) => ({
@@ -396,7 +449,22 @@ const HorseStable = ({
     setStableHorses(horsesToGraze.map((h) => createHorseData(h)));
 
     setTimeout(() => setStableLoaded(true), 1000);
-    }, []); // EMPTY DEPENDENCY ARRAY - RUN ONLY ONCE ON MOUNT
+  }, []); // EMPTY DEPENDENCY ARRAY - RUN ONLY ONCE ON MOUNT
+
+  // Update horse inventories when horseInventories prop changes
+  useEffect(() => {
+    if (!stableLoaded || !horseInventories) return;
+    
+    console.log('🏠 Stable - horseInventories updated, refreshing stable horses');
+    console.log('  - New horseInventories:', horseInventories);
+    
+    setStableHorses(prevHorses => 
+      prevHorses.map(horse => ({
+        ...horse,
+        inventory: horseInventories[horse.id] || horse.inventory || []
+      }))
+    );
+  }, [horseInventories, stableLoaded]);
 
   // DISABLED - Resource decay system (causing re-render issues)
   // useEffect(() => {
@@ -777,6 +845,9 @@ const HorseStable = ({
             borderLeft: '4px solid #8B4513',
             borderRight: '4px solid #8B4513'
           }}
+          onClick={(e) => {
+            console.log('🏠 Stable - Background clicked!', e.target);
+          }}
         >
           
           {/* Fence along top and bottom */}
@@ -914,12 +985,13 @@ const HorseStable = ({
               className="absolute z-20 cursor-pointer"
               style={{ left: `${horse.x}%`, top: `${horse.y}%` }}
               transition={{ duration: 0.1, ease: "linear" }}
+              data-horse-clickable="true"
               onClick={(e) => {
-                // Only open horse details if not dragging
-                if (!isDragging) {
-                  e.stopPropagation();
-                  setSelectedHorse(horse);
-                }
+                e.stopPropagation();
+                console.log(`🐴 Stable - Horse ${horse.name} clicked:`);
+                console.log('  - Horse object:', horse);
+                console.log('  - Horse inventory:', horse.inventory);
+                setSelectedHorse(horse);
               }}
             >
               <motion.div
@@ -1342,8 +1414,10 @@ const HorseStable = ({
           onClose={() => setSelectedHorse(null)}
           onRename={handleRename}
           onSendToLabyrinth={() => {
+            console.log('🏠 Stable - onSendToLabyrinth called with selectedHorse:', selectedHorse);
+            console.log('🎒 Stable - selectedHorse inventory:', selectedHorse?.inventory);
+            onSendToLabyrinth(selectedHorse);
             setSelectedHorse(null);
-            onSendToLabyrinth();
           }}
           onCareAction={(horseId, actionType) => {
             handleIndividualCareAction(horseId, actionType);

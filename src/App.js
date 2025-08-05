@@ -7,7 +7,9 @@ import RaceTrack from "./components1/RaceTrack";
 import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
 import HorseMazeGame from "./components1/labyrinth";
+import SettingsModal from "./components1/SettingsModal";
 import { createSeededRng } from "./utils/prng";
+import { gameStorage } from "./utils/gameStorage";
 
 const MotionFadeInImage = motion(FadeInImage);
 
@@ -58,6 +60,10 @@ export default function RandomPicker() {
   const [betAmount, setBetAmount] = useState(0);
   const [betHorse, setBetHorse] = useState(null);
   const [betEnabled, setBetEnabled] = useState(false);
+  const [gameLoaded, setGameLoaded] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
+  const [horseInventories, setHorseInventories] = useState({});
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -208,6 +214,54 @@ const horsePersonalities = [
     const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
     setShuffledAvatars(available);
   }, [unlockedHorses]);
+
+  // Load saved game data on startup
+  useEffect(() => {
+    if (gameStorage.isAvailable()) {
+      const savedData = gameStorage.load();
+      
+      if (savedData.coins !== undefined) {
+        setCoins(savedData.coins);
+      }
+      
+      if (savedData.fastestTime !== null) {
+        setFastestTime(savedData.fastestTime);
+      }
+      
+      if (savedData.history && savedData.history.length > 0) {
+        setHistory(savedData.history);
+      }
+      
+      if (savedData.unlockedHorses && Array.isArray(savedData.unlockedHorses)) {
+        setUnlockedHorses(savedData.unlockedHorses);
+      }
+      
+      if (savedData.horseInventories && typeof savedData.horseInventories === 'object') {
+        setHorseInventories(savedData.horseInventories);
+      }
+      
+      console.log('Game data loaded successfully');
+    } else {
+      console.warn('localStorage not available, game progress will not be saved');
+    }
+    
+    setGameLoaded(true);
+  }, []);
+
+  // Auto-save game state when key values change
+  useEffect(() => {
+    if (gameLoaded && gameStorage.isAvailable()) {
+      const gameState = {
+        coins,
+        unlockedHorses,
+        fastestTime,
+        history,
+        horseInventories
+      };
+      
+      gameStorage.save(gameState);
+    }
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1125,6 +1179,22 @@ const horsePersonalities = [
     setFastestTime(null);
   };
 
+  const clearAllSaveData = () => {
+    if (confirm('Are you sure you want to clear all saved progress? This cannot be undone.')) {
+      gameStorage.clear();
+      setCoins(1000);
+      setUnlockedHorses(horseAvatars.map((_, index) => index < 5));
+      setFastestTime(null);
+      setHistory([]);
+      setHorseInventories({});
+      console.log('All save data cleared');
+    }
+  };
+
+  const getSaveInfo = () => {
+    return gameStorage.getSaveInfo();
+  };
+
   const randomizeHorseNames = () => {
     const categoryList =
       horseNameCategories[nameCategory] || horseNameCategories["Default"];
@@ -1548,7 +1618,8 @@ const horsePersonalities = [
         horseNames={horseNames}
         horsePersonalities={horsePersonalities}
         unlockedHorses={unlockedHorses}
-        coins={coins} 
+        coins={coins}
+        horseInventories={horseInventories} 
         onBack={() => {
           setShowStable(false);
           // Randomize horse avatars when returning from stable
@@ -1559,7 +1630,10 @@ const horsePersonalities = [
           setShowStable(false);
           setShowLockedHorses(true);
         }}
-         onSendToLabyrinth={() => {
+         onSendToLabyrinth={(horse) => {
+          console.log('🚀 App - Horse being sent to labyrinth:', horse);
+          console.log('🎒 App - Horse inventory at send time:', horse?.inventory);
+          setSelectedHorseForLabyrinth(horse);
           setShowStable(false);
           setShowLabyrinth(true);
         }}
@@ -1588,9 +1662,21 @@ const horsePersonalities = [
   if (showLabyrinth) {
     return (
       <HorseMazeGame
+        selectedHorse={selectedHorseForLabyrinth}
         onBack={() => {
+          console.log('🏠 App - Horse returning from labyrinth:', selectedHorseForLabyrinth);
           setShowLabyrinth(false);
           setShowStable(true);
+          setSelectedHorseForLabyrinth(null);
+        }}
+        onHorseReturn={(updatedHorse) => {
+          // Update horse inventories
+          if (updatedHorse && updatedHorse.id) {
+            setHorseInventories(prev => ({
+              ...prev,
+              [updatedHorse.id]: updatedHorse.inventory || []
+            }));
+          }
         }}
       />
     );
@@ -1641,6 +1727,13 @@ const horsePersonalities = [
                 className="text-lg sm:text-sm px-3 py-2 btn-retro btn-retro-yellow text-white"
               >
                 🏠 Stable
+              </button>
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="text-lg sm:text-sm px-3 py-2 btn-retro btn-retro-gray text-white"
+                title="Settings"
+              >
+                ⚙️
               </button>
             </div>
           </div>
@@ -1919,6 +2012,15 @@ const horsePersonalities = [
               </div>
             </motion.div>
           )}
+
+          {/* Settings Modal */}
+          <SettingsModal
+            isOpen={showSettingsModal}
+            onClose={() => setShowSettingsModal(false)}
+            onResetAll={clearAllSaveData}
+            getSaveInfo={getSaveInfo}
+            gameStorage={gameStorage}
+          />
         </div>
       </div>
     </div>

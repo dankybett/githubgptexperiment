@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save System Test</title>
+</head>
+<body>
+    <h1>Save System Test</h1>
+    <div id="output"></div>
+    <button onclick="testSave()">Test Save</button>
+    <button onclick="testLoad()">Test Load</button>
+    <button onclick="testClear()">Test Clear</button>
+
+    <script>
+        // Simplified version of gameStorage for testing
+        const STORAGE_KEY = 'horseRaceGame';
+        const STORAGE_VERSION = '1.0';
+
+        const gameStorage = {
+            save: (gameState) => {
+                try {
+                    const dataToSave = {
+                        ...gameState,
+                        version: STORAGE_VERSION,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+                    return true;
+                } catch (error) {
+                    console.warn('Failed to save game state:', error);
+                    return false;
+                }
+            },
+
+            load: () => {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (!saved) {
+                        return { coins: 1000, message: 'No save data found' };
+                    }
+
+                    const parsed = JSON.parse(saved);
+                    return parsed;
+                } catch (error) {
+                    console.warn('Failed to load game state:', error);
+                    return { coins: 1000, message: 'Error loading save data' };
+                }
+            },
+
+            clear: () => {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return true;
+                } catch (error) {
+                    console.warn('Failed to clear game state:', error);
+                    return false;
+                }
+            }
+        };
+
+        function testSave() {
+            const testData = {
+                coins: 1500,
+                unlockedHorses: [true, true, true, false, false],
+                fastestTime: 12.5,
+                history: [{ winner: 'Test Horse', time: '12.5s' }]
+            };
+            
+            const success = gameStorage.save(testData);
+            document.getElementById('output').innerHTML += `<p>Save test: ${success ? 'SUCCESS' : 'FAILED'}</p>`;
+        }
+
+        function testLoad() {
+            const data = gameStorage.load();
+            document.getElementById('output').innerHTML += `<p>Load test: ${JSON.stringify(data, null, 2)}</p>`;
+        }
+
+        function testClear() {
+            const success = gameStorage.clear();
+            document.getElementById('output').innerHTML += `<p>Clear test: ${success ? 'SUCCESS' : 'FAILED'}</p>`;
+        }
+
+        // Test localStorage availability
+        document.getElementById('output').innerHTML = `<p>localStorage available: ${typeof(Storage) !== "undefined"}</p>`;
+    </script>
+</body>
+</html>

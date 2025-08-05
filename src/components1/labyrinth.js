@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { INVENTORY_ITEMS, inventoryUtils } from "../utils/inventoryItems";
+import ItemSelectionModal from "./ItemSelectionModal";
 
 const MAZE_SIZE = 12;
 const CELL_EMPTY = 0;
@@ -185,11 +187,32 @@ const SKILL_TREE = {
   }
 };
 
-function HorseMazeGame({ onBack }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [minotaurPos, setMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
   const [inventory, setInventory] = useState([]);
+  const [horseInventory, setHorseInventory] = useState(selectedHorse?.inventory || []);
+  const [collectedItemsThisRun, setCollectedItemsThisRun] = useState([]);
+  const [showItemSelection, setShowItemSelection] = useState(false);
+  const [availableKeys, setAvailableKeys] = useState(() => {
+    // Initialize with keys from horse's existing inventory
+    const initialKeys = inventoryUtils.getItemCount(selectedHorse?.inventory || [], 'key');
+    console.log('🔍 Initializing labyrinth with horse keys:', initialKeys, 'from inventory:', selectedHorse?.inventory);
+    return initialKeys;
+  });
+
+  // Debug when selectedHorse changes
+  useEffect(() => {
+    console.log('🐎 Labyrinth - selectedHorse prop changed:', selectedHorse);
+    console.log('🎒 Labyrinth - Horse inventory from prop:', selectedHorse?.inventory);
+    if (selectedHorse?.inventory) {
+      const keyCount = inventoryUtils.getItemCount(selectedHorse.inventory, 'key');
+      console.log('🗝️ Labyrinth - Keys counted in inventory:', keyCount);
+      setAvailableKeys(keyCount);
+    }
+  }, [selectedHorse]);
+
   const [gameState, setGameState] = useState('waiting');
   const [currentRewards, setCurrentRewards] = useState([]);
   const [gameSpeed, setGameSpeed] = useState(800);
@@ -725,6 +748,9 @@ function HorseMazeGame({ onBack }) {
         const reward = betterRewards[Math.floor(Math.random() * betterRewards.length)] || REWARDS[0];
         setCurrentRewards(prev => [...prev, reward]);
         
+        // Add treasure to collected items
+        setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.treasure]);
+        
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
           newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
@@ -733,6 +759,9 @@ function HorseMazeGame({ onBack }) {
       } else if (cell === CELL_POWERUP) {
         const powerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
         usePowerup(powerup);
+        
+        // Add power-up to collected items
+        setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.powerup]);
         
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
@@ -743,6 +772,10 @@ function HorseMazeGame({ onBack }) {
         const key = vaultKeys.find(k => k.x === nextMove.x && k.y === nextMove.y);
         if (key) {
           setCollectedKeys(prev => [...prev, key.id]);
+          // Add key to collected items
+          setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.key]);
+          // Increment available keys for vault usage
+          setAvailableKeys(prev => prev + 1);
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
             newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
@@ -750,7 +783,7 @@ function HorseMazeGame({ onBack }) {
           });
         }
       } else if (cell === CELL_VAULT) {
-        if (collectedKeys.length > 0) {
+        if (collectedKeys.length > 0 && availableKeys > 0) {
           const legendaryRewards = [
             { name: 'Ancient Treasure', emoji: '👑', rarity: 0.05 },
             { name: 'Dragon Egg', emoji: '🥚', rarity: 0.03 },
@@ -759,6 +792,28 @@ function HorseMazeGame({ onBack }) {
           const reward = legendaryRewards[Math.floor(Math.random() * legendaryRewards.length)];
           setCurrentRewards(prev => [...prev, reward]);
           setCollectedKeys(prev => prev.slice(1));
+          
+          // Consume a key
+          setAvailableKeys(prev => prev - 1);
+          
+          // Remove key from appropriate source (prefer collected items first)
+          const keysCollectedThisRun = collectedItemsThisRun.filter(item => item.id === 'key').length;
+          if (keysCollectedThisRun > 0) {
+            // Remove one key from collected items
+            setCollectedItemsThisRun(prev => {
+              const keyIndex = prev.findIndex(item => item.id === 'key');
+              if (keyIndex !== -1) {
+                return prev.filter((_, index) => index !== keyIndex);
+              }
+              return prev;
+            });
+          } else {
+            // Remove one key from horse inventory
+            setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
+          }
+          
+          // Add vault treasure to collected items
+          setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.vault_treasure]);
           
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
@@ -840,6 +895,81 @@ function HorseMazeGame({ onBack }) {
     setTrapHits(0);
     setCollectedKeys([]);
     setCurrentLevel(1);
+    setCollectedItemsThisRun([]);
+    // Reset available keys to horse's starting inventory keys
+    setAvailableKeys(inventoryUtils.getItemCount(selectedHorse?.inventory || [], 'key'));
+  };
+
+  const exitLabyrinth = () => {
+    const currentInventoryCount = selectedHorse?.inventory?.length || 0;
+    const maxSlots = 4;
+    const availableSlots = maxSlots - currentInventoryCount;
+    
+    // If we collected more items than we can carry, show selection modal
+    if (collectedItemsThisRun.length > availableSlots) {
+      setShowItemSelection(true);
+      return;
+    }
+    
+    // If we can carry all items, add them directly
+    returnHorseWithItems(collectedItemsThisRun);
+  };
+
+  const returnHorseWithItems = (itemsToKeep, discardedIndices = []) => {
+    if (selectedHorse && onHorseReturn) {
+      // Start with current inventory, removing discarded items
+      let updatedInventory = [...(selectedHorse.inventory || [])];
+      
+      // Remove discarded items (sort indices in descending order to avoid index shifting)
+      const sortedDiscardedIndices = [...discardedIndices].sort((a, b) => b - a);
+      sortedDiscardedIndices.forEach(index => {
+        if (index >= 0 && index < updatedInventory.length) {
+          updatedInventory.splice(index, 1);
+        }
+      });
+      
+      // Add selected items
+      itemsToKeep.forEach(item => {
+        const result = inventoryUtils.addItem(updatedInventory, item);
+        if (result.success) {
+          updatedInventory = result.inventory;
+        }
+      });
+      
+      const updatedHorse = {
+        ...selectedHorse,
+        inventory: updatedInventory
+      };
+      
+      console.log('🎒 Labyrinth - Returning horse with updated inventory:');
+      console.log('  - Original inventory:', selectedHorse.inventory);
+      console.log('  - Discarded indices:', discardedIndices);
+      console.log('  - Items to keep:', itemsToKeep);
+      console.log('  - Final inventory:', updatedInventory);
+      
+      onHorseReturn(updatedHorse);
+    }
+    onBack();
+  };
+
+  const handleItemSelectionConfirm = (selectionResult) => {
+    setShowItemSelection(false);
+    
+    // Handle both old format (array) and new format (object with selectedItems and discardedItems)
+    if (Array.isArray(selectionResult)) {
+      // Old format - just selected items
+      returnHorseWithItems(selectionResult);
+    } else {
+      // New format - handle discarding and selecting
+      const { selectedItems, discardedItems } = selectionResult;
+      returnHorseWithItems(selectedItems, discardedItems);
+    }
+  };
+
+  const handleItemSelectionCancel = () => {
+    setShowItemSelection(false);
+    // Return with no new items
+    returnHorseWithItems([]);
   };
 
   const getCellDisplay = (cell, x, y) => {
@@ -929,57 +1059,51 @@ function HorseMazeGame({ onBack }) {
     .sort((a, b) => b.count - a.count);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-100 to-green-200 p-2 sm:p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
+    <div className="min-h-screen bg-gradient-to-b from-green-100 to-green-200 flex flex-col">
+      <div className="flex-1 flex flex-col w-full p-3">
+        
+        {/* Header with Back Button */}
+        <div className="flex items-center justify-between mb-3">
           {onBack && (
             <button
-              onClick={onBack}
-              className="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm"
+              onClick={exitLabyrinth}
+              className="px-3 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-1 shadow-md"
             >
               ← Back
             </button>
           )}
-          <h1 className="text-2xl sm:text-4xl font-bold text-center flex-1 text-green-800">
-            🐎 Horse Maze
+          <h1 className="text-lg font-bold text-green-800 flex items-center gap-2">
+            🐎 Labyrinth
           </h1>
-          <div className="w-16 sm:w-20" />
+          <div className="w-16" /> {/* Spacer */}
         </div>
-        <p className="text-center text-green-700 mb-4 text-sm sm:text-base hidden sm:block">
-          Watch your brave horse explore mysterious mazes and collect treasures!
-        </p>
 
-        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6">
-          <div className="lg:col-span-2 bg-white rounded-lg p-3 sm:p-6 shadow-lg order-1">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+        {/* 1. Mobile-optimized Maze Display */}
+        <div className="bg-white rounded-xl p-4 shadow-lg mb-3">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
                 {MAZE_TYPES[selectedMazeType].name}
+                <span className="text-yellow-600 text-sm">{'⭐'.repeat(MAZE_TYPES[selectedMazeType].difficulty)}</span>
               </h2>
-              <div className="text-xs sm:text-sm text-gray-600 flex gap-2 sm:gap-4">
+              <div className="text-xs text-gray-600 flex gap-3 mt-1">
                 <span>Run #{totalRuns}</span>
                 <span className="text-purple-600">💎 {skillPoints} SP</span>
                 <span className="text-blue-600">🔬 {researchPoints} RP</span>
               </div>
             </div>
+          </div>
 
-            {/* Maze Type Info */}
-            <div className="mb-4 p-2 bg-gray-50 rounded text-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold">{MAZE_TYPES[selectedMazeType].name}</span>
-                <span className="text-yellow-600">{'⭐'.repeat(MAZE_TYPES[selectedMazeType].difficulty)}</span>
-              </div>
-              <div className="text-gray-600">{MAZE_TYPES[selectedMazeType].description}</div>
-            </div>
-
-            <div 
-              className="mb-4 border-2 border-gray-800 bg-gray-900 w-full max-w-full overflow-hidden"
-              style={{ 
-                display: 'flex',
-                flexDirection: 'column',
-                lineHeight: 0,
-                aspectRatio: '1/1'
-              }}
-            >
+          {/* Maze Grid */}
+          <div 
+            className="border-2 border-gray-800 bg-gray-900 w-full rounded-lg overflow-hidden shadow-inner"
+            style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              lineHeight: 0,
+              aspectRatio: '1/1'
+            }}
+          >
               {maze.map((row, y) => (
                 <div 
                   key={y}
@@ -1012,144 +1136,214 @@ function HorseMazeGame({ onBack }) {
                   ))}
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex gap-1 sm:gap-2 flex-wrap">
-                <button
-                  onClick={startGame}
-                  disabled={gameState === 'exploring'}
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
-                >
-                  {gameState === 'waiting' ? 'Start' : 'New Game'}
-                </button>
-                
-                <button
-                  onClick={() => setShowSkillTree(!showSkillTree)}
-                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                >
-                  Skills ({skillPoints}💎)
-                </button>
-                
-                <button
-                  onClick={() => setShowResearchTree(!showResearchTree)}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                >
-                  Research ({researchPoints}🔬)
-                </button>
-                
-                <select
-                  value={selectedMazeType}
-                  onChange={(e) => setSelectedMazeType(e.target.value)}
-                  className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
-                  disabled={gameState === 'exploring'}
-                >
-                  {Object.entries(MAZE_TYPES).map(([key, maze]) => (
-                    <option key={key} value={key} disabled={!maze.unlocked && !unlockedMazes[key]}>
-                      {maze.name} {maze.unlocked || unlockedMazes[key] ? '' : '🔒'}
-                    </option>
-                  ))}
-                </select>
-                
-                <select
-                  value={gameSpeed}
-                  onChange={(e) => setGameSpeed(Number(e.target.value))}
-                  className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
-                  disabled={gameState === 'exploring'}
-                >
-                  <option value={1200}>Slow</option>
-                  <option value={800}>Normal</option>
-                  <option value={400}>Fast</option>
-                  <option value={200}>Very Fast</option>
-                </select>
-              </div>
-
-              <div className="text-sm space-y-2">
-                {gameState === 'waiting' && (
-                  <p className="text-gray-600">Click "Start Adventure" to begin!</p>
+          </div>
+          
+          {/* Horse Status Text */}
+          <div className="text-center py-2">
+            {gameState === 'waiting' && (
+              <p className="text-gray-600 text-sm">Ready to explore!</p>
+            )}
+            {gameState === 'exploring' && (
+              <div className="space-y-1">
+                <p className="text-blue-600 animate-pulse text-sm font-medium">🏃‍♂️ Exploring maze...</p>
+                {minotaurStunned > 0 && (
+                  <p className="text-yellow-600 text-xs">😵 Minotaur stunned ({minotaurStunned} turns)</p>
                 )}
-                {gameState === 'exploring' && (
-                  <div className="space-y-1">
-                    <p className="text-blue-600 animate-pulse">🐎 Your horse is exploring the maze...</p>
-                    {minotaurStunned > 0 && (
-                      <p className="text-yellow-600">😵 Minotaur is stunned for {minotaurStunned} more turns!</p>
-                    )}
-                    {minotaurLostTrack > 0 && (
-                      <p className="text-purple-600">❓ Minotaur lost track for {minotaurLostTrack} more turns!</p>
-                    )}
-                    {!minotaurStunned && !minotaurLostTrack && (
-                      <p className="text-red-600 animate-pulse">👹 The minotaur is hunting your horse!</p>
-                    )}
-                  </div>
+                {minotaurLostTrack > 0 && (
+                  <p className="text-purple-600 text-xs">❓ Minotaur lost track ({minotaurLostTrack} turns)</p>
                 )}
-                {gameState === 'ended' && (
-                  <div>
-                    {endReason === 'trap' && lastTrap && (
-                      <p className="text-red-600">💥 Your horse hit a {lastTrap.name} {lastTrap.emoji}!</p>
-                    )}
-                    {endReason === 'minotaur' && (
-                      <p className="text-red-600">👹 The minotaur caught your horse!</p>
-                    )}
-                  </div>
-                )}
-
-                {activePowerups.length > 0 && (
-                  <div className="bg-blue-50 p-2 rounded">
-                    <h4 className="text-xs font-semibold text-blue-800 mb-1">Active Power-ups:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {activePowerups.map((powerup, idx) => (
-                        <span key={idx} className="bg-blue-200 px-2 py-1 rounded text-xs">
-                          {powerup.emoji} {powerup.name} ({powerup.duration})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                {!minotaurStunned && !minotaurLostTrack && (
+                  <p className="text-red-600 animate-pulse text-xs">👹 Minotaur hunting!</p>
                 )}
               </div>
-
-              {(trapHits > 0 || Object.values(skills).some(level => level > 0) || collectedKeys.length > 0) && (
-                <div className="bg-blue-50 p-2 rounded">
-                  <h4 className="text-xs font-semibold text-blue-800 mb-1">Horse Status:</h4>
-                  <div className="text-xs space-y-1">
-                    {trapHits > 0 && <div>❤️ Trap Hits: {trapHits}/{getSkillLevel('thickSkin')}</div>}
-                    {collectedKeys.length > 0 && <div>🗝️ Keys: {collectedKeys.length}</div>}
-                    {getSkillLevel('wallWalking') > 0 && <div>🕷️ Wall Walking Active</div>}
-                    {getSkillLevel('pathfinding') > 0 && <div>🧭 Smart Movement Active</div>}
-                  </div>
-                </div>
-              )}
-
-              {(movingWalls.length > 0 || Object.values(portals).some(p => p !== null) || darkZones.length > 0) && (
-                <div className="bg-indigo-50 p-2 rounded">
-                  <h4 className="text-xs font-semibold text-indigo-800 mb-1">Maze Features:</h4>
-                  <div className="text-xs space-y-1">
-                    {movingWalls.length > 0 && <div>🚪 Moving Walls: {movingWalls.filter(w => !w.closed).length}/{movingWalls.length} open</div>}
-                    {portals.A && portals.B && <div>🌀 Portal Network Active</div>}
-                    {darkZones.length > 0 && <div>🌑 Dark Zones: {darkZones.length}</div>}
-                  </div>
-                </div>
-              )}
-
-              {currentRewards.length > 0 && (
-                <div className="bg-yellow-50 p-3 rounded-lg">
-                  <h4 className="font-semibold text-yellow-800 mb-2">Current Run Rewards:</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {currentRewards.map((reward, idx) => (
-                      <span key={idx} className="bg-yellow-200 px-2 py-1 rounded text-xs">
-                        {reward.emoji} {reward.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
+            {gameState === 'ended' && (
+              <div className="text-sm">
+                {endReason === 'trap' && lastTrap && (
+                  <p className="text-red-600">💥 Hit {lastTrap.name} {lastTrap.emoji}!</p>
+                )}
+                {endReason === 'minotaur' && (
+                  <p className="text-red-600">👹 Caught by minotaur!</p>
+                )}
+                {endReason === 'success' && (
+                  <p className="text-green-600">🎉 Escaped successfully!</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {showSkillTree && (
-            <div className="bg-white rounded-lg p-3 sm:p-6 shadow-lg order-2 lg:order-none">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Skill Tree (💎 {skillPoints} points available)
+          {/* Mobile-optimized Controls */}
+          <div className="space-y-3">
+            {/* Primary Action Button */}
+            <button
+              onClick={startGame}
+              disabled={gameState === 'exploring'}
+              className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-base shadow-md"
+            >
+              {gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
+            </button>
+            
+            {/* Settings Row */}
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={selectedMazeType}
+                onChange={(e) => setSelectedMazeType(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                disabled={gameState === 'exploring'}
+              >
+                {Object.entries(MAZE_TYPES).map(([key, maze]) => (
+                  <option key={key} value={key} disabled={!maze.unlocked && !unlockedMazes[key]}>
+                    {maze.name} {maze.unlocked || unlockedMazes[key] ? '' : '🔒'}
+                  </option>
+                ))}
+              </select>
+              
+              <select
+                value={gameSpeed}
+                onChange={(e) => setGameSpeed(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                disabled={gameState === 'exploring'}
+              >
+                <option value={1200}>🐌 Slow</option>
+                <option value={800}>🚶 Normal</option>
+                <option value={400}>🏃 Fast</option>
+                <option value={200}>⚡ Very Fast</option>
+              </select>
+            </div>
+            
+            {/* Secondary Action Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowSkillTree(!showSkillTree)}
+                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium shadow-md"
+              >
+                💎 Skills ({skillPoints})
+              </button>
+              
+              <button
+                onClick={() => setShowResearchTree(!showResearchTree)}
+                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium shadow-md"
+              >
+                🔬 Research ({researchPoints})
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Horse Display with Inventory */}
+        {selectedHorse && (
+          <div className="bg-white rounded-xl p-4 shadow-lg mb-3 border-2 border-green-200">
+            <div className="flex items-center gap-3 mb-3">
+              <img 
+                src={selectedHorse.avatar} 
+                alt={selectedHorse.name}
+                className="w-16 h-16 rounded-lg object-contain bg-gray-50 border border-gray-200"
+              />
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-gray-800">{selectedHorse.name}</h2>
+                <p className="text-sm text-gray-600">{selectedHorse.personality}</p>
+                <div className="flex items-center gap-3 mt-1 text-xs">
+                  {availableKeys >= 0 && (
+                    <span className="text-yellow-700 font-semibold">🗝️ {availableKeys}</span>
+                  )}
+                  {collectedItemsThisRun.length > 0 && (
+                    <span className="text-purple-700 font-semibold">✨ +{collectedItemsThisRun.length}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Inventory Grid */}
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: 4 }).map((_, index) => {
+                const item = selectedHorse.inventory?.[index];
+                return (
+                  <div
+                    key={index}
+                    className={`aspect-square border-2 border-dashed rounded-lg flex items-center justify-center ${
+                      item ? 'bg-white border-solid border-purple-300' : 'bg-gray-50 border-gray-300'
+                    }`}
+                  >
+                    {item ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-8 h-8 object-contain"
+                        title={item.name}
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-xs">Empty</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 3. Status Panels */}
+        {activePowerups.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 shadow-sm">
+            <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
+              ⚡ Active Power-ups
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {activePowerups.map((powerup, idx) => (
+                <span key={idx} className="bg-blue-200 px-3 py-1 rounded-full text-xs font-medium">
+                  {powerup.emoji} {powerup.name} ({powerup.duration})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Mobile-optimized Horse Status */}
+        {(trapHits > 0 || Object.values(skills).some(level => level > 0) || collectedKeys.length > 0) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 shadow-sm">
+            <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
+              🐎 Horse Status
+            </h4>
+            <div className="text-sm space-y-1">
+              {trapHits > 0 && <div>❤️ Trap Hits: {trapHits}/{getSkillLevel('thickSkin')}</div>}
+              {collectedKeys.length > 0 && <div>🗝️ Keys Collected: {collectedKeys.length}</div>}
+              {getSkillLevel('wallWalking') > 0 && <div>🕷️ Wall Walking Active</div>}
+              {getSkillLevel('pathfinding') > 0 && <div>🧭 Smart Movement Active</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Current Run Rewards */}
+        {currentRewards.length > 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-3 shadow-sm">
+            <h4 className="text-sm font-semibold text-yellow-800 mb-2">🏆 Current Run Rewards</h4>
+            <div className="flex flex-wrap gap-2">
+              {currentRewards.map((reward, idx) => (
+                <span key={idx} className="bg-yellow-200 px-3 py-1 rounded-full text-xs font-medium">
+                  {reward.emoji} {reward.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Skill Tree Modal */}
+      {showSkillTree && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
+          <div className="bg-white rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800">
+                💎 Skills ({skillPoints} points)
               </h2>
+              <button
+                onClick={() => setShowSkillTree(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto max-h-96">
               
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {Object.entries(SKILL_TREE).map(([categoryKey, category]) => (
@@ -1196,15 +1390,28 @@ function HorseMazeGame({ onBack }) {
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {showResearchTree && (
-            <div className="bg-white rounded-lg p-3 sm:p-6 shadow-lg order-2 lg:order-none">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
-                Research Tree (🔬 {researchPoints} points available)
+      {/* Mobile Research Tree Modal */}
+      {showResearchTree && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
+          <div className="bg-white rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800">
+                🔬 Research ({researchPoints} points)
               </h2>
-              
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <button
+                onClick={() => setShowResearchTree(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto max-h-96">
+              <div className="space-y-4">
                 {Object.entries(RESEARCH_TREE).map(([categoryKey, category]) => (
                   <div key={categoryKey} className="border rounded-lg p-3">
                     <h3 className={`font-semibold mb-2 text-${category.color}-700`}>
@@ -1251,101 +1458,19 @@ function HorseMazeGame({ onBack }) {
                 ))}
               </div>
             </div>
-          )}
-
-          <div className="bg-white rounded-lg p-3 sm:p-6 shadow-lg order-3 lg:order-none">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
-              Inventory ({inventory.length})
-            </h2>
-            
-            {inventory.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                No treasures collected yet. Send your horse on an adventure!
-              </p>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {uniqueInventoryItems.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{item.emoji}</span>
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-semibold">
-                      {item.count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {inventory.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>Total Adventures: {totalRuns}</div>
-                  <div>Success Rate: {totalRuns > 0 ? Math.round((inventory.length / totalRuns) * 100) : 0}% items per run</div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
+      )}
 
-        <div className="mt-4 lg:mt-6 bg-white rounded-lg p-3 sm:p-4 shadow-lg">
-          <details className="lg:open">
-            <summary className="font-semibold mb-2 cursor-pointer lg:cursor-default">Legend & Guide</summary>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-2 text-xs sm:text-sm mb-3">
-              <div>🐎 Horse</div>
-              <div>👹 Minotaur</div>
-              <div>🏠 Start</div>
-              <div>✨ Treasure</div>
-              <div>❌ Trap</div>
-              <div>🔮 Power-up</div>
-              <div>🗝️ Key</div>
-              <div>🏛️ Vault</div>
-              <div>🚪 Door</div>
-              <div>🌀 Portal</div>
-              <div>⬆️ One-way</div>
-              <div>🌑 Dark</div>
-            </div>
-            
-            <div className="border-t pt-2 hidden sm:block">
-              <h4 className="font-semibold mb-2 text-sm">Power-ups:</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2 text-xs">
-                <div className="bg-gray-50 p-1 sm:p-2 rounded">
-                  <div className="font-semibold">⚡ Speed Boost</div>
-                  <div className="hidden sm:block">Horse moves twice per turn</div>
-                </div>
-                <div className="bg-gray-50 p-1 sm:p-2 rounded">
-                  <div className="font-semibold">👻 Invisibility</div>
-                  <div className="hidden sm:block">Minotaur wanders randomly</div>
-                </div>
-                <div className="bg-gray-50 p-1 sm:p-2 rounded">
-                  <div className="font-semibold">🌀 Teleport</div>
-                  <div className="hidden sm:block">Jump to random safe location</div>
-                </div>
-                <div className="bg-gray-50 p-1 sm:p-2 rounded">
-                  <div className="font-semibold">🔨 Wall Breaker</div>
-                  <div className="hidden sm:block">Move through walls</div>
-                </div>
-                <div className="bg-gray-50 p-1 sm:p-2 rounded">
-                  <div className="font-semibold">💣 Stun Bomb</div>
-                  <div className="hidden sm:block">Freeze minotaur in place</div>
-                </div>
-                <div className="bg-gray-50 p-1 sm:p-2 rounded">
-                  <div className="font-semibold">🧲 Magnet</div>
-                  <div className="hidden sm:block">Auto-collect nearby treasures</div>
-                </div>
-              </div>
-              
-              <div className="border-t pt-2 mt-2">
-                <h4 className="font-semibold mb-1 text-sm">Research System:</h4>
-                <p className="text-xs text-gray-600">
-                  Unlock new maze types through research! Earn Research Points 🔬 by completing runs - harder mazes give more points. Each maze offers unique mechanics and challenges.
-                </p>
-              </div>
-            </div>
-          </details>
-        </div>
-      </div>
+      {/* ItemSelectionModal */}
+      <ItemSelectionModal
+        isOpen={showItemSelection}
+        horse={selectedHorse}
+        collectedItems={collectedItemsThisRun}
+        maxSlots={4}
+        onConfirm={handleItemSelectionConfirm}
+        onCancel={handleItemSelectionCancel}
+      />
     </div>
   );
 }
