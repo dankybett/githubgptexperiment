@@ -319,19 +319,19 @@ const horsePersonalities = [
   const usedCommentaryRef = useRef(new Set());
   const lastCommentaryRef = useRef("");
 
-  const [trackLength, setTrackLength] = useState(window.innerWidth * 2);
+  const getFixedTrackLength = (distance) => {
+    const lengths = {
+      short: 1200,   // Sprint: 1200px
+      medium: 2400,  // Classic: 2400px  
+      long: 4800     // Marathon: 4800px
+    };
+    return lengths[distance];
+  };
+
+  const [trackLength, setTrackLength] = useState(getFixedTrackLength("medium"));
 
   useEffect(() => {
-    const updateTrackLength = () => {
-      const baseLength =
-        raceDistance === "short" ? 1.8 : raceDistance === "long" ? 9 : 4.5;
-      setTrackLength(Math.max(window.innerWidth * baseLength, 1000));
-    };
-
-    window.addEventListener("resize", updateTrackLength);
-    updateTrackLength();
-
-    return () => window.removeEventListener("resize", updateTrackLength);
+    setTrackLength(getFixedTrackLength(raceDistance));
   }, [raceDistance]);
 
   const maxItems = 20;
@@ -609,7 +609,8 @@ const horsePersonalities = [
         surgeFrequency: 0.45, // Increased from 0.35 for more action
         comebackChance: 0.35, // Increased from 0.15 for more lead changes
         dramaMoments: 2,
-        hurdles: [],
+        hurdles: [], // No hurdles for sprint
+        hurdlePixels: [], // Fixed pixel positions
         staminaFactor: 0.1,
         packTightness: 0.95,
       },
@@ -620,7 +621,8 @@ const horsePersonalities = [
         surgeFrequency: 0.38, // Increased from 0.28 for more action
         comebackChance: 0.4, // Increased from 0.25 for more lead changes
         dramaMoments: 3,
-        hurdles: [0.3, 0.65],
+        hurdles: [0.3, 0.65], // Keep for backward compatibility
+        hurdlePixels: [720, 1560], // Fixed pixel positions for 2400px track
         staminaFactor: 0.2,
         packTightness: 0.97,
       },
@@ -631,7 +633,8 @@ const horsePersonalities = [
         surgeFrequency: 0.55, // Increased from 0.32 for constant action
         comebackChance: 0.7, // Increased from 0.5 for frequent lead changes
         dramaMoments: 8, // Increased from 5 for more excitement
-        hurdles: [0.15, 0.35, 0.55, 0.75, 0.9],
+        hurdles: [0.15, 0.35, 0.55, 0.75, 0.9], // Keep for backward compatibility
+        hurdlePixels: [720, 1680, 2640, 3600, 4320], // Fixed pixel positions for 4800px track
         staminaFactor: 0.25, // Reduced from 0.35 to reduce fatigue effects
         packTightness: 0.98,
       },
@@ -770,28 +773,28 @@ const horsePersonalities = [
     let winnerDeclared = false;
     let finished = false;
 
-    if (trackContainerRef.current) {
-      trackContainerRef.current.scrollLeft = 0;
-    }
 
     const horseProfiles = Array(itemCount)
       .fill(0)
-      .map(() => ({
-        baseSpeed:
-          settings.baseSpeed + (rngRef.current() - 0.5) * settings.speedVariation,
-        stamina: 0.6 + rngRef.current() * 0.7,
-        comebackPotential: rngRef.current(),
-        hurdleSkill: 0.3 + rngRef.current() * 0.7,
-        surgeCount: 0,
-        lastSurge: 0,
-        isComingBack: false,
-        hurdlesCrossed: [],
-        isStunned: false,
-        stunnedUntil: 0,
-        isSurging: false,
-        surgeEndTime: 0,
-        isFatigued: false,
-      }));
+      .map(() => {
+        const baseSpeed = settings.baseSpeed + (rngRef.current() - 0.5) * settings.speedVariation;
+        return {
+          baseSpeed,
+          currentSpeed: baseSpeed, // Track current speed for deceleration
+          stamina: 0.6 + rngRef.current() * 0.7,
+          comebackPotential: rngRef.current(),
+          hurdleSkill: 0.3 + rngRef.current() * 0.7,
+          surgeCount: 0,
+          lastSurge: 0,
+          isComingBack: false,
+          hurdlesCrossed: [],
+          isStunned: false,
+          stunnedUntil: 0,
+          isSurging: false,
+          surgeEndTime: 0,
+          isFatigued: false,
+        };
+      });
 
     const updatePositions = () => {
       let updatedPositions = [];
@@ -811,7 +814,7 @@ const horsePersonalities = [
 
         updatedPositions = prevPositions.map((pos, idx) => {
           const profile = horseProfiles[idx];
-          let speed = profile.baseSpeed;
+          let speed = profile.baseSpeed; // Back to using base speed for racing
 
           const currentTime = Date.now();
           if (profile.isStunned && currentTime < profile.stunnedUntil) {
@@ -855,10 +858,9 @@ const horsePersonalities = [
             speed *= (0.92 / marathonMultiplier); // Enhanced penalty for marathon leaders
           }
 
-          for (const hurdlePos of settings.hurdles) {
-            // Convert to pixel positions to match visual rendering
-            const horsePixelPos = pos * (trackLength - 225);
-            const hurdlePixelPos = hurdlePos * (trackLength - 225);
+          for (const hurdlePixelPos of settings.hurdlePixels) {
+            // Use fixed pixel positions directly
+            const horsePixelPos = pos * (trackLength - 200); // Adjusted buffer for fixed tracks
             const horseImageWidth = 64; // Horse image is w-16 h-16 (64px)
             const hurdleWidth = 10; // Hurdle width in pixels
             
@@ -872,10 +874,10 @@ const horsePersonalities = [
               horseFrontPixel >= hurdleStartPixel &&
               horsePixelPos <= hurdleEndPixel &&
               !profile.hurdlesCrossed.some(
-                (stored) => Math.abs(stored - hurdlePos) < 1e-4
+                (stored) => Math.abs(stored - hurdlePixelPos) < 1e-4
               )
             ) {
-              profile.hurdlesCrossed.push(hurdlePos);
+              profile.hurdlesCrossed.push(hurdlePixelPos);
 
                const jumpSuccess = rngRef.current() < profile.hurdleSkill;
 
@@ -952,7 +954,13 @@ const horsePersonalities = [
         const winnerIdx = updatedPositions.findIndex((p) => p >= 1);
         if (winnerIdx !== -1 && !winnerDeclared) {
           winnerDeclared = true;
-          clearInterval(timerInterval);
+          
+          // Let horses continue for a short time at normal speed, then stop
+          setTimeout(() => {
+            clearInterval(timerInterval);
+            setIsRacing(false);
+          }, 800); // Just 0.8 seconds of continued racing after winner declared
+
           const finalTime = parseFloat(
             ((Date.now() - raceStartTime.current) / 1000).toFixed(1)
           );
@@ -997,14 +1005,6 @@ const horsePersonalities = [
 
           clearInterval(commentaryIntervalRef.current);
           
-          // Scroll to finish line to show winner at the end
-          setTimeout(() => {
-            if (trackContainerRef.current) {
-              const container = trackContainerRef.current;
-              const finishLinePosition = trackLength - container.clientWidth;
-              container.scrollLeft = Math.max(0, finishLinePosition);
-            }
-          }, 500);
         }
  
         if (updatedPositions.every((p) => p >= 1)) {
@@ -1015,56 +1015,6 @@ const horsePersonalities = [
           }
         }
 
-        if (trackContainerRef.current) {
-          const container = trackContainerRef.current;
-
-          // Sort positions in descending order (lead is first)
-          const sorted = [...updatedPositions].sort((a, b) => b - a);
-          const lead = sorted[0];
-          const second = sorted[1] ?? sorted[0]; // Fallback in case only one horse exists
-
-          // Calculate dynamic focus based on race situation
-          const gap = lead - second;
-          const maxGap = trackLength * 0.1; // 10% of track length for reference
-
-          // If horses are close, focus exactly between them
-          // If gap is large, bias slightly toward the leader for better viewing
-          const focusWeight = Math.min(gap / maxGap, 1);
-          let focusPoint = second + (lead - second) * (0.5 + focusWeight * 0.2);
-
-          // Convert focus point to pixel position
-          let targetLeft = focusPoint * (trackLength - container.clientWidth);
-
-          // Ensure leader always remains in view
-          const leaderPixelPos = lead * trackLength;
-          const viewportStart = targetLeft;
-          const viewportEnd = targetLeft + container.clientWidth;
-
-          // If leader is outside the right edge of viewport, adjust
-          if (leaderPixelPos > viewportEnd) {
-            targetLeft = leaderPixelPos - container.clientWidth;
-          }
-          // If leader is outside the left edge of viewport, adjust
-          else if (leaderPixelPos < viewportStart) {
-            targetLeft = leaderPixelPos;
-          }
-
-          // Apply final boundaries
-          targetLeft = Math.max(
-            0,
-            Math.min(targetLeft, trackLength - container.clientWidth)
-          );
-
-          // Smooth camera movement with damping
-          // Adjust smoothingFactor (0.05-0.2) for different camera responsiveness
-          // Lower values = smoother but slower, Higher values = more responsive
-          const smoothingFactor = 0.1;
-          const currentLeft = container.scrollLeft;
-          const newLeft =
-            currentLeft + (targetLeft - currentLeft) * smoothingFactor;
-
-          container.scrollLeft = newLeft;
-        }
 
         // Update surging and fatigued horses state for visual effects
         const currentlySurging = horseProfiles.map((profile, index) => profile.isSurging);

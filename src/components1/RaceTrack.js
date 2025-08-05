@@ -61,17 +61,29 @@ export default function RaceTrack({
   onRaceAgain,
   backToSetup,
 }) {
+  // Calculate camera position based on leading horse
+  const leadPosition = Math.max(...positions);
+  const leadPixelPos = leadPosition * (trackLength - 200);
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth - 100 : 800;
+  const cameraOffset = Math.max(0, Math.min(leadPixelPos - viewportWidth * 0.3, trackLength - viewportWidth));
+
   return (
     <div className="flex-1 p-3 sm:p-4 relative flex flex-col">
-
-      <div className="overflow-x-auto h-full" ref={trackContainerRef}>
-        <div
+      {/* Viewport container with fixed dimensions */}
+      <div 
+        className="relative h-full min-h-96 overflow-hidden rounded-2xl"
+        ref={trackContainerRef}
+      >
+        {/* Track container that moves smoothly */}
+        <motion.div
           className={`p-3 rounded-2xl shadow-inner bg-gradient-to-r ${
             currentWeather
               ? currentWeather.trackColor
               : "from-green-400 to-green-600"
           } relative h-full min-h-96`}
           style={{ width: `${trackLength}px`, backgroundSize: "cover" }}
+          animate={{ x: -cameraOffset }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
         >
           <div className="space-y-2 relative z-10 py-4">
             {items.map((item, index) => (
@@ -79,13 +91,13 @@ export default function RaceTrack({
                 key={index}
                 className="relative w-full h-16 bg-green-100 bg-opacity-60 border-2 border-green-700 rounded-xl overflow-hidden shadow-md"
               >
-                <div className="absolute top-0 bottom-0 left-1/2 w-1 bg-green-800 opacity-20" />
-                {getRaceSettings(raceDistance).hurdles.map(
-                  (hurdlePos, hIdx) => (
+                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-green-800 opacity-10" />
+                {getRaceSettings(raceDistance).hurdlePixels.map(
+                  (hurdlePixelPos, hIdx) => (
                     <div
                       key={hIdx}
                       className="absolute top-2 bottom-2 w-2 bg-gradient-to-b from-amber-600 to-amber-800 opacity-80 rounded-sm shadow-md z-10"
-                      style={{ left: `${hurdlePos * (trackLength - 225)}px` }}
+                      style={{ left: `${hurdlePixelPos}px` }}
                       title="Hurdle"
                     >
                       <div className="absolute -top-1 -left-1 w-4 h-4 text-xs flex items-center justify-center">
@@ -94,21 +106,21 @@ export default function RaceTrack({
                     </div>
                   )
                 )}
-                <div className="absolute top-0 h-full w-2 bg-gradient-to-b from-red-500 to-yellow-500 opacity-90 shadow-lg" style={{ right: '50px' }}>
-                  <div className="absolute -top-2 -left-2 text-xs font-bold text-red-600">🏁</div>
+                {/* FINISH LINE - Winner determined here */}
+                <div className="absolute top-0 h-full w-4 bg-gradient-to-b from-white via-black to-white opacity-100 shadow-2xl border-2 border-black z-20" style={{ left: `${trackLength - 200}px` }}>
+                  <div className="absolute -top-3 -left-3 text-lg font-bold text-black bg-white px-1 rounded shadow-lg">🏁</div>
+                  <div className="absolute top-1/2 -left-8 -translate-y-1/2 text-xs font-bold text-black bg-white px-1 rounded shadow transform -rotate-90 whitespace-nowrap">FINISH</div>
                 </div>
                 <motion.div
                   className="absolute top-0 h-full flex items-center z-30"
                   animate={{
                     x: positions[index]
-                      ? positions[index] >= 1.0
-                        ? `${trackLength - 225}px`
-                        : `${positions[index] * (trackLength - 225)}px`
+                      ? `${Math.min(positions[index], 1.1) * (trackLength - 200 - 150)}px`
                       : "0px",
                   }}
                   transition={{ 
-                    duration: positions[index] >= 1.0 ? 0.3 : 0.1,
-                    ease: positions[index] >= 1.0 ? "easeOut" : "linear"
+                    duration: 0.1,
+                    ease: "linear"
                   }}
                 >
                   <div className="flex items-center gap-3">
@@ -176,17 +188,18 @@ export default function RaceTrack({
                       src={shuffledAvatars[index % shuffledAvatars.length]}
                       alt="Horse avatar"
                       animate={
-                        isRacing && positions[index] < 1.0
+                        isRacing && positions[index] < 1.1
                           ? {
+                              // Racing animation - continues even past finish line until race stops
                               rotateZ: [0, -5, 5, -5, 5, 0],
                               y: [0, -4, 4, -3, 3, 0],
                               scale: [1, 1.1, 0.9, 1.1, 0.9, 1],
                             }
-                          : { rotateZ: 0, y: 0, scale: 1 }
+                          : { rotateZ: 0, y: 0, scale: 1 } // Stopped when race ends
                       }
                       transition={{
-                        duration: positions[index] >= 1.0 ? 0.5 : 0.3,
-                        repeat: positions[index] >= 1.0 ? 0 : Infinity,
+                        duration: isRacing ? 0.3 : 0.5,
+                        repeat: isRacing ? Infinity : 0,
                         ease: "easeInOut",
                       }}
                       className="w-16 h-16 object-contain rounded-lg flex-shrink-0"
@@ -210,19 +223,23 @@ export default function RaceTrack({
             ))}
           </div>
 
-          {winner && !isRacing && (
-              <motion.div 
-                className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5, duration: 0.5 }}
-              >
-                <motion.div
-                className="text-center p-6 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 1.5, duration: 0.5 }}
-              >
+        </motion.div>
+      </div>
+      
+      {/* Winner modal - positioned outside the track container */}
+      {winner && !isRacing && (
+        <motion.div 
+          className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 0.5 }}
+        >
+          <motion.div
+            className="text-center p-6 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 1.5, duration: 0.5 }}
+          >
                 <div className="relative mb-2 flex justify-center">
                   <MotionFadeInImage
                     src={
@@ -369,8 +386,6 @@ export default function RaceTrack({
               </motion.div>
             </motion.div>
           )}
-        </div>
-      </div>
       
       {/* Commentary below race track */}
       {(isRacing || countdown) && (
