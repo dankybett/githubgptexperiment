@@ -13,7 +13,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <motion.div
-        className="bg-white rounded-xl p-6 w-96 shadow-2xl relative"
+        className="bg-white rounded-xl p-6 w-[500px] h-[400px] shadow-2xl relative flex flex-col"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
       >
@@ -22,7 +22,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
         <div className="flex mb-4">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex-1 py-2 px-2 text-xs font-semibold rounded-l-lg transition-colors ${
+            className={`flex-1 py-2 px-3 text-sm font-semibold rounded-l-lg transition-colors ${
               activeTab === 'details'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -32,7 +32,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
           </button>
           <button
             onClick={() => setActiveTab('status')}
-            className={`flex-1 py-2 px-2 text-xs font-semibold transition-colors ${
+            className={`flex-1 py-2 px-3 text-sm font-semibold transition-colors ${
               activeTab === 'status'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -41,18 +41,8 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
             Care Status
           </button>
           <button
-            onClick={() => setActiveTab('actions')}
-            className={`flex-1 py-2 px-2 text-xs font-semibold transition-colors ${
-              activeTab === 'actions'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Actions
-          </button>
-          <button
             onClick={() => setActiveTab('inventory')}
-            className={`flex-1 py-2 px-2 text-xs font-semibold rounded-r-lg transition-colors ${
+            className={`flex-1 py-2 px-3 text-sm font-semibold rounded-r-lg transition-colors ${
               activeTab === 'inventory'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -69,47 +59,90 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
           className="w-24 h-24 mx-auto mb-4 object-contain"
         />
 
-        {/* Tab Content - Reduced Height Container */}
-        <div className="min-h-[200px] flex flex-col">
+        {/* Tab Content - Fixed Height Container */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           {activeTab === 'details' && (
             /* Details Tab */
             <div className="space-y-3 flex-1 flex flex-col justify-between">
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-semibold mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={20}
-                    className="w-full border rounded px-2 py-1"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      maxLength={20}
+                      className="flex-1 border rounded px-2 py-1"
+                    />
+                    <button
+                      onClick={handleSave}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm">Personality: {horse.personality}</p>
+                
+                {/* Care Actions */}
+                {horse.happiness !== undefined && onCareAction && careCosts && (
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <h3 className="text-sm font-semibold mb-3 text-center">Care Actions</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
+                        onClick={() => onCareAction(horse.id, 'groom')}
+                        disabled={coins < careCosts.groom}
+                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
+                          coins >= careCosts.groom
+                            ? 'bg-purple-600 text-white hover:bg-purple-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="text-lg mb-1">🧼</div>
+                        <div>Groom</div>
+                        <div className="text-xs opacity-75">{careCosts.groom} 💰</div>
+                      </button>
+                      
+                      <button
+                        onClick={() => onCareAction(horse.id, 'apple')}
+                        disabled={coins < careCosts.apple}
+                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
+                          coins >= careCosts.apple
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="text-lg mb-1">🍎</div>
+                        <div>Apple</div>
+                        <div className="text-xs opacity-75">{careCosts.apple} 💰</div>
+                      </button>
+                      
+                      <button
+                        onClick={() => onCareAction(horse.id, 'carrot')}
+                        disabled={coins < careCosts.carrot}
+                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
+                          coins >= careCosts.carrot
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="text-lg mb-1">🥕</div>
+                        <div>Carrot</div>
+                        <div className="text-xs opacity-75">{careCosts.carrot} 💰</div>
+                      </button>
+                    </div>
+                    <div className="mt-2 text-xs text-center text-gray-600">
+                      💰 Available: {coins} coins
+                    </div>
+                  </div>
+                )}
               </div>
               
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
-                    console.log('📦 Modal - Horse inventory:', horse?.inventory);
-                    onSendToLabyrinth();
-                  }}
-                  className="w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                >
-                  Send to Labyrinth
+              <div className="text-center">
+                <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
+                  Close
                 </button>
-                <div className="flex justify-end gap-2">
-                  <button onClick={onClose} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Save
-                  </button>
-                </div>
               </div>
             </div>
           )}
@@ -227,70 +260,6 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
             </div>
           )}
 
-          {activeTab === 'actions' && (
-            /* Care Actions Tab */
-            <div className="space-y-3 flex-1 flex flex-col justify-between">
-              <div>
-                {horse.happiness !== undefined && onCareAction && careCosts && (
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <h3 className="text-sm font-semibold mb-3 text-center">Care Actions</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      <button
-                        onClick={() => onCareAction(horse.id, 'groom')}
-                        disabled={coins < careCosts.groom}
-                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                          coins >= careCosts.groom
-                            ? 'bg-purple-600 text-white hover:bg-purple-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <div className="text-lg mb-1">🧼</div>
-                        <div>Groom</div>
-                        <div className="text-xs opacity-75">{careCosts.groom} 💰</div>
-                      </button>
-                      
-                      <button
-                        onClick={() => onCareAction(horse.id, 'apple')}
-                        disabled={coins < careCosts.apple}
-                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                          coins >= careCosts.apple
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <div className="text-lg mb-1">🍎</div>
-                        <div>Apple</div>
-                        <div className="text-xs opacity-75">{careCosts.apple} 💰</div>
-                      </button>
-                      
-                      <button
-                        onClick={() => onCareAction(horse.id, 'carrot')}
-                        disabled={coins < careCosts.carrot}
-                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                          coins >= careCosts.carrot
-                            ? 'bg-orange-600 text-white hover:bg-orange-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <div className="text-lg mb-1">🥕</div>
-                        <div>Carrot</div>
-                        <div className="text-xs opacity-75">{careCosts.carrot} 💰</div>
-                      </button>
-                    </div>
-                    <div className="mt-2 text-xs text-center text-gray-600">
-                      💰 Available: {coins} coins
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="text-center">
-                <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
-                  Close
-                </button>
-              </div>
-            </div>
-          )}
 
           {activeTab === 'inventory' && (
             /* Inventory Tab */
@@ -300,7 +269,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                   <h3 className="text-sm font-semibold mb-3 text-center">🎒 Inventory</h3>
                   
                   {/* Inventory Grid - 4 slots in 2x2 */}
-                  <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="grid grid-cols-2 gap-3 mb-3 justify-items-center max-w-[140px] mx-auto">
                     {Array.from({ length: 4 }).map((_, index) => {
                       const item = horse.inventory?.[index];
                       return (
@@ -356,10 +325,22 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                 </div>
               </div>
               
-              <div className="text-center">
-                <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
-                  Close
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
+                    console.log('📦 Modal - Horse inventory:', horse?.inventory);
+                    onSendToLabyrinth();
+                  }}
+                  className="w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                >
+                  Send to Labyrinth
                 </button>
+                <div className="text-center">
+                  <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -197,6 +197,22 @@ button {
   box-shadow: 1px 1px 0px #424242;
 }
 
+.btn-retro-settings {
+  background-color: #9E9E9E;
+  border-color: #00695C;
+  color: white;
+  box-shadow: 4px 4px 0px #00695C;
+}
+
+.btn-retro-settings:hover {
+  background-color: #BDBDBD;
+  box-shadow: 2px 2px 0px #00695C;
+}
+
+.btn-retro-settings:active {
+  box-shadow: 1px 1px 0px #00695C;
+}
+
 /* Mobile-responsive font sizes */
 .text-mobile-xs {
   font-size: 8px;
