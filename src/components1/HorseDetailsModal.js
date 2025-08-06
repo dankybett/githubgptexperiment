@@ -81,6 +81,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    maxLength={20}
                     className="w-full border rounded px-2 py-1"
                   />
                 </div>

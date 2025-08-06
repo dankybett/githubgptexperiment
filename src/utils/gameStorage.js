@@ -7,6 +7,7 @@ const defaultGameState = {
   fastestTime: null,
   history: [],
   horseInventories: {},
+  customHorseNames: {}, // Store custom names by horse index
   version: STORAGE_VERSION
 };
 
@@ -48,6 +49,7 @@ export const gameStorage = {
         fastestTime: typeof parsed.fastestTime === 'number' ? parsed.fastestTime : null,
         history: Array.isArray(parsed.history) ? parsed.history : [],
         horseInventories: typeof parsed.horseInventories === 'object' && parsed.horseInventories !== null ? parsed.horseInventories : {},
+        customHorseNames: typeof parsed.customHorseNames === 'object' && parsed.customHorseNames !== null ? parsed.customHorseNames : {},
         version: STORAGE_VERSION
       };
 

@@ -64,6 +64,7 @@ export default function RandomPicker() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
   const [horseInventories, setHorseInventories] = useState({});
+  const [customHorseNames, setCustomHorseNames] = useState({});
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -240,6 +241,10 @@ const horsePersonalities = [
         setHorseInventories(savedData.horseInventories);
       }
       
+      if (savedData.customHorseNames && typeof savedData.customHorseNames === 'object') {
+        setCustomHorseNames(savedData.customHorseNames);
+      }
+      
       console.log('Game data loaded successfully');
     } else {
       console.warn('localStorage not available, game progress will not be saved');
@@ -256,12 +261,13 @@ const horsePersonalities = [
         unlockedHorses,
         fastestTime,
         history,
-        horseInventories
+        horseInventories,
+        customHorseNames
       };
       
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, customHorseNames, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -602,15 +608,20 @@ const horsePersonalities = [
   };
 
   const getHorseName = (item, index) => {
-    // If user has entered a custom name, use that
+    // If user has entered a custom name in the input field, use that
     if (item.trim()) {
       return item.trim();
     }
     
+    // Check if there's a saved custom name for this horse avatar
+    const currentAvatar = shuffledAvatars[index % shuffledAvatars.length];
+    const avatarIndex = horseAvatars.findIndex(avatar => avatar === currentAvatar);
+    if (customHorseNames[avatarIndex]) {
+      return customHorseNames[avatarIndex];
+    }
+    
     // For Default theme, map avatar to its specific name
     if (nameCategory === "Default") {
-      const currentAvatar = shuffledAvatars[index % shuffledAvatars.length];
-      const avatarIndex = horseAvatars.findIndex(avatar => avatar === currentAvatar);
       return horseNames[avatarIndex] || horseNames[index % horseNames.length];
     }
     
@@ -1078,7 +1089,9 @@ const horsePersonalities = [
 
           if (betHorse !== null && betAmount > 0) {
             if (winnerIdx === betHorse) {
-              setCoins((c) => c + betAmount * itemCount);
+              // Cap the multiplier at 3x to prevent excessive payouts
+              const multiplier = Math.min(3, Math.max(1.5, itemCount * 0.5));
+              setCoins((c) => c + Math.floor(betAmount * multiplier));
             } else {
               setCoins((c) => Math.max(0, c - betAmount));
             }
@@ -1187,12 +1200,20 @@ const horsePersonalities = [
       setFastestTime(null);
       setHistory([]);
       setHorseInventories({});
+      setCustomHorseNames({});
       console.log('All save data cleared');
     }
   };
 
   const getSaveInfo = () => {
     return gameStorage.getSaveInfo();
+  };
+
+  const handleHorseRename = (horseId, newName) => {
+    setCustomHorseNames(prev => ({
+      ...prev,
+      [horseId]: newName
+    }));
   };
 
   const randomizeHorseNames = () => {
@@ -1619,7 +1640,8 @@ const horsePersonalities = [
         horsePersonalities={horsePersonalities}
         unlockedHorses={unlockedHorses}
         coins={coins}
-        horseInventories={horseInventories} 
+        horseInventories={horseInventories}
+        customHorseNames={customHorseNames}
         onBack={() => {
           setShowStable(false);
           // Randomize horse avatars when returning from stable
@@ -1638,6 +1660,7 @@ const horsePersonalities = [
           setShowLabyrinth(true);
         }}
         onUpdateCoins={setCoins}
+        onHorseRename={handleHorseRename}
       />
     );
   }
@@ -1741,7 +1764,7 @@ const horsePersonalities = [
           {/* Number Input */}
           <div className="mb-4">
             <label className="block mb-2 font-semibold text-gray-200 text-sm">
-              Number of Contestants (1-{maxItems})
+              Number of Horses (1-{maxItems})
             </label>
             <input
               type="number"
@@ -1839,7 +1862,7 @@ const horsePersonalities = [
           {items.length > 0 && (
             <div className="mb-4">
               <h3 className="font-semibold text-gray-200 mb-3 text-sm">
-                Contestants:
+                Horses:
               </h3>
               <div className="grid grid-cols-1 gap-2">
                 {items.map((item, index) => (
@@ -1861,6 +1884,7 @@ const horsePersonalities = [
                       }`}
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
+                      maxLength={20}
                       className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-24 pr-12 focus:shadow-lg contestant-input"
                     />
                     <FadeInImage
@@ -1903,37 +1927,58 @@ const horsePersonalities = [
                 </label>
               </div>
                {betEnabled && (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
-                    value={betAmount || ""}
-                    onChange={(e) =>
-                      setBetAmount(parseInt(e.target.value, 10) || 0)
-                    }
-                    placeholder="Bet amount"
-                  />
-                  <select
-                    value={betHorse !== null ? betHorse : ""}
-                    onChange={(e) =>
-                      setBetHorse(
-                        e.target.value === ""
-                          ? null
-                          : parseInt(e.target.value, 10)
-                      )
-                    }
-                    className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
-                  >
-                    <option value="" disabled>
-                      Select horse
-                    </option>
-                    {items.map((item, index) => (
-                      <option key={index} value={index}>
-                        {getHorseName(item, index)}
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                      value={betAmount || ""}
+                      onChange={(e) =>
+                        setBetAmount(parseInt(e.target.value, 10) || 0)
+                      }
+                      placeholder="Bet amount"
+                    />
+                    <select
+                      value={betHorse !== null ? betHorse : ""}
+                      onChange={(e) =>
+                        setBetHorse(
+                          e.target.value === ""
+                            ? null
+                            : parseInt(e.target.value, 10)
+                        )
+                      }
+                      className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                    >
+                      <option value="" disabled>
+                        Select horse
                       </option>
-                    ))}
-                  </select>
+                      {items.map((item, index) => (
+                        <option key={index} value={index}>
+                          {getHorseName(item, index)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {betAmount > 0 && betHorse !== null && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Potential payout if <strong>{getHorseName(items[betHorse], betHorse)}</strong> wins:</span>
+                        <span className="font-bold text-green-600">
+                          {(() => {
+                            const multiplier = Math.min(3, Math.max(1.5, itemCount * 0.5));
+                            return Math.floor(betAmount * multiplier);
+                          })()} coins
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Multiplier: {(() => {
+                          const multiplier = Math.min(3, Math.max(1.5, itemCount * 0.5));
+                          return multiplier.toFixed(1);
+                        })()}x ({itemCount} horses)
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

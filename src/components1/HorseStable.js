@@ -10,10 +10,12 @@ const HorseStable = ({
   unlockedHorses,
   coins,
   horseInventories,
+  customHorseNames,
   onBack,
   onShowLockedHorses,
   onSendToLabyrinth,
   onUpdateCoins,
+  onHorseRename,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -366,13 +368,15 @@ const HorseStable = ({
 
   const createHorseData = (horse) => {
     const inventory = horseInventories?.[horse.id] || horse.inventory || [];
-    console.log(`🏠 Stable - createHorseData for horse ${horse.id} (${horse.name}):`);
+    const customName = customHorseNames?.[horse.id] || horse.name;
+    console.log(`🏠 Stable - createHorseData for horse ${horse.id} (${customName}):`);
     console.log('  - horseInventories:', horseInventories);
     console.log('  - horseInventories[horse.id]:', horseInventories?.[horse.id]);
     console.log('  - final inventory:', inventory);
     
     return {
       ...horse,
+      name: customName, // Use custom name if available
       x: Math.random() * 70 + 10,
       y: Math.random() * 60 + 20,
       targetX: Math.random() * 70 + 10,
@@ -398,6 +402,12 @@ const HorseStable = ({
   };
 
   const handleRename = (id, newName) => {
+    // Update the global custom names
+    if (onHorseRename) {
+      onHorseRename(id, newName);
+    }
+    
+    // Update local state
     setStableHorses((prev) =>
       prev.map((horse) =>
         horse.id === id ? { ...horse, name: newName } : horse
@@ -438,7 +448,7 @@ const HorseStable = ({
       .map(({ avatar, index }) => ({
         id: index,
         avatar,
-        name: horseNames[index],
+        name: customHorseNames?.[index] || horseNames[index],
         personality: horsePersonalities[index],
       }));
 
@@ -450,6 +460,27 @@ const HorseStable = ({
 
     setTimeout(() => setStableLoaded(true), 1000);
   }, []); // EMPTY DEPENDENCY ARRAY - RUN ONLY ONCE ON MOUNT
+
+  // Update horse names when customHorseNames changes
+  useEffect(() => {
+    if (!stableLoaded) return;
+    
+    // Update available horses with new custom names
+    setAvailableHorses(prev => 
+      prev.map(horse => ({
+        ...horse,
+        name: customHorseNames?.[horse.id] || horseNames[horse.id]
+      }))
+    );
+    
+    // Update stable horses with new custom names
+    setStableHorses(prev => 
+      prev.map(horse => ({
+        ...horse,
+        name: customHorseNames?.[horse.id] || horseNames[horse.id]
+      }))
+    );
+  }, [customHorseNames, stableLoaded, horseNames]);
 
   // Update horse inventories when horseInventories prop changes
   useEffect(() => {
