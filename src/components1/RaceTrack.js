@@ -60,23 +60,26 @@ export default function RaceTrack({
   getRaceDistanceInfo,
   onRaceAgain,
   backToSetup,
+  betEnabled,
+  betAmount,
+  betHorse,
 }) {
   // Calculate camera position based on leading horse
   const leadPosition = Math.max(...positions);
   const leadPixelPos = leadPosition * (trackLength - 200);
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth - 100 : 800;
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
   const cameraOffset = Math.max(0, Math.min(leadPixelPos - viewportWidth * 0.3, trackLength - viewportWidth));
 
   return (
-    <div className="flex-1 p-3 sm:p-4 relative flex flex-col">
+    <div className="flex-1 relative flex flex-col">
       {/* Viewport container with fixed dimensions */}
       <div 
-        className="relative h-full min-h-96 overflow-hidden rounded-2xl"
+        className="relative h-full min-h-96 overflow-hidden"
         ref={trackContainerRef}
       >
         {/* Track container that moves smoothly */}
         <motion.div
-          className={`p-3 rounded-2xl shadow-inner bg-gradient-to-r ${
+          className={`shadow-inner bg-gradient-to-r ${
             currentWeather
               ? currentWeather.trackColor
               : "from-green-400 to-green-600"
@@ -85,26 +88,41 @@ export default function RaceTrack({
           animate={{ x: -cameraOffset }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
         >
-          <div className="space-y-2 relative z-10 py-4">
+          {/* Crowd Section */}
+          <div 
+            className="absolute -top-64 left-0 right-0 h-64 z-5 overflow-hidden"
+            style={{
+              backgroundImage: 'url(/racetrack/crowd.png)',
+              backgroundRepeat: 'repeat-x',
+              backgroundSize: 'auto 100%',
+              backgroundPosition: 'center bottom'
+            }}
+          ></div>
+
+          <div className="space-y-2 relative z-10 py-2 px-2" style={{ marginTop: "80px" }}>
             {items.map((item, index) => (
               <div
                 key={index}
-                className="relative w-full h-16 bg-green-100 bg-opacity-60 border-2 border-green-700 rounded-xl overflow-hidden shadow-md"
+                className="relative w-full bg-green-100 bg-opacity-60 border-2 border-green-700 rounded-xl overflow-hidden shadow-md"
+                style={{ height: "64px" }}
               >
                 <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-green-800 opacity-10" />
-                {getRaceSettings(raceDistance).hurdlePixels.map(
-                  (hurdlePixelPos, hIdx) => (
-                    <div
-                      key={hIdx}
-                      className="absolute top-2 bottom-2 w-2 bg-gradient-to-b from-amber-600 to-amber-800 opacity-80 rounded-sm shadow-md z-10"
-                      style={{ left: `${hurdlePixelPos}px` }}
-                      title="Hurdle"
-                    >
-                      <div className="absolute -top-1 -left-1 w-4 h-4 text-xs flex items-center justify-center">
-                        🚧
+                {getRaceSettings(raceDistance).hurdles.map(
+                  (hurdlePercent, hIdx) => {
+                    const hurdlePixelPos = hurdlePercent * (trackLength - 200);
+                    return (
+                      <div
+                        key={hIdx}
+                        className="absolute top-2 bottom-2 w-2 bg-gradient-to-b from-amber-600 to-amber-800 opacity-80 rounded-sm shadow-md z-10"
+                        style={{ left: `${hurdlePixelPos}px` }}
+                        title="Hurdle"
+                      >
+                        <div className="absolute -top-1 -left-1 w-4 h-4 text-xs flex items-center justify-center">
+                          🚧
+                        </div>
                       </div>
-                    </div>
-                  )
+                    );
+                  }
                 )}
                 {/* FINISH LINE - Winner determined here */}
                 <div className="absolute top-0 h-full w-4 bg-gradient-to-b from-white via-black to-white opacity-100 shadow-2xl border-2 border-black z-20" style={{ left: `${trackLength - 200}px` }}>
@@ -119,13 +137,13 @@ export default function RaceTrack({
                       : "0px",
                   }}
                   transition={{ 
-                    duration: 0.1,
+                    duration: 0.02,
                     ease: "linear"
                   }}
                 >
                   <div className="flex items-center gap-3">
                     <motion.div
-                      className={`px-3 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap ${
+                      className={`px-2 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap w-52 flex items-center justify-center ${
                         winnerIndex === index
                           ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
                           : surgingHorses[index]
@@ -202,8 +220,10 @@ export default function RaceTrack({
                         repeat: isRacing ? Infinity : 0,
                         ease: "easeInOut",
                       }}
-                      className="w-16 h-16 object-contain rounded-lg flex-shrink-0"
+                      className="object-contain rounded-lg flex-shrink-0"
                       style={{
+                        width: "64px",
+                        height: "64px",
                         filter:
                           winnerIndex === index
                             ? "drop-shadow(0 0 8px gold)"
@@ -225,6 +245,127 @@ export default function RaceTrack({
 
         </motion.div>
       </div>
+      
+      {/* Live Race Statistics Panel - Phase 1 */}
+      {(isRacing || countdown) && (
+        <motion.div
+          className="mt-4 mx-3 bg-white bg-opacity-95 rounded-2xl shadow-lg border-2 border-gray-200 p-4"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0, duration: 0.3 }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Race Info */}
+            <div className="text-center lg:text-left">
+              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 justify-center lg:justify-start">
+                <span>⏱️</span>
+                <span>Race Status</span>
+              </h3>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Time:</span>
+                  <span className="font-bold text-blue-600">{raceTime.toFixed(1)}s</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Distance:</span>
+                  <span className="font-bold">{getRaceDistanceInfo(raceDistance).name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Progress:</span>
+                  <span className="font-bold text-green-600">
+                    {Math.round(Math.max(...positions) * 100)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Commentary */}
+            <div className="lg:col-span-2">
+              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 justify-center lg:justify-start">
+                <motion.span
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  📢
+                </motion.span>
+                <span>Live Commentary</span>
+              </h3>
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 min-h-[100px] flex items-center justify-center">
+                <div className="text-center">
+                  {commentary ? (
+                    <motion.p
+                      key={commentary}
+                      className="text-sm font-medium text-gray-800 leading-relaxed"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {commentary}
+                    </motion.p>
+                  ) : countdown ? (
+                    <motion.p
+                      className="text-lg font-bold text-blue-600"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 0.5, repeat: Infinity }}
+                    >
+                      Get ready... {countdown}!
+                    </motion.p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">
+                      Commentary will appear here during the race...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Your Bet Status - if betting is enabled */}
+          {betEnabled && betAmount > 0 && betHorse !== null && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 justify-center">
+                <span>🎯</span>
+                <span>Your Bet</span>
+              </h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-600">Betting on:</span>
+                  <span className="font-bold text-blue-600">
+                    {getHorseName(items[betHorse], betHorse)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-600">Bet amount:</span>
+                  <span className="font-bold">{betAmount} coins</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Current position:</span>
+                  <span className={`font-bold ${
+                    items
+                      .map((item, index) => ({ position: positions[index] || 0, index }))
+                      .sort((a, b) => b.position - a.position)
+                      .findIndex(horse => horse.index === betHorse) === 0
+                      ? "text-green-600" 
+                      : "text-gray-600"
+                  }`}>
+                    {items
+                      .map((item, index) => ({ position: positions[index] || 0, index }))
+                      .sort((a, b) => b.position - a.position)
+                      .findIndex(horse => horse.index === betHorse) + 1}
+                    {items
+                      .map((item, index) => ({ position: positions[index] || 0, index }))
+                      .sort((a, b) => b.position - a.position)
+                      .findIndex(horse => horse.index === betHorse) === 0 ? " 🥇" : ""}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Potential payout: {Math.floor(betAmount * Math.min(3, Math.max(1.5, items.length * 0.5)))} coins
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
       
       {/* Winner modal - positioned outside the track container */}
       {winner && !isRacing && (
@@ -386,39 +527,6 @@ export default function RaceTrack({
               </motion.div>
             </motion.div>
           )}
-      
-      {/* Commentary below race track */}
-      {(isRacing || countdown) && (
-        <motion.div
-          key={commentary || countdown} 
-          className="mt-4 p-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white rounded-2xl backdrop-blur-sm shadow-2xl border-2 border-white/20 max-w-md mx-auto"
-          animate={{
-            scale: [1, 1.02, 1],
-            boxShadow: [
-              "0 10px 25px rgba(0,0,0,0.3)",
-              "0 15px 35px rgba(0,0,0,0.4)",
-              "0 10px 25px rgba(0,0,0,0.3)",
-            ],
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 50, opacity: 0 }}
-        >
-          <div className="flex items-center gap-3 justify-center">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="text-2xl"
-            >
-              📢
-            </motion.div>
-            <p className="text-sm sm:text-base font-bold text-center flex-1 leading-tight">
-              {commentary || `Get ready... ${countdown}!`}
-            </p>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }

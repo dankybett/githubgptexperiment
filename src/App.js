@@ -401,7 +401,7 @@ const horsePersonalities = [
     setTrackLength(getFixedTrackLength(raceDistance));
   }, [raceDistance]);
 
-  const maxItems = 20;
+  const maxItems = 6;
 
   const commentaryPhrases = {
     start: [
@@ -858,6 +858,8 @@ const horsePersonalities = [
           hurdlesCrossed: [],
           isStunned: false,
           stunnedUntil: 0,
+          stunnedAtPosition: 0,
+          stoppedUntil: 0,
           isSurging: false,
           surgeEndTime: 0,
           isFatigued: false,
@@ -895,10 +897,12 @@ const horsePersonalities = [
           let speed = profile.baseSpeed; // Back to using base speed for racing
 
           const currentTime = Date.now();
-          if (profile.isStunned && currentTime < profile.stunnedUntil) {
-            return pos;
-          } else if (profile.isStunned) {
-            profile.isStunned = false;
+          
+          // Check if horse should be stopped at a hurdle
+          if (profile.stoppedUntil && currentTime < profile.stoppedUntil) {
+            return pos; // Stay at current position
+          } else if (profile.stoppedUntil) {
+            profile.stoppedUntil = 0; // Clear stop
           }
 
           const fatigueEffect =
@@ -936,53 +940,6 @@ const horsePersonalities = [
             speed *= (0.92 / marathonMultiplier); // Enhanced penalty for marathon leaders
           }
 
-          for (const hurdlePixelPos of settings.hurdlePixels) {
-            // Use consistent pixel positioning that matches the visual track
-            const horsePixelPos = pos * (trackLength - 200); // This matches the visual positioning in RaceTrack.js line 118
-            const horseImageWidth = 64; // Horse image is w-16 h-16 (64px)
-            const hurdleWidth = 8; // Match actual hurdle width from RaceTrack.js (w-2 = 8px)
-            
-            // Define clear collision boundaries - horse center should align with hurdle center
-            const horseCenterPixel = horsePixelPos + (horseImageWidth / 2);
-            const hurdleCenterPixel = hurdlePixelPos + (hurdleWidth / 2);
-            const collisionTolerance = 15; // Small tolerance zone around hurdle center
-            
-            // Check if horse center is within collision zone of hurdle center
-            const distanceToHurdle = Math.abs(horseCenterPixel - hurdleCenterPixel);
-            const isInCollisionZone = distanceToHurdle <= collisionTolerance;
-            const hasNotCrossedThisHurdle = !profile.hurdlesCrossed.some(
-              (stored) => Math.abs(stored - hurdlePixelPos) < 1e-4
-            );
-            
-            // Enhanced collision detection for mobile - check if horse is approaching hurdle
-            // to prevent skipping collision zone due to frame rate issues
-            const wasInZoneLastFrame = profile.lastHurdleDistance !== undefined && 
-                                     profile.lastHurdleDistance <= collisionTolerance;
-            const isApproaching = profile.lastHurdleDistance !== undefined && 
-                                 distanceToHurdle < profile.lastHurdleDistance;
-            
-            // Store distance for next frame
-            profile.lastHurdleDistance = distanceToHurdle;
-            
-            if ((isInCollisionZone || (wasInZoneLastFrame && isApproaching)) && hasNotCrossedThisHurdle) {
-              profile.hurdlesCrossed.push(hurdlePixelPos);
-
-              const jumpSuccess = rngRef.current() < profile.hurdleSkill;
-
-              if (jumpSuccess) {
-                // Successful jump gives a small speed boost
-                speed += settings.surgeIntensity * 0.3;
-                dramaMomentRef.current = Math.max(dramaMomentRef.current, 1);
-              } else {
-                // Failed jump causes a brief slowdown rather than complete stop
-                const stunDuration = 300 + rngRef.current() * 300; // Reduced stun time
-                profile.isStunned = true;
-                profile.stunnedUntil = currentTime + stunDuration;
-                speed *= 0.1; // Slow down significantly but don't stop completely
-                dramaMomentRef.current = 3;
-              }
-            }
-          }
 
           const shouldSurge =
             rngRef.current() < settings.surgeFrequency &&
@@ -1030,6 +987,35 @@ const horsePersonalities = [
 
           let nextPos = Math.max(0, pos + speed);
           if (nextPos > 1) nextPos = 1;
+          
+          // Simple hurdle check - just stop at hurdle position
+          for (const hurdlePercent of settings.hurdles) {
+            const hasNotCrossedThisHurdle = !profile.hurdlesCrossed.includes(hurdlePercent);
+            
+            // Check if horse would reach hurdle area (accounting for horse position in container)
+            const offsetToHorse = 200; // Distance from container left edge to horse image (fine-tuned for w-52 name tags)  
+            const adjustment = offsetToHorse / (trackLength - 200);
+            const horseImagePos = nextPos + adjustment; // Where the horse image actually is
+            
+            if (horseImagePos >= hurdlePercent && hasNotCrossedThisHurdle) {
+              profile.hurdlesCrossed.push(hurdlePercent);
+              
+              const jumpSuccess = rngRef.current() < profile.hurdleSkill;
+              
+              if (jumpSuccess) {
+                // Successful jump - small speed boost
+                speed += settings.surgeIntensity * 0.2;
+                dramaMomentRef.current = Math.max(dramaMomentRef.current, 1);
+              } else {
+                // Failed jump - stop at hurdle
+                nextPos = hurdlePercent - adjustment;
+                profile.stoppedUntil = currentTime + 400; // Stop for 0.4 seconds
+                dramaMomentRef.current = 3;
+              }
+              break;
+            }
+          }
+          
           return nextPos;
         });
 
@@ -1626,6 +1612,9 @@ const horsePersonalities = [
             getRaceDistanceInfo={getRaceDistanceInfo}
             onRaceAgain={handleRaceAgain}
             backToSetup={backToSetup}
+            betEnabled={betEnabled}
+            betAmount={betAmount}
+            betHorse={betHorse}
           />
         )}
       </div>
