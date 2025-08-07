@@ -64,6 +64,9 @@ export default function RandomPicker() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
   const [horseInventories, setHorseInventories] = useState({});
+  const [horseSkills, setHorseSkills] = useState({});
+  const [horseSkillPoints, setHorseSkillPoints] = useState({});
+  const [researchPoints, setResearchPoints] = useState(0);
   const [customHorseNames, setCustomHorseNames] = useState({});
 
   // Horse avatars can now be custom images located in the `public` folder.
@@ -221,6 +224,10 @@ const horsePersonalities = [
     if (gameStorage.isAvailable()) {
       const savedData = gameStorage.load();
       
+      console.log('🏠 App - Raw savedData from localStorage:', savedData);
+      console.log('🏠 App - savedData.horseSkills:', savedData?.horseSkills);
+      console.log('🏠 App - savedData.horseSkillPoints:', savedData?.horseSkillPoints);
+      
       if (savedData.coins !== undefined) {
         setCoins(savedData.coins);
       }
@@ -239,6 +246,20 @@ const horsePersonalities = [
       
       if (savedData.horseInventories && typeof savedData.horseInventories === 'object') {
         setHorseInventories(savedData.horseInventories);
+      }
+      
+      if (savedData.horseSkills && typeof savedData.horseSkills === 'object') {
+        console.log('🏠 App - Loading horseSkills from save:', savedData.horseSkills);
+        setHorseSkills(savedData.horseSkills);
+      }
+      
+      if (savedData.horseSkillPoints && typeof savedData.horseSkillPoints === 'object') {
+        console.log('🏠 App - Loading horseSkillPoints from save:', savedData.horseSkillPoints);
+        setHorseSkillPoints(savedData.horseSkillPoints);
+      }
+      
+      if (typeof savedData.researchPoints === 'number') {
+        setResearchPoints(savedData.researchPoints);
       }
       
       if (savedData.customHorseNames && typeof savedData.customHorseNames === 'object') {
@@ -262,12 +283,19 @@ const horsePersonalities = [
         fastestTime,
         history,
         horseInventories,
+        horseSkills,
+        horseSkillPoints,
+        researchPoints,
         customHorseNames
       };
       
+      console.log('🏠 App - Saving game state:', gameState);
+      console.log('🏠 App - horseSkills being saved:', horseSkills);
+      console.log('🏠 App - horseSkillPoints being saved:', horseSkillPoints);
+      
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, customHorseNames, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1186,6 +1214,9 @@ const horsePersonalities = [
       setFastestTime(null);
       setHistory([]);
       setHorseInventories({});
+      setHorseSkills({});
+      setHorseSkillPoints({});
+      setResearchPoints(0);
       setCustomHorseNames({});
       console.log('All save data cleared');
     }
@@ -1630,6 +1661,8 @@ const horsePersonalities = [
         unlockedHorses={unlockedHorses}
         coins={coins}
         horseInventories={horseInventories}
+        horseSkills={horseSkills}
+        horseSkillPoints={horseSkillPoints}
         customHorseNames={customHorseNames}
         onBack={() => {
           setShowStable(false);
@@ -1675,6 +1708,10 @@ const horsePersonalities = [
     return (
       <HorseMazeGame
         selectedHorse={selectedHorseForLabyrinth}
+        researchPoints={researchPoints}
+        onUpdateResearchPoints={setResearchPoints}
+        coins={coins}
+        onUpdateCoins={setCoins}
         onBack={() => {
           console.log('🏠 App - Horse returning from labyrinth:', selectedHorseForLabyrinth);
           setShowLabyrinth(false);
@@ -1682,12 +1719,37 @@ const horsePersonalities = [
           setSelectedHorseForLabyrinth(null);
         }}
         onHorseReturn={(updatedHorse) => {
-          // Update horse inventories
+          // Update horse inventories, skills, and skill points
+          console.log('🏠 App - onHorseReturn received horse:', updatedHorse);
           if (updatedHorse && updatedHorse.id) {
             setHorseInventories(prev => ({
               ...prev,
               [updatedHorse.id]: updatedHorse.inventory || []
             }));
+            
+            if (updatedHorse.skills) {
+              console.log('🏠 App - Saving skills for horse', updatedHorse.id, ':', updatedHorse.skills);
+              setHorseSkills(prev => {
+                const newState = {
+                  ...prev,
+                  [updatedHorse.id]: updatedHorse.skills
+                };
+                console.log('🏠 App - Updated horseSkills state:', newState);
+                return newState;
+              });
+            }
+            
+            if (updatedHorse.skillPoints !== undefined) {
+              console.log('🏠 App - Saving skill points for horse', updatedHorse.id, ':', updatedHorse.skillPoints);
+              setHorseSkillPoints(prev => {
+                const newState = {
+                  ...prev,
+                  [updatedHorse.id]: updatedHorse.skillPoints
+                };
+                console.log('🏠 App - Updated horseSkillPoints state:', newState);
+                return newState;
+              });
+            }
           }
         }}
       />

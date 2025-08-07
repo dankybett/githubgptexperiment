@@ -10,6 +10,8 @@ const HorseStable = ({
   unlockedHorses,
   coins,
   horseInventories,
+  horseSkills,
+  horseSkillPoints,
   customHorseNames,
   onBack,
   onShowLockedHorses,
@@ -368,15 +370,25 @@ const HorseStable = ({
 
   const createHorseData = (horse) => {
     const inventory = horseInventories?.[horse.id] || horse.inventory || [];
+    const skills = horseSkills?.[horse.id] || horse.skills || {};
+    const skillPoints = horseSkillPoints?.[horse.id] || horse.skillPoints || 0;
     const customName = customHorseNames?.[horse.id] || horse.name;
     console.log(`🏠 Stable - createHorseData for horse ${horse.id} (${customName}):`);
     console.log('  - horseInventories:', horseInventories);
     console.log('  - horseInventories[horse.id]:', horseInventories?.[horse.id]);
+    console.log('  - horseSkills prop:', horseSkills);
+    console.log('  - horseSkills[horse.id]:', horseSkills?.[horse.id]);
+    console.log('  - horseSkillPoints prop:', horseSkillPoints);
+    console.log('  - horseSkillPoints[horse.id]:', horseSkillPoints?.[horse.id]);
     console.log('  - final inventory:', inventory);
+    console.log('  - final skills:', skills);
+    console.log('  - final skillPoints:', skillPoints);
     
     return {
       ...horse,
       name: customName, // Use custom name if available
+      skills, // Include horse skills
+      skillPoints, // Include skill points
       x: Math.random() * 70 + 10,
       y: Math.random() * 60 + 20,
       targetX: Math.random() * 70 + 10,
@@ -418,6 +430,48 @@ const HorseStable = ({
         horse.id === id ? { ...horse, name: newName } : horse
       )
     );
+  };
+
+  const handleSellItem = (horseId, itemIndex) => {
+    // Find the horse
+    const horse = stableHorses.find(h => h.id === horseId) || availableHorses.find(h => h.id === horseId);
+    if (!horse || !horse.inventory || !horse.inventory[itemIndex]) return;
+
+    const item = horse.inventory[itemIndex];
+    
+    // Calculate item value based on type
+    let itemValue = 5; // Base value
+    if (item.name.includes('Golden')) itemValue = 25;
+    else if (item.name.includes('Silver')) itemValue = 15;
+    else if (item.name.includes('Crystal') || item.name.includes('Gem')) itemValue = 20;
+    else if (item.name.includes('Magic')) itemValue = 18;
+    else if (item.name.includes('Ancient') || item.name.includes('Dragon') || item.name.includes('Sacred')) itemValue = 30;
+    
+    // Update coins
+    if (onUpdateCoins) {
+      onUpdateCoins(coins + itemValue);
+    }
+
+    // Remove item from horse inventory
+    const updatedInventory = [...horse.inventory];
+    updatedInventory.splice(itemIndex, 1);
+
+    // Update the horse in both stable and available horses
+    setStableHorses((prev) =>
+      prev.map((h) =>
+        h.id === horseId ? { ...h, inventory: updatedInventory } : h
+      )
+    );
+    setAvailableHorses((prev) =>
+      prev.map((h) =>
+        h.id === horseId ? { ...h, inventory: updatedInventory } : h
+      )
+    );
+
+    // Update selected horse if it's the one being modified
+    if (selectedHorse && selectedHorse.id === horseId) {
+      setSelectedHorse({ ...selectedHorse, inventory: updatedInventory });
+    }
   };
 
   const toggleHorseRoaming = (id) => {
@@ -1445,6 +1499,7 @@ const HorseStable = ({
             handleIndividualCareAction(horseId, actionType);
             setSelectedHorse(null); // Close modal to see animation effects
           }}
+          onSellItem={handleSellItem}
           coins={coins}
           careCosts={individualCareCosts}
         />

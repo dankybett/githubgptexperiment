@@ -1,9 +1,52 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth, onCareAction, coins, careCosts }) {
+// Skill tree data (matching labyrinth.js)
+const SKILL_TREE = {
+  survival: {
+    name: 'Survival',
+    color: 'green',
+    skills: {
+      trapSense: { name: 'Trap Sense', emoji: '👁️', maxLevel: 5, description: 'Chance to avoid traps' },
+      thickSkin: { name: 'Thick Skin', emoji: '🛡️', maxLevel: 3, description: 'Survive one extra trap hit' },
+      lucky: { name: 'Lucky', emoji: '🍀', maxLevel: 5, description: 'Better reward quality' }
+    }
+  },
+  mobility: {
+    name: 'Mobility',
+    color: 'blue',
+    skills: {
+      swiftness: { name: 'Swiftness', emoji: '💨', maxLevel: 5, description: 'Increased movement speed' },
+      pathfinding: { name: 'Pathfinding', emoji: '🧭', maxLevel: 3, description: 'Smarter movement choices' },
+      wallWalking: { name: 'Wall Walking', emoji: '🕷️', maxLevel: 1, description: 'Permanent wall breaking' },
+      swimming: { name: 'Swimming', emoji: '🏊', maxLevel: 3, description: 'Move faster through water' },
+      climbing: { name: 'Climbing', emoji: '🧗', maxLevel: 3, description: 'Navigate ramps and levels easier' }
+    }
+  },
+  magic: {
+    name: 'Magic',
+    color: 'purple',
+    skills: {
+      powerupMagnet: { name: 'Power-up Magnet', emoji: '🔮', maxLevel: 3, description: 'Attract power-ups from distance' },
+      enhancement: { name: 'Enhancement', emoji: '✨', maxLevel: 5, description: 'Power-up effects last longer' },
+      teleportMastery: { name: 'Teleport Mastery', emoji: '🌟', maxLevel: 3, description: 'Control teleport destination' },
+      timeResistance: { name: 'Time Resistance', emoji: '⏰', maxLevel: 3, description: 'Resist temporal effects' }
+    }
+  },
+  stealth: {
+    name: 'Stealth',
+    color: 'gray',
+    skills: {
+      sneaking: { name: 'Sneaking', emoji: '🤫', maxLevel: 5, description: 'Minotaur moves slower' },
+      distraction: { name: 'Distraction', emoji: '🎭', maxLevel: 3, description: 'Confuse minotaur occasionally' },
+      ghostForm: { name: 'Ghost Form', emoji: '👻', maxLevel: 1, description: 'Rare chance to phase through minotaur' }
+    }
+  }
+};
+
+export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth, onCareAction, onSellItem, coins, careCosts }) {
   const [name, setName] = useState(horse.name);
-  const [activeTab, setActiveTab] = useState('details'); // 'details', 'status', 'actions', or 'inventory'
+  const [activeTab, setActiveTab] = useState('details'); // 'details', 'status', 'skills', or 'inventory'
 
   const handleSave = () => {
     onRename(horse.id, name);
@@ -22,7 +65,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
         <div className="flex mb-4">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex-1 py-2 px-3 text-sm font-semibold rounded-l-lg transition-colors ${
+            className={`flex-1 py-2 px-2 text-xs font-semibold rounded-l-lg transition-colors ${
               activeTab === 'details'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -32,32 +75,54 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
           </button>
           <button
             onClick={() => setActiveTab('status')}
-            className={`flex-1 py-2 px-3 text-sm font-semibold transition-colors ${
+            className={`flex-1 py-2 px-2 text-xs font-semibold transition-colors ${
               activeTab === 'status'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            Care Status
+            Care
+          </button>
+          <button
+            onClick={() => setActiveTab('skills')}
+            className={`flex-1 py-2 px-2 text-xs font-semibold transition-colors ${
+              activeTab === 'skills'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            💎 Skills
           </button>
           <button
             onClick={() => setActiveTab('inventory')}
-            className={`flex-1 py-2 px-3 text-sm font-semibold rounded-r-lg transition-colors ${
+            className={`flex-1 py-2 px-2 text-xs font-semibold rounded-r-lg transition-colors ${
               activeTab === 'inventory'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            Inventory
+            Items
           </button>
         </div>
 
-        {/* Horse Avatar */}
-        <img
-          src={horse.avatar}
-          alt={horse.name}
-          className="w-24 h-24 mx-auto mb-4 object-contain"
-        />
+        {/* Horse Avatar and Send to Labyrinth Button */}
+        <div className="flex items-center justify-center gap-6 mb-4">
+          <img
+            src={horse.avatar}
+            alt={horse.name}
+            className="w-24 h-24 object-contain"
+          />
+          <button
+            onClick={() => {
+              console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
+              console.log('📦 Modal - Horse inventory:', horse?.inventory);
+              onSendToLabyrinth();
+            }}
+            className="px-2 py-2 rounded text-xs font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700"
+          >
+            Send to Labyrinth
+          </button>
+        </div>
 
         {/* Tab Content - Fixed Height Container */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -260,66 +325,85 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
             </div>
           )}
 
-
-          {activeTab === 'inventory' && (
-            /* Inventory Tab */
-            <div className="space-y-3 flex-1 flex flex-col justify-between">
-              <div>
+          {activeTab === 'skills' && (
+            /* Skills Tab */
+            <div className="space-y-3 flex-1 flex flex-col">
+              <div className="flex-1 overflow-y-auto max-h-[250px] min-h-[200px] pr-2" style={{ scrollbarWidth: 'thin' }}>
                 <div className="p-3 bg-purple-50 rounded-lg">
-                  <h3 className="text-sm font-semibold mb-3 text-center">🎒 Inventory</h3>
+                  <h3 className="text-sm font-semibold mb-3 text-center">💎 {horse.name}'s Skills</h3>
                   
-                  {/* Inventory Grid - 4 slots in 2x2 */}
-                  <div className="grid grid-cols-2 gap-3 mb-3 justify-items-center max-w-[140px] mx-auto">
-                    {Array.from({ length: 4 }).map((_, index) => {
-                      const item = horse.inventory?.[index];
-                      return (
-                        <div
-                          key={index}
-                          className={`w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center ${
-                            item ? 'bg-white border-solid border-purple-300' : 'bg-gray-50'
-                          }`}
-                        >
-                          {item ? (
-                            <div className="text-center">
-                              <img 
-                                src={item.image} 
-                                alt={item.name}
-                                className="w-10 h-10 object-contain mx-auto"
-                                title={item.name}
-                              />
+                  {horse.skills && Object.values(horse.skills).some(level => level > 0) ? (
+                    <div className="space-y-3">
+                      {Object.entries(SKILL_TREE).map(([categoryKey, category]) => {
+                        // Check if this category has any learned skills
+                        const categorySkills = Object.entries(category.skills).filter(([skillKey, _]) => 
+                          (horse.skills[skillKey] || 0) > 0
+                        );
+                        
+                        if (categorySkills.length === 0) return null;
+                        
+                        return (
+                          <div key={categoryKey} className="bg-white rounded-lg p-2">
+                            <h4 className={`text-xs font-semibold mb-2 text-${category.color}-700`}>
+                              {category.name}
+                            </h4>
+                            <div className="space-y-1">
+                              {categorySkills.map(([skillKey, skill]) => {
+                                const currentLevel = horse.skills[skillKey] || 0;
+                                return (
+                                  <div key={skillKey} className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span>{skill.emoji}</span>
+                                      <span className="font-medium">{skill.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="text-right">
+                                        <span className="font-bold text-purple-600">
+                                          {currentLevel}/{skill.maxLevel}
+                                        </span>
+                                      </div>
+                                      {/* Progress bar */}
+                                      <div className="w-8 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-purple-600 transition-all"
+                                          style={{ width: `${(currentLevel / skill.maxLevel) * 100}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          ) : (
-                            <div className="text-gray-400 text-xs text-center">
-                              Empty
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Item Details */}
-                  {horse.inventory && horse.inventory.length > 0 ? (
-                    <div className="text-xs">
-                      <div className="font-semibold mb-1">Items carried:</div>
-                      <div className="space-y-1">
-                        {horse.inventory.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between bg-white px-2 py-1 rounded">
-                            <span className="flex items-center gap-1">
-                              <img src={item.image} alt={item.name} className="w-4 h-4" />
-                              <span>{item.name}</span>
-                            </span>
-                            <span className="text-gray-500 text-xs">
-                              {item.description || 'Maze item'}
-                            </span>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
+                      
+                      {/* Skill Points Available */}
+                      {(horse.skillPoints || 0) > 0 && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-center">
+                          <div className="text-sm font-semibold text-yellow-800">
+                            💎 {horse.skillPoints} Skill Points Available
+                          </div>
+                          <div className="text-xs text-yellow-600 mt-1">
+                            Send to labyrinth to spend points on new skills!
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-xs text-center text-gray-500">
-                      This horse hasn't collected any items yet.<br/>
-                      Send them to the labyrinth to find treasures!
+                    <div className="text-center py-4">
+                      <div className="text-gray-400 text-lg mb-2">🌟</div>
+                      <div className="text-xs text-gray-500">
+                        This horse hasn't learned any skills yet.<br/>
+                        Send them to the labyrinth to earn skill points<br/>
+                        and unlock powerful abilities!
+                      </div>
+                      <div className="mt-2 text-xs text-purple-600">
+                        {(horse.skillPoints || 0) > 0 ? 
+                          `${horse.skillPoints} skill points ready to spend!` : 
+                          'Earn skill points by completing labyrinth runs.'
+                        }
+                      </div>
                     </div>
                   )}
                 </div>
@@ -329,7 +413,6 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                 <button
                   onClick={() => {
                     console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
-                    console.log('📦 Modal - Horse inventory:', horse?.inventory);
                     onSendToLabyrinth();
                   }}
                   className="w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
@@ -341,6 +424,87 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                     Close
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'inventory' && (
+            /* Inventory Tab */
+            <div className="space-y-3 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="p-3 bg-purple-50 rounded-lg">
+                  <h3 className="text-sm font-semibold mb-3 text-center">🎒 Inventory</h3>
+                  
+                  {/* Inventory Grid - 4 slots in 2x2 with integrated details */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {Array.from({ length: 4 }).map((_, index) => {
+                      const item = horse.inventory?.[index];
+                      
+                      // Calculate item value for display
+                      let itemValue = 5;
+                      if (item) {
+                        if (item.name.includes('Golden')) itemValue = 25;
+                        else if (item.name.includes('Silver')) itemValue = 15;
+                        else if (item.name.includes('Crystal') || item.name.includes('Gem')) itemValue = 20;
+                        else if (item.name.includes('Magic')) itemValue = 18;
+                        else if (item.name.includes('Ancient') || item.name.includes('Dragon') || item.name.includes('Sacred')) itemValue = 30;
+                      }
+
+                      return (
+                        <div
+                          key={index}
+                          className={`border-2 border-dashed border-gray-300 rounded-lg p-2 ${
+                            item ? 'bg-white border-solid border-purple-300 min-h-[100px]' : 'bg-gray-50 h-16 flex items-center justify-center'
+                          }`}
+                        >
+                          {item ? (
+                            <div className="text-center space-y-2">
+                              <img 
+                                src={item.image} 
+                                alt={item.name}
+                                className="w-8 h-8 object-contain mx-auto"
+                              />
+                              <div className="text-xs font-medium text-gray-800 leading-tight">
+                                {item.name}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-600">
+                                  {itemValue} 💰
+                                </span>
+                                {onSellItem && (
+                                  <button
+                                    onClick={() => onSellItem(horse.id, index)}
+                                    className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                                  >
+                                    Sell
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-xs text-center">
+                              Empty
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Show message only if completely empty inventory */}
+                  {(!horse.inventory || horse.inventory.length === 0) && (
+                    <div className="text-xs text-center text-gray-500">
+                      This horse hasn't collected any items yet.<br/>
+                      Send them to the labyrinth to find treasures!
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
+                  Close
+                </button>
               </div>
             </div>
           )}

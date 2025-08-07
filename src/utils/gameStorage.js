@@ -7,6 +7,9 @@ const defaultGameState = {
   fastestTime: null,
   history: [],
   horseInventories: {},
+  horseSkills: {},
+  horseSkillPoints: {},
+  researchPoints: 0,
   customHorseNames: {}, // Store custom names by horse index
   version: STORAGE_VERSION
 };
@@ -49,6 +52,9 @@ export const gameStorage = {
         fastestTime: typeof parsed.fastestTime === 'number' ? parsed.fastestTime : null,
         history: Array.isArray(parsed.history) ? parsed.history : [],
         horseInventories: typeof parsed.horseInventories === 'object' && parsed.horseInventories !== null ? parsed.horseInventories : {},
+        horseSkills: typeof parsed.horseSkills === 'object' && parsed.horseSkills !== null ? parsed.horseSkills : {},
+        horseSkillPoints: typeof parsed.horseSkillPoints === 'object' && parsed.horseSkillPoints !== null ? parsed.horseSkillPoints : {},
+        researchPoints: typeof parsed.researchPoints === 'number' ? parsed.researchPoints : defaultGameState.researchPoints,
         customHorseNames: typeof parsed.customHorseNames === 'object' && parsed.customHorseNames !== null ? parsed.customHorseNames : {},
         version: STORAGE_VERSION
       };

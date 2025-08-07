@@ -145,6 +145,51 @@ const RESEARCH_TREE = {
   }
 };
 
+const STABLE_UPGRADES = {
+  automaticFeeder: {
+    name: 'Automatic Feeder',
+    description: 'Feed reduces 50% slower',
+    researchCost: 50,
+    unlockedBy: 'pyramid',
+    category: 'architectural'
+  },
+  springWell: {
+    name: 'Natural Spring Well',
+    description: 'Water reduces 60% slower',
+    researchCost: 40,
+    unlockedBy: 'cave',
+    category: 'environmental'
+  },
+  selfCleaningStalls: {
+    name: 'Self-Cleaning Stalls',
+    description: 'Cleanliness reduces 70% slower',
+    researchCost: 60,
+    unlockedBy: 'gear',
+    category: 'architectural'
+  },
+  healingPonds: {
+    name: 'Healing Ponds',
+    description: 'Horses slowly recover health in stable',
+    researchCost: 80,
+    unlockedBy: 'flooded',
+    category: 'environmental'
+  },
+  timeAccelerator: {
+    name: 'Time Acceleration Chamber',
+    description: 'Horses recover from fatigue 3x faster',
+    researchCost: 100,
+    unlockedBy: 'temporal',
+    category: 'temporal'
+  },
+  chaosFeeder: {
+    name: 'Chaos Energy Feeder',
+    description: 'Randomly provides free stable resources',
+    researchCost: 75,
+    unlockedBy: 'random',
+    category: 'chaos'
+  }
+};
+
 const SKILL_TREE = {
   survival: {
     name: 'Survival',
@@ -187,7 +232,7 @@ const SKILL_TREE = {
   }
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [minotaurPos, setMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
@@ -235,10 +280,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
   const [visionRange] = useState(2);
   
   // Research system
-  const [researchPoints, setResearchPoints] = useState(0);
   const [unlockedMazes, setUnlockedMazes] = useState({ standard: true });
   const [selectedMazeType, setSelectedMazeType] = useState('standard');
   const [showResearchTree, setShowResearchTree] = useState(false);
+  
+  // Stable upgrades system
+  const [stableUpgrades, setStableUpgrades] = useState({});
   
   // Maze-specific features
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -248,9 +295,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
   const [timeZones, setTimeZones] = useState([]);
   const [phasingWalls, setPhasingWalls] = useState([]);
   
-  // Skill system
+  // Skill system (now per-horse)
   const [skillPoints, setSkillPoints] = useState(0);
-  const [skills, setSkills] = useState({
+  const [horseSkills, setHorseSkills] = useState({
     trapSense: 0, thickSkin: 0, lucky: 0,
     swiftness: 0, pathfinding: 0, wallWalking: 0, swimming: 0, climbing: 0,
     powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
@@ -391,6 +438,27 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
     setMaze(generateMaze());
   }, [generateMaze]);
 
+  // Initialize horse skills when selectedHorse changes
+  useEffect(() => {
+    if (selectedHorse) {
+      // Load horse's existing skills or initialize to defaults
+      const horseExistingSkills = selectedHorse.skills || {
+        trapSense: 0, thickSkin: 0, lucky: 0,
+        swiftness: 0, pathfinding: 0, wallWalking: 0, swimming: 0, climbing: 0,
+        powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
+        sneaking: 0, distraction: 0, ghostForm: 0
+      };
+      
+      setHorseSkills(horseExistingSkills);
+      
+      // Initialize skill points from horse data or default
+      setSkillPoints(selectedHorse.skillPoints || 0);
+      
+      console.log('🎓 Labyrinth - Initialized horse skills:', horseExistingSkills);
+      console.log('🎓 Labyrinth - Horse skill points:', selectedHorse.skillPoints || 0);
+    }
+  }, [selectedHorse]);
+
   // Update moving walls
   const updateMovingWalls = useCallback(() => {
     setMovingWalls(prev => prev.map(wall => {
@@ -435,13 +503,34 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
     setUnlockedMazes(prev => ({ ...prev, [mazeKey]: true }));
   }, [canResearchMaze]);
 
+  // Stable upgrade functions
+  const canResearchStableUpgrade = useCallback((upgradeKey) => {
+    const upgrade = STABLE_UPGRADES[upgradeKey];
+    const mazeUnlocked = unlockedMazes[upgrade.unlockedBy];
+    return mazeUnlocked && !stableUpgrades[upgradeKey] && researchPoints >= upgrade.researchCost;
+  }, [researchPoints, stableUpgrades, unlockedMazes]);
+  
+  const researchStableUpgrade = useCallback((upgradeKey) => {
+    if (!canResearchStableUpgrade(upgradeKey)) return;
+    
+    const upgrade = STABLE_UPGRADES[upgradeKey];
+    setResearchPoints(prev => prev - upgrade.researchCost);
+    setStableUpgrades(prev => ({ ...prev, [upgradeKey]: true }));
+    
+    // Pass upgrade info to parent for stable integration
+    if (onHorseReturn) {
+      // Create a temporary object to communicate the upgrade
+      onHorseReturn(selectedHorse, { stableUpgrade: { key: upgradeKey, ...upgrade } });
+    }
+  }, [canResearchStableUpgrade, selectedHorse, onHorseReturn]);
+
   // Check if cell is visible (always visible now - no fog of war)
   const isCellVisible = useCallback(() => {
     return true; // Always visible for more exciting gameplay
   }, []);
 
-  // Skill system functions
-  const getSkillLevel = useCallback((skillName) => skills[skillName] || 0, [skills]);
+  // Skill system functions (now per-horse)
+  const getSkillLevel = useCallback((skillName) => horseSkills[skillName] || 0, [horseSkills]);
   
   const canUpgradeSkill = useCallback((categoryKey, skillKey) => {
     const skill = SKILL_TREE[categoryKey].skills[skillKey];
@@ -457,9 +546,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
     const currentLevel = getSkillLevel(skillKey);
     const cost = skill.cost(currentLevel + 1);
     
-    setSkills(prev => ({ ...prev, [skillKey]: currentLevel + 1 }));
+    setHorseSkills(prev => ({ ...prev, [skillKey]: currentLevel + 1 }));
     setSkillPoints(prev => prev - cost);
-  }, [canUpgradeSkill, getSkillLevel]);
+    
+    console.log(`🎓 Upgraded ${skillKey} to level ${currentLevel + 1} for horse ${selectedHorse?.name}`);
+  }, [canUpgradeSkill, getSkillLevel, selectedHorse]);
 
   // Update power-up durations
   const updatePowerups = useCallback(() => {
@@ -653,7 +744,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         const skillPointsEarned = basePoints;
         const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.5);
         setSkillPoints(prev => prev + skillPointsEarned);
-        setResearchPoints(prev => prev + researchPointsEarned);
+        onUpdateResearchPoints(prev => prev + researchPointsEarned);
         return prevPos;
       }
       
@@ -673,7 +764,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
           const skillPointsEarned = basePoints;
           const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.5);
           setSkillPoints(prev => prev + skillPointsEarned);
-          setResearchPoints(prev => prev + researchPointsEarned);
+          onUpdateResearchPoints(prev => prev + researchPointsEarned);
           return { x: nextStep.x, y: nextStep.y };
         }
         
@@ -684,6 +775,21 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
     });
   }, [gameState, horsePos, findPathToHorse, currentRewards, minotaurStunned, getSkillLevel]);
 
+  // Calculate horse performance modifiers based on stable condition
+  const getHorsePerformanceModifiers = useCallback(() => {
+    if (!selectedHorse) return { speed: 1, trapAvoidance: 0, treasureBonus: 1, energy: 1 };
+    
+    const avgCondition = (selectedHorse.happiness + selectedHorse.health + selectedHorse.energy) / 300;
+    const cleanlinessBonus = selectedHorse.cleanliness / 100;
+    
+    return {
+      speed: 0.5 + (avgCondition * 0.7), // 0.5x to 1.2x speed based on condition
+      trapAvoidance: Math.floor(avgCondition * 25), // 0-25% trap avoidance
+      treasureBonus: 0.8 + (cleanlinessBonus * 0.4), // 0.8x to 1.2x treasure find rate
+      energy: 0.6 + (selectedHorse.energy / 100 * 0.6) // 0.6x to 1.2x energy efficiency
+    };
+  }, [selectedHorse]);
+
   // Horse movement logic
   const moveHorse = useCallback(() => {
     if (gameState !== 'exploring') return;
@@ -692,6 +798,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
     updatePowerups();
     updateMovingWalls();
     collectWithMagnet();
+
+    const performanceModifiers = getHorsePerformanceModifiers();
 
     setHorsePos(prevPos => {
       const { x, y } = prevPos;
@@ -744,7 +852,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
       // Handle cell interactions
       if (cell === CELL_REWARD) {
         const lucky = getSkillLevel('lucky');
-        const betterRewards = REWARDS.filter(r => r.rarity <= 0.3 + lucky * 0.1);
+        const treasureMultiplier = performanceModifiers.treasureBonus;
+        
+        // Well-cared horses find better treasures
+        const baseRewardChance = 0.3 + lucky * 0.1;
+        const enhancedRewardChance = Math.min(0.6, baseRewardChance * treasureMultiplier);
+        const betterRewards = REWARDS.filter(r => r.rarity <= enhancedRewardChance);
         const reward = betterRewards[Math.floor(Math.random() * betterRewards.length)] || REWARDS[0];
         setCurrentRewards(prev => [...prev, reward]);
         
@@ -825,7 +938,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         const trapSense = getSkillLevel('trapSense');
         const thickSkin = getSkillLevel('thickSkin');
         
-        if (trapSense > 0 && Math.random() < trapSense * 0.15) {
+        // Horse condition affects trap avoidance
+        const conditionTrapAvoidance = performanceModifiers.trapAvoidance / 100;
+        const totalTrapAvoidance = (trapSense * 0.15) + conditionTrapAvoidance;
+        
+        if (Math.random() < totalTrapAvoidance) {
           return { x: nextMove.x, y: nextMove.y };
         }
         
@@ -847,7 +964,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         const skillPointsEarned = basePoints;
         const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.5);
         setSkillPoints(prev => prev + skillPointsEarned);
-        setResearchPoints(prev => prev + researchPointsEarned);
+        onUpdateResearchPoints(prev => prev + researchPointsEarned);
         return prevPos;
       }
 
@@ -858,25 +975,29 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
   // Game loop
   useEffect(() => {
     if (gameState === 'exploring') {
+      const performanceModifiers = getHorsePerformanceModifiers();
+      const adjustedGameSpeed = gameSpeed / performanceModifiers.speed;
+      
       const timer = setTimeout(() => {
         moveHorse();
         
         if (hasPowerup('speed') && horseMoveCount % 2 === 0) {
-          setTimeout(moveHorse, gameSpeed / 4);
+          setTimeout(moveHorse, adjustedGameSpeed / 4);
         }
         
         const swiftness = getSkillLevel('swiftness');
         if (swiftness > 0 && Math.random() < swiftness * 0.1) {
-          setTimeout(moveHorse, gameSpeed / 3);
+          setTimeout(moveHorse, adjustedGameSpeed / 3);
         }
         
+        // Minotaur moves at regular speed
         if (Math.random() < 0.7) {
           moveMinotaur();
         }
-      }, gameSpeed);
+      }, adjustedGameSpeed);
       return () => clearTimeout(timer);
     }
-  }, [gameState, moveHorse, moveMinotaur, gameSpeed, horsePos, minotaurPos, hasPowerup, horseMoveCount, getSkillLevel]);
+  }, [gameState, moveHorse, moveMinotaur, gameSpeed, horsePos, minotaurPos, hasPowerup, horseMoveCount, getSkillLevel, getHorsePerformanceModifiers]);
 
   const startGame = () => {
     const newMaze = generateMaze();
@@ -915,6 +1036,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
     returnHorseWithItems(collectedItemsThisRun);
   };
 
+
   const returnHorseWithItems = (itemsToKeep, discardedIndices = []) => {
     if (selectedHorse && onHorseReturn) {
       // Start with current inventory, removing discarded items
@@ -936,16 +1058,46 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         }
       });
       
+      // Apply fatigue and potential injury from labyrinth run
+      const fatigueFromRun = Math.min(20, horseMoveCount * 0.5); // More movement = more fatigue
+      const injuryChance = (endReason === 'trap') ? 0.3 : (endReason === 'minotaur') ? 0.2 : 0.1;
+      const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+      
+      let healthReduction = 0;
+      let energyReduction = fatigueFromRun;
+      let happinessChange = 0;
+      
+      // Apply injury if unlucky
+      if (Math.random() < injuryChance * difficultyMultiplier) {
+        healthReduction = Math.random() * 25 + 10; // 10-35 health loss
+        happinessChange = -15; // Injury makes horses unhappy
+        energyReduction += 20; // Extra fatigue from injury
+      } else if (endReason === 'success') {
+        happinessChange = 10; // Successful runs make horses happy
+      }
+      
       const updatedHorse = {
         ...selectedHorse,
-        inventory: updatedInventory
+        inventory: updatedInventory,
+        health: Math.max(0, selectedHorse.health - healthReduction),
+        energy: Math.max(0, selectedHorse.energy - energyReduction),
+        happiness: Math.max(0, Math.min(100, selectedHorse.happiness + happinessChange)),
+        cleanliness: Math.max(0, selectedHorse.cleanliness - (fatigueFromRun * 0.3)), // Gets dirty from adventure
+        lastLabyrinthRun: Date.now(),
+        runsSinceRest: (selectedHorse.runsSinceRest || 0) + 1,
+        // Save horse's skills and skill points
+        skills: horseSkills,
+        skillPoints: skillPoints
       };
       
-      console.log('🎒 Labyrinth - Returning horse with updated inventory:');
-      console.log('  - Original inventory:', selectedHorse.inventory);
-      console.log('  - Discarded indices:', discardedIndices);
-      console.log('  - Items to keep:', itemsToKeep);
+      console.log('🎒 Labyrinth - Returning horse with updated stats:');
+      console.log('  - Health change:', -healthReduction);
+      console.log('  - Energy change:', -energyReduction);
+      console.log('  - Happiness change:', happinessChange);
       console.log('  - Final inventory:', updatedInventory);
+      console.log('  - Skills being saved:', horseSkills);
+      console.log('  - Skill points being saved:', skillPoints);
+      console.log('  - Updated horse object:', updatedHorse);
       
       onHorseReturn(updatedHorse);
     }
@@ -1250,6 +1402,63 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
                     <span className="text-purple-700 font-semibold">✨ +{collectedItemsThisRun.length}</span>
                   )}
                 </div>
+                
+                {/* Horse Condition Display */}
+                <div className="grid grid-cols-4 gap-1 mt-2 text-xs">
+                  <div className="text-center">
+                    <div className={`text-xs font-bold ${selectedHorse.happiness >= 80 ? 'text-green-600' : selectedHorse.happiness >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      😊 {Math.round(selectedHorse.happiness)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xs font-bold ${selectedHorse.health >= 80 ? 'text-green-600' : selectedHorse.health >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      ❤️ {Math.round(selectedHorse.health)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xs font-bold ${selectedHorse.energy >= 80 ? 'text-green-600' : selectedHorse.energy >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      ⚡ {Math.round(selectedHorse.energy)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xs font-bold ${selectedHorse.cleanliness >= 80 ? 'text-green-600' : selectedHorse.cleanliness >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      🧼 {Math.round(selectedHorse.cleanliness)}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Performance Indicators */}
+                <div className="mt-1 text-xs text-gray-500">
+                  {(() => {
+                    const modifiers = getHorsePerformanceModifiers();
+                    return `Speed: ${Math.round(modifiers.speed * 100)}% | Treasure: ${Math.round(modifiers.treasureBonus * 100)}% | Trap Avoid: ${modifiers.trapAvoidance}%`;
+                  })()}
+                </div>
+                
+                {/* Condition Warnings */}
+                {(selectedHorse.health < 50 || selectedHorse.energy < 30) && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="text-xs text-red-700 font-semibold flex items-center gap-1">
+                      ⚠️ WARNING
+                    </div>
+                    <div className="text-xs text-red-600 mt-1">
+                      {selectedHorse.health < 50 && "This horse is injured and needs medical care! "}
+                      {selectedHorse.energy < 30 && "This horse is exhausted and needs rest! "}
+                      Sending weak horses on adventures increases injury risk.
+                    </div>
+                  </div>
+                )}
+                
+                {(selectedHorse.runsSinceRest || 0) >= 3 && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="text-xs text-yellow-700 font-semibold flex items-center gap-1">
+                      😴 TIRED
+                    </div>
+                    <div className="text-xs text-yellow-600 mt-1">
+                      This horse has been on {selectedHorse.runsSinceRest} recent adventures. Consider letting them rest in the stable.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -1298,7 +1507,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         )}
 
         {/* Mobile-optimized Horse Status */}
-        {(trapHits > 0 || Object.values(skills).some(level => level > 0) || collectedKeys.length > 0) && (
+        {(trapHits > 0 || Object.values(horseSkills).some(level => level > 0) || collectedKeys.length > 0) && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 shadow-sm">
             <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
               🐎 Horse Status
@@ -1315,13 +1524,18 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         {/* Current Run Rewards */}
         {currentRewards.length > 0 && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-3 shadow-sm">
-            <h4 className="text-sm font-semibold text-yellow-800 mb-2">🏆 Current Run Rewards</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold text-yellow-800">🏆 Current Run Rewards</h4>
+            </div>
             <div className="flex flex-wrap gap-2">
               {currentRewards.map((reward, idx) => (
                 <span key={idx} className="bg-yellow-200 px-3 py-1 rounded-full text-xs font-medium">
                   {reward.emoji} {reward.name}
                 </span>
               ))}
+            </div>
+            <div className="text-xs text-yellow-700 mt-2">
+              💡 Sell treasures to earn coins and stable resources!
             </div>
           </div>
         )}
@@ -1332,9 +1546,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
           <div className="bg-white rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">
-                💎 Skills ({skillPoints} points)
-              </h2>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  💎 {selectedHorse?.name}'s Skills
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {skillPoints} skill points available
+                </p>
+              </div>
               <button
                 onClick={() => setShowSkillTree(false)}
                 className="text-gray-500 hover:text-gray-700 text-xl"
@@ -1418,24 +1637,46 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
                       {category.name}
                     </h3>
                     <p className="text-xs text-gray-600 mb-3">{category.description}</p>
-                    <div className="space-y-2">
+                    
+                    {/* Mazes */}
+                    <div className="space-y-2 mb-3">
+                      <h4 className="text-sm font-medium text-gray-700">🏰 Maze Types</h4>
                       {category.mazes.map(mazeKey => {
                         const maze = MAZE_TYPES[mazeKey];
                         const isUnlocked = maze.unlocked || unlockedMazes[mazeKey];
                         const canResearch = canResearchMaze(mazeKey);
+                        const hasEnoughPoints = researchPoints >= maze.researchCost;
                         
                         return (
-                          <div key={mazeKey} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <div key={mazeKey} className={`flex items-center justify-between p-2 rounded ${
+                            isUnlocked ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                          }`}>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{maze.name}</span>
+                                <span className={`font-medium text-sm ${isUnlocked ? 'text-green-800' : 'text-gray-800'}`}>
+                                  {maze.name}
+                                </span>
                                 <span className="text-yellow-600">{'⭐'.repeat(maze.difficulty)}</span>
                                 {isUnlocked && <span className="text-green-600">✓</span>}
+                                {!isUnlocked && !hasEnoughPoints && <span className="text-red-500">💰</span>}
                               </div>
                               <div className="text-xs text-gray-600">{maze.description}</div>
                               <div className="text-xs text-blue-600 mt-1">
-                                {maze.mechanics.join(', ')}
+                                Features: {maze.mechanics.join(', ')}
                               </div>
+                              {!isUnlocked && (
+                                <div className={`text-xs mt-1 flex items-center gap-2 ${
+                                  hasEnoughPoints ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  <span>Cost: {maze.researchCost} 🔬</span>
+                                  <span>|</span>
+                                  <span>Available: {researchPoints} 🔬</span>
+                                  {hasEnoughPoints ? 
+                                    <span className="text-green-600">✓ Ready to unlock!</span> : 
+                                    <span className="text-red-600">Need {maze.researchCost - researchPoints} more</span>
+                                  }
+                                </div>
+                              )}
                             </div>
                             {!isUnlocked && (
                               <button
@@ -1446,13 +1687,93 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn }) {
                                     ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 }`}
+                                title={canResearch ? 
+                                  `Unlock ${maze.name} for ${maze.researchCost} research points` : 
+                                  `Need ${maze.researchCost - researchPoints} more research points`
+                                }
                               >
-                                {maze.researchCost} 🔬
+                                {hasEnoughPoints ? 'Unlock' : `${maze.researchCost} 🔬`}
                               </button>
                             )}
                           </div>
                         );
                       })}
+                    </div>
+                    
+                    {/* Stable Upgrades */}
+                    <div className="space-y-2 border-t border-gray-200 pt-3">
+                      <h4 className="text-sm font-medium text-gray-700">🏠 Stable Upgrades</h4>
+                      {Object.entries(STABLE_UPGRADES)
+                        .filter(([_, upgrade]) => upgrade.category === categoryKey)
+                        .map(([upgradeKey, upgrade]) => {
+                          const isUnlocked = stableUpgrades[upgradeKey];
+                          const canResearch = canResearchStableUpgrade(upgradeKey);
+                          const requiredMazeUnlocked = unlockedMazes[upgrade.unlockedBy];
+                          const hasEnoughPoints = researchPoints >= upgrade.researchCost;
+                          
+                          return (
+                            <div key={upgradeKey} className={`flex items-center justify-between p-2 rounded ${
+                              isUnlocked ? 'bg-green-100 border border-green-300' : 
+                              !requiredMazeUnlocked ? 'bg-gray-100' : 'bg-green-50'
+                            }`}>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`font-medium text-sm ${
+                                    isUnlocked ? 'text-green-800' : 
+                                    !requiredMazeUnlocked ? 'text-gray-500' : 'text-gray-800'
+                                  }`}>
+                                    {upgrade.name}
+                                  </span>
+                                  {isUnlocked && <span className="text-green-600">✓</span>}
+                                  {!requiredMazeUnlocked && <span className="text-gray-400">🔒</span>}
+                                  {!isUnlocked && requiredMazeUnlocked && !hasEnoughPoints && <span className="text-red-500">💰</span>}
+                                </div>
+                                <div className={`text-xs ${!requiredMazeUnlocked ? 'text-gray-500' : 'text-gray-600'}`}>
+                                  {upgrade.description}
+                                </div>
+                                <div className={`text-xs mt-1 ${!requiredMazeUnlocked ? 'text-gray-400' : 'text-purple-600'}`}>
+                                  Requires: {MAZE_TYPES[upgrade.unlockedBy].name}
+                                  {!requiredMazeUnlocked && ' (locked)'}
+                                </div>
+                                {!isUnlocked && requiredMazeUnlocked && (
+                                  <div className={`text-xs mt-1 flex items-center gap-2 ${
+                                    hasEnoughPoints ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    <span>Cost: {upgrade.researchCost} 🔬</span>
+                                    <span>|</span>
+                                    <span>Available: {researchPoints} 🔬</span>
+                                    {hasEnoughPoints ? 
+                                      <span className="text-green-600">✓ Ready!</span> : 
+                                      <span className="text-red-600">Need {upgrade.researchCost - researchPoints} more</span>
+                                    }
+                                  </div>
+                                )}
+                              </div>
+                              {!isUnlocked && requiredMazeUnlocked && (
+                                <button
+                                  onClick={() => researchStableUpgrade(upgradeKey)}
+                                  disabled={!canResearch}
+                                  className={`px-2 py-1 rounded text-xs font-semibold ${
+                                    canResearch 
+                                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                  }`}
+                                  title={canResearch ? 
+                                    `Unlock ${upgrade.name} for ${upgrade.researchCost} research points` : 
+                                    `Need ${upgrade.researchCost - researchPoints} more research points`
+                                  }
+                                >
+                                  {hasEnoughPoints ? 'Unlock' : `${upgrade.researchCost} 🔬`}
+                                </button>
+                              )}
+                              {!isUnlocked && !requiredMazeUnlocked && (
+                                <div className="text-xs text-gray-400 px-2">
+                                  Unlock maze first
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 ))}
