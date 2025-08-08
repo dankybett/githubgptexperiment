@@ -5,7 +5,6 @@ const ItemSelectionModal = ({
   isOpen, 
   horse, 
   collectedItems, 
-  maxSlots, 
   onConfirm, 
   onCancel 
 }) => {
@@ -14,7 +13,8 @@ const ItemSelectionModal = ({
   
   const currentInventoryCount = horse?.inventory?.length || 0;
   const keptInventoryCount = currentInventoryCount - discardedItems.length;
-  const availableSlots = maxSlots - keptInventoryCount;
+  const dynamicMaxSlots = 4 + (horse?.skills?.saddlebags || 0);
+  const availableSlots = dynamicMaxSlots - keptInventoryCount;
   const totalCollected = collectedItems.length;
   
   const toggleItemSelection = (item, index) => {
@@ -61,7 +61,17 @@ const ItemSelectionModal = ({
     setDiscardedItems([]);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('🎒 ItemSelectionModal - Modal not open, isOpen:', isOpen);
+    return null;
+  }
+  
+  console.log('🎒 ItemSelectionModal - Modal opening with:');
+  console.log('  - isOpen:', isOpen);
+  console.log('  - horse:', horse);
+  console.log('  - collectedItems:', collectedItems);
+  console.log('  - dynamicMaxSlots:', dynamicMaxSlots);
+  console.log('  - availableSlots:', availableSlots);
 
   return (
     <AnimatePresence>
@@ -116,35 +126,47 @@ const ItemSelectionModal = ({
           {currentInventoryCount > 0 && (
             <div className="mb-6">
               <h3 className="font-semibold text-gray-700 mb-2">
-                📦 Current Inventory ({currentInventoryCount}/{maxSlots}) - Click to discard:
+                📦 Current Inventory ({currentInventoryCount}/{dynamicMaxSlots}) - Click to discard:
               </h3>
               <div className="grid grid-cols-4 gap-2">
-                {horse.inventory.map((item, index) => {
+                {Array.from({ length: dynamicMaxSlots }).map((_, index) => {
+                  const item = horse.inventory?.[index];
                   const isDiscarded = discardedItems.includes(index);
                   
                   return (
                     <motion.div
                       key={index}
-                      className={`border-2 rounded-lg p-2 cursor-pointer transition-all ${
-                        isDiscarded
-                          ? 'border-red-500 bg-red-50 opacity-60'
-                          : 'border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-25'
+                      className={`border-2 rounded-lg p-2 transition-all ${
+                        item 
+                          ? `cursor-pointer ${isDiscarded
+                              ? 'border-red-500 bg-red-50 opacity-60'
+                              : 'border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-25'
+                            }`
+                          : 'border-dashed border-gray-300 bg-gray-50'
                       }`}
-                      onClick={() => toggleInventoryDiscard(index)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      onClick={() => item && toggleInventoryDiscard(index)}
+                      whileHover={item ? { scale: 1.05 } : {}}
+                      whileTap={item ? { scale: 0.95 } : {}}
                     >
-                      <img 
-                        src={item.image} 
-                        alt={item.name}
-                        className="w-12 h-12 mx-auto object-contain"
-                      />
-                      <div className="text-xs text-center mt-1 font-medium">
-                        {item.name}
-                      </div>
-                      {isDiscarded && (
-                        <div className="text-center mt-1">
-                          <span className="text-red-500 text-sm">🗑️</span>
+                      {item ? (
+                        <>
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="w-12 h-12 mx-auto object-contain"
+                          />
+                          <div className="text-xs text-center mt-1 font-medium">
+                            {item.name}
+                          </div>
+                          {isDiscarded && (
+                            <div className="text-center mt-1">
+                              <span className="text-red-500 text-sm">🗑️</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-12 h-12 flex items-center justify-center mx-auto">
+                          <div className="text-gray-400 text-xs">Empty</div>
                         </div>
                       )}
                     </motion.div>

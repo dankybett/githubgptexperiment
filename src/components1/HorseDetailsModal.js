@@ -41,6 +41,15 @@ const SKILL_TREE = {
       distraction: { name: 'Distraction', emoji: '🎭', maxLevel: 3, description: 'Confuse minotaur occasionally' },
       ghostForm: { name: 'Ghost Form', emoji: '👻', maxLevel: 1, description: 'Rare chance to phase through minotaur' }
     }
+  },
+  inventory: {
+    name: 'Inventory',
+    color: 'amber',
+    skills: {
+      saddlebags: { name: 'Saddlebags', emoji: '👜', maxLevel: 2, description: '+1 inventory slot per level' },
+      organization: { name: 'Organization', emoji: '📦', maxLevel: 3, description: 'Better item stacking and management' },
+      treasureHunter: { name: 'Treasure Hunter', emoji: '🔍', maxLevel: 3, description: 'Find higher quality items' }
+    }
   }
 };
 
@@ -56,7 +65,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <motion.div
-        className="bg-white rounded-xl p-6 w-[500px] h-[400px] shadow-2xl relative flex flex-col"
+        className="bg-white rounded-xl p-6 w-[500px] max-h-[90vh] shadow-2xl relative flex flex-col"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
       >
@@ -409,35 +418,24 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
-                    onSendToLabyrinth();
-                  }}
-                  className="w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                >
-                  Send to Labyrinth
+              <div className="text-center">
+                <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
+                  Close
                 </button>
-                <div className="text-center">
-                  <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
-                    Close
-                  </button>
-                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'inventory' && (
             /* Inventory Tab */
-            <div className="space-y-3 flex-1 flex flex-col justify-between">
-              <div>
+            <div className="space-y-3 flex-1 flex flex-col">
+              <div className="flex-1 overflow-y-auto max-h-64">
                 <div className="p-3 bg-purple-50 rounded-lg">
                   <h3 className="text-sm font-semibold mb-3 text-center">🎒 Inventory</h3>
                   
-                  {/* Inventory Grid - 4 slots in 2x2 with integrated details */}
+                  {/* Inventory Grid - Dynamic slots based on saddlebags skill */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    {Array.from({ length: 4 }).map((_, index) => {
+                    {Array.from({ length: 4 + (horse.skills?.saddlebags || 0) }).map((_, index) => {
                       const item = horse.inventory?.[index];
                       
                       // Calculate item value for display
@@ -501,7 +499,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                 </div>
               </div>
               
-              <div className="text-center">
+              <div className="text-center mt-3 flex-shrink-0">
                 <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
                   Close
                 </button>

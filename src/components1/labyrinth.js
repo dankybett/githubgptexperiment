@@ -229,10 +229,19 @@ const SKILL_TREE = {
       distraction: { name: 'Distraction', emoji: '🎭', maxLevel: 3, cost: (level) => level * 3, description: 'Confuse minotaur occasionally' },
       ghostForm: { name: 'Ghost Form', emoji: '👻', maxLevel: 1, cost: () => 15, description: 'Rare chance to phase through minotaur' }
     }
+  },
+  inventory: {
+    name: 'Inventory',
+    color: 'amber',
+    skills: {
+      saddlebags: { name: 'Saddlebags', emoji: '👜', maxLevel: 2, cost: (level) => level * 8, description: '+1 inventory slot per level' },
+      organization: { name: 'Organization', emoji: '📦', maxLevel: 3, cost: (level) => level * 6, description: 'Better item stacking and management' },
+      treasureHunter: { name: 'Treasure Hunter', emoji: '🔍', maxLevel: 3, cost: (level) => level * 4, description: 'Find higher quality items' }
+    }
   }
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [minotaurPos, setMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
@@ -280,7 +289,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [visionRange] = useState(2);
   
   // Research system
-  const [unlockedMazes, setUnlockedMazes] = useState({ standard: true });
   const [selectedMazeType, setSelectedMazeType] = useState('standard');
   const [showResearchTree, setShowResearchTree] = useState(false);
   
@@ -301,10 +309,37 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     trapSense: 0, thickSkin: 0, lucky: 0,
     swiftness: 0, pathfinding: 0, wallWalking: 0, swimming: 0, climbing: 0,
     powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
-    sneaking: 0, distraction: 0, ghostForm: 0
+    sneaking: 0, distraction: 0, ghostForm: 0,
+    saddlebags: 0, organization: 0, treasureHunter: 0
   });
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [trapHits, setTrapHits] = useState(0);
+  
+  // Visual feedback states
+  const [floatingTexts, setFloatingTexts] = useState([]);
+  const [horseFlash, setHorseFlash] = useState(null);
+  
+  // Vault interaction states
+  const [showVaultModal, setShowVaultModal] = useState(false);
+  const [currentVault, setCurrentVault] = useState(null);
+  
+  // Visual feedback functions
+  const addFloatingText = useCallback((text, color = '#10b981') => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setFloatingTexts(prev => {
+      const newText = { id, text, color, timestamp: Date.now() };
+      return [...prev, newText];
+    });
+    // Remove after 2 seconds
+    setTimeout(() => {
+      setFloatingTexts(prev => prev.filter(ft => ft.id !== id));
+    }, 2000);
+  }, []);
+  
+  const flashHorse = useCallback((color = '#3b82f6') => {
+    setHorseFlash(color);
+    setTimeout(() => setHorseFlash(null), 500);
+  }, []);
 
   // Generate maze based on selected type
   const generateMaze = useCallback(() => {
@@ -347,10 +382,20 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     
     // Add features based on maze type
     const mazeType = MAZE_TYPES[selectedMazeType];
+    let keysPlaced = 0;
+    let vaultPlaced = false;
     
     for (let y = 1; y < MAZE_SIZE - 1; y++) {
       for (let x = 1; x < MAZE_SIZE - 1; x++) {
         if (newMaze[y][x] === CELL_EMPTY) {
+          // Skip spawn areas to prevent trapping horse or minotaur
+          const isHorseSpawnArea = Math.abs(x - 1) <= 1 && Math.abs(y - 1) <= 1;
+          const isMinotaurSpawnArea = Math.abs(x - (MAZE_SIZE - 2)) <= 1 && Math.abs(y - (MAZE_SIZE - 2)) <= 1;
+          
+          if (isHorseSpawnArea || isMinotaurSpawnArea) {
+            continue; // Keep these areas clear of special features
+          }
+          
           const rand = Math.random();
           
           // Base features (all maze types) - these take priority
@@ -360,11 +405,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             newMaze[y][x] = CELL_TRAP;
           } else if (rand < 0.32) {
             newMaze[y][x] = CELL_POWERUP;
-          } else if (rand < 0.38) {
+          } else if (rand < 0.38 && keysPlaced < 2) {
             newMaze[y][x] = CELL_KEY;
             newVaultKeys.push({ x, y, id: Math.random().toString(36).substr(2, 9) });
-          } else if (rand < 0.42 && newVaultKeys.length > 0) {
+            keysPlaced++;
+          } else if (rand < 0.42 && !vaultPlaced && newVaultKeys.length > 0) {
             newMaze[y][x] = CELL_VAULT;
+            vaultPlaced = true;
           } else {
             // Only add maze-specific features if no base feature was placed
             // Maze-type specific features
@@ -446,7 +493,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         trapSense: 0, thickSkin: 0, lucky: 0,
         swiftness: 0, pathfinding: 0, wallWalking: 0, swimming: 0, climbing: 0,
         powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
-        sneaking: 0, distraction: 0, ghostForm: 0
+        sneaking: 0, distraction: 0, ghostForm: 0,
+        saddlebags: 0, organization: 0, treasureHunter: 0
       };
       
       setHorseSkills(horseExistingSkills);
@@ -499,9 +547,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     if (!canResearchMaze(mazeKey)) return;
     
     const maze = MAZE_TYPES[mazeKey];
-    setResearchPoints(prev => prev - maze.researchCost);
-    setUnlockedMazes(prev => ({ ...prev, [mazeKey]: true }));
-  }, [canResearchMaze]);
+    onUpdateResearchPoints(prev => prev - maze.researchCost);
+    onUpdateUnlockedMazes(prev => ({ ...prev, [mazeKey]: true }));
+  }, [canResearchMaze, onUpdateResearchPoints, onUpdateUnlockedMazes]);
 
   // Stable upgrade functions
   const canResearchStableUpgrade = useCallback((upgradeKey) => {
@@ -514,7 +562,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     if (!canResearchStableUpgrade(upgradeKey)) return;
     
     const upgrade = STABLE_UPGRADES[upgradeKey];
-    setResearchPoints(prev => prev - upgrade.researchCost);
+    onUpdateResearchPoints(prev => prev - upgrade.researchCost);
     setStableUpgrades(prev => ({ ...prev, [upgradeKey]: true }));
     
     // Pass upgrade info to parent for stable integration
@@ -522,7 +570,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       // Create a temporary object to communicate the upgrade
       onHorseReturn(selectedHorse, { stableUpgrade: { key: upgradeKey, ...upgrade } });
     }
-  }, [canResearchStableUpgrade, selectedHorse, onHorseReturn]);
+  }, [canResearchStableUpgrade, selectedHorse, onHorseReturn, onUpdateResearchPoints]);
 
   // Check if cell is visible (always visible now - no fog of war)
   const isCellVisible = useCallback(() => {
@@ -573,6 +621,22 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   // Use power-up effects
   const usePowerup = useCallback((powerup) => {
+    // Add visual feedback for all power-ups
+    const powerupMessages = {
+      'teleport': { text: 'TELEPORT!', color: '#8b5cf6' },
+      'invisibility': { text: 'INVISIBLE!', color: '#6b7280' },
+      'stun': { text: 'STUN BOMB!', color: '#f59e0b' },
+      'speed': { text: 'SPEED BOOST!', color: '#3b82f6' },
+      'wallbreaker': { text: 'WALL BREAKER!', color: '#ef4444' },
+      'magnet': { text: 'MAGNET!', color: '#10b981' }
+    };
+    
+    const feedback = powerupMessages[powerup.effect];
+    if (feedback) {
+      addFloatingText(feedback.text, feedback.color);
+      flashHorse(feedback.color);
+    }
+    
     switch (powerup.effect) {
       case 'teleport':
         const emptyCells = [];
@@ -615,7 +679,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         setActivePowerups(prev => [...prev, { ...powerup }]);
         break;
     }
-  }, [maze, minotaurPos, getSkillLevel]);
+  }, [maze, minotaurPos, getSkillLevel, addFloatingText, flashHorse]);
 
   // Collect nearby treasures with magnet
   const collectWithMagnet = useCallback(() => {
@@ -641,8 +705,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             const betterRewards = REWARDS.filter(r => r.rarity <= 0.3 + lucky * 0.1);
             const reward = betterRewards[Math.floor(Math.random() * betterRewards.length)] || REWARDS[0];
             setCurrentRewards(prev => [...prev, reward]);
+            // No floating text for magnet treasure collection
           } else if (maze[ny][nx] === CELL_POWERUP) {
             const powerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+            // Add visual feedback for magnet power-up collection
+            addFloatingText(`🧲 ${powerup.emoji} ${powerup.name}`, '#10b981');
             usePowerup(powerup);
           }
           
@@ -741,8 +808,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         // Award points based on performance and maze difficulty
         const basePoints = Math.floor(currentRewards.length / 2) + 1;
         const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
-        const skillPointsEarned = basePoints;
-        const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.5);
+        const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
+        const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.2);
         setSkillPoints(prev => prev + skillPointsEarned);
         onUpdateResearchPoints(prev => prev + researchPointsEarned);
         return prevPos;
@@ -761,8 +828,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           setInventory(prev => [...prev, ...currentRewards]);
           const basePoints = Math.floor(currentRewards.length / 2) + 1;
           const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
-          const skillPointsEarned = basePoints;
-          const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.5);
+          const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
+          const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.2);
           setSkillPoints(prev => prev + skillPointsEarned);
           onUpdateResearchPoints(prev => prev + researchPointsEarned);
           return { x: nextStep.x, y: nextStep.y };
@@ -852,14 +919,18 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       // Handle cell interactions
       if (cell === CELL_REWARD) {
         const lucky = getSkillLevel('lucky');
+        const treasureHunter = getSkillLevel('treasureHunter');
         const treasureMultiplier = performanceModifiers.treasureBonus;
         
         // Well-cared horses find better treasures
-        const baseRewardChance = 0.3 + lucky * 0.1;
+        const baseRewardChance = 0.3 + lucky * 0.1 + treasureHunter * 0.05;
         const enhancedRewardChance = Math.min(0.6, baseRewardChance * treasureMultiplier);
         const betterRewards = REWARDS.filter(r => r.rarity <= enhancedRewardChance);
         const reward = betterRewards[Math.floor(Math.random() * betterRewards.length)] || REWARDS[0];
         setCurrentRewards(prev => [...prev, reward]);
+        
+        // Flash effect for treasure collection (no text)
+        flashHorse('#fbbf24');
         
         // Add treasure to collected items
         setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.treasure]);
@@ -871,6 +942,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         });
       } else if (cell === CELL_POWERUP) {
         const powerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+        
+        // Only flash effect for power-up collection - text will be shown by usePowerup()
+        flashHorse('#a855f7');
+        
         usePowerup(powerup);
         
         // Add power-up to collected items
@@ -884,6 +959,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       } else if (cell === CELL_KEY) {
         const key = vaultKeys.find(k => k.x === nextMove.x && k.y === nextMove.y);
         if (key) {
+          // Add visual feedback for key collection
+          addFloatingText('🗝️ Key Found!', '#eab308');
+          flashHorse('#eab308');
+          
           setCollectedKeys(prev => [...prev, key.id]);
           // Add key to collected items
           setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.key]);
@@ -896,44 +975,21 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           });
         }
       } else if (cell === CELL_VAULT) {
-        if (collectedKeys.length > 0 && availableKeys > 0) {
-          const legendaryRewards = [
-            { name: 'Ancient Treasure', emoji: '👑', rarity: 0.05 },
-            { name: 'Dragon Egg', emoji: '🥚', rarity: 0.03 },
-            { name: 'Sacred Relic', emoji: '🏺', rarity: 0.04 }
-          ];
-          const reward = legendaryRewards[Math.floor(Math.random() * legendaryRewards.length)];
-          setCurrentRewards(prev => [...prev, reward]);
-          setCollectedKeys(prev => prev.slice(1));
-          
-          // Consume a key
-          setAvailableKeys(prev => prev - 1);
-          
-          // Remove key from appropriate source (prefer collected items first)
-          const keysCollectedThisRun = collectedItemsThisRun.filter(item => item.id === 'key').length;
-          if (keysCollectedThisRun > 0) {
-            // Remove one key from collected items
-            setCollectedItemsThisRun(prev => {
-              const keyIndex = prev.findIndex(item => item.id === 'key');
-              if (keyIndex !== -1) {
-                return prev.filter((_, index) => index !== keyIndex);
-              }
-              return prev;
-            });
-          } else {
-            // Remove one key from horse inventory
-            setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
-          }
-          
-          // Add vault treasure to collected items
-          setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.vault_treasure]);
-          
-          setMaze(prevMaze => {
-            const newMaze = prevMaze.map(row => [...row]);
-            newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
-            return newMaze;
-          });
-        }
+        // Pause game and show vault interaction modal
+        const legendaryRewards = [
+          { name: 'Ancient Treasure', emoji: '👑', rarity: 0.05 },
+          { name: 'Dragon Egg', emoji: '🥚', rarity: 0.03 },
+          { name: 'Sacred Relic', emoji: '🏺', rarity: 0.04 }
+        ];
+        const potentialReward = legendaryRewards[Math.floor(Math.random() * legendaryRewards.length)];
+        
+        setCurrentVault({
+          position: { x: nextMove.x, y: nextMove.y },
+          reward: potentialReward
+        });
+        setShowVaultModal(true);
+        // Game will be paused while modal is open
+        return prevPos; // Don't move onto vault yet
       } else if (cell === CELL_TRAP) {
         const trapSense = getSkillLevel('trapSense');
         const thickSkin = getSkillLevel('thickSkin');
@@ -961,8 +1017,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         // Award points based on performance and maze difficulty
         const basePoints = Math.floor(currentRewards.length / 2) + 1;
         const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
-        const skillPointsEarned = basePoints;
-        const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.5);
+        const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
+        const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.2);
         setSkillPoints(prev => prev + skillPointsEarned);
         onUpdateResearchPoints(prev => prev + researchPointsEarned);
         return prevPos;
@@ -972,9 +1028,70 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     });
   }, [gameState, maze, currentRewards, hasPowerup, updatePowerups, updateMovingWalls, collectWithMagnet, usePowerup, getSkillLevel, minotaurPos, trapHits, isCellPassable, portals, vaultKeys, collectedKeys]);
 
+  // Vault interaction functions
+  const handleVaultUnlock = useCallback(() => {
+    if (!currentVault || !availableKeys) return;
+    
+    // Add reward and consume key
+    setCurrentRewards(prev => [...prev, currentVault.reward]);
+    setCollectedKeys(prev => prev.slice(1));
+    setAvailableKeys(prev => prev - 1);
+    
+    // Remove key from appropriate source
+    const keysCollectedThisRun = collectedItemsThisRun.filter(item => item.id === 'key').length;
+    if (keysCollectedThisRun > 0) {
+      setCollectedItemsThisRun(prev => {
+        const keyIndex = prev.findIndex(item => item.id === 'key');
+        if (keyIndex !== -1) {
+          return prev.filter((_, index) => index !== keyIndex);
+        }
+        return prev;
+      });
+    } else {
+      setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
+    }
+    
+    // Add vault treasure to collected items
+    setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.vault_treasure]);
+    
+    // Remove vault from maze
+    setMaze(prevMaze => {
+      const newMaze = prevMaze.map(row => [...row]);
+      newMaze[currentVault.position.y][currentVault.position.x] = CELL_EMPTY;
+      return newMaze;
+    });
+    
+    // Move horse to vault position
+    setHorsePos({ x: currentVault.position.x, y: currentVault.position.y });
+    
+    // Close modal and resume game
+    setShowVaultModal(false);
+    setCurrentVault(null);
+    
+    // Visual feedback
+    addFloatingText(`${selectedHorse?.name} found ${currentVault.reward.name}!`, '#dc2626');
+    flashHorse('#dc2626');
+  }, [currentVault, availableKeys, collectedItemsThisRun, addFloatingText, flashHorse]);
+  
+  const handleVaultLeave = useCallback(() => {
+    // Close modal and remove vault from maze so horse can continue
+    setShowVaultModal(false);
+    
+    // Remove vault from maze (same as unlock but without rewards)
+    if (currentVault) {
+      setMaze(prevMaze => {
+        const newMaze = prevMaze.map(row => [...row]);
+        newMaze[currentVault.position.y][currentVault.position.x] = CELL_EMPTY;
+        return newMaze;
+      });
+    }
+    
+    setCurrentVault(null);
+  }, [currentVault]);
+
   // Game loop
   useEffect(() => {
-    if (gameState === 'exploring') {
+    if (gameState === 'exploring' && !showVaultModal) {
       const performanceModifiers = getHorsePerformanceModifiers();
       const adjustedGameSpeed = gameSpeed / performanceModifiers.speed;
       
@@ -1000,6 +1117,73 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   }, [gameState, moveHorse, moveMinotaur, gameSpeed, horsePos, minotaurPos, hasPowerup, horseMoveCount, getSkillLevel, getHorsePerformanceModifiers]);
 
   const startGame = () => {
+    console.log('🚀 StartGame - Debug info:');
+    console.log('  - gameState:', gameState);
+    console.log('  - currentRewards.length:', currentRewards.length);
+    console.log('  - collectedItemsThisRun.length:', collectedItemsThisRun.length);
+    console.log('  - currentRewards:', currentRewards);
+    console.log('  - collectedItemsThisRun:', collectedItemsThisRun);
+    
+    // Check if there are unreturned rewards from previous run
+    if (gameState === 'ended' && (currentRewards.length > 0 || collectedItemsThisRun.length > 0)) {
+      console.log('🚀 StartGame - Found unreturned items, checking what to do...');
+      
+      if (collectedItemsThisRun.length > 0) {
+        // Check if we have inventory space to auto-add items and continue
+        const currentInventoryCount = selectedHorse?.inventory?.length || 0;
+        const baseSlotsCount = 4;
+        const saddlebagsLevel = getSkillLevel('saddlebags');
+        const maxSlots = baseSlotsCount + saddlebagsLevel;
+        const availableSlots = maxSlots - currentInventoryCount;
+        
+        console.log('🚀 StartGame - Inventory check:');
+        console.log('  - Current inventory:', currentInventoryCount);
+        console.log('  - Max slots:', maxSlots);
+        console.log('  - Available slots:', availableSlots);
+        console.log('  - Items to add:', collectedItemsThisRun.length);
+        
+        if (collectedItemsThisRun.length <= availableSlots) {
+          // We have space - add items to inventory and continue with new run
+          console.log('🚀 StartGame - Auto-adding items and starting new run');
+          
+          // Process items silently without exiting to stable
+          let updatedInventory = [...(selectedHorse.inventory || [])];
+          const dynamicMaxSlots = 4 + (selectedHorse.skills?.saddlebags || 0);
+          
+          collectedItemsThisRun.forEach(item => {
+            const result = inventoryUtils.addItem(updatedInventory, item, dynamicMaxSlots);
+            if (result.success) {
+              updatedInventory = result.inventory;
+            }
+          });
+          
+          // Update horse inventory in parent component
+          if (selectedHorse && onHorseReturn) {
+            const updatedHorse = {
+              ...selectedHorse,
+              inventory: updatedInventory
+            };
+            onHorseReturn(updatedHorse);
+          }
+          
+          // Clear collected items and continue to new run
+          setCollectedItemsThisRun([]);
+          setCurrentRewards([]);
+        } else {
+          // Inventory full - use existing flow with modal
+          console.log('🚀 StartGame - Inventory full, showing management modal');
+          exitLabyrinth();
+          return;
+        }
+      } else {
+        // If only currentRewards (which are just display rewards), clear them and continue to new game
+        console.log('🚀 StartGame - Only display rewards, clearing and continuing to new game');
+        setCurrentRewards([]);
+      }
+    }
+    
+    console.log('🚀 StartGame - Starting new game directly');
+    
     const newMaze = generateMaze();
     setMaze(newMaze);
     setHorsePos({ x: 1, y: 1 });
@@ -1023,15 +1207,28 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   const exitLabyrinth = () => {
     const currentInventoryCount = selectedHorse?.inventory?.length || 0;
-    const maxSlots = 4;
+    const baseSlotsCount = 4;
+    const saddlebagsLevel = getSkillLevel('saddlebags');
+    const maxSlots = baseSlotsCount + saddlebagsLevel;
     const availableSlots = maxSlots - currentInventoryCount;
+    
+    console.log('🎒 ExitLabyrinth - Inventory check:');
+    console.log('  - Current inventory count:', currentInventoryCount);
+    console.log('  - Base slots:', baseSlotsCount);
+    console.log('  - Saddlebags level:', saddlebagsLevel);
+    console.log('  - Max slots:', maxSlots);
+    console.log('  - Available slots:', availableSlots);
+    console.log('  - Collected items this run:', collectedItemsThisRun.length);
+    console.log('  - Need modal?', collectedItemsThisRun.length > availableSlots);
     
     // If we collected more items than we can carry, show selection modal
     if (collectedItemsThisRun.length > availableSlots) {
+      console.log('🎒 ExitLabyrinth - Showing item selection modal');
       setShowItemSelection(true);
       return;
     }
     
+    console.log('🎒 ExitLabyrinth - Adding all items directly');
     // If we can carry all items, add them directly
     returnHorseWithItems(collectedItemsThisRun);
   };
@@ -1050,13 +1247,26 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         }
       });
       
-      // Add selected items
-      itemsToKeep.forEach(item => {
-        const result = inventoryUtils.addItem(updatedInventory, item);
+      // Add selected items with dynamic slot calculation
+      const dynamicMaxSlots = 4 + (selectedHorse.skills?.saddlebags || 0);
+      console.log('🎒 ReturnHorseWithItems - Adding items:');
+      console.log('  - Items to keep:', itemsToKeep);
+      console.log('  - Dynamic max slots:', dynamicMaxSlots);
+      console.log('  - Starting inventory:', updatedInventory);
+      
+      itemsToKeep.forEach((item, index) => {
+        console.log(`  - Processing item ${index + 1}:`, item);
+        const result = inventoryUtils.addItem(updatedInventory, item, dynamicMaxSlots);
+        console.log(`  - Add result:`, result);
         if (result.success) {
           updatedInventory = result.inventory;
+          console.log(`  - Updated inventory:`, updatedInventory);
+        } else {
+          console.log(`  - Failed to add item:`, result.reason);
         }
       });
+      
+      console.log('🎒 ReturnHorseWithItems - Final inventory:', updatedInventory);
       
       // Apply fatigue and potential injury from labyrinth run
       const fatigueFromRun = Math.min(20, horseMoveCount * 0.5); // More movement = more fatigue
@@ -1143,7 +1353,24 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       return <img src="/maze/collision.png" alt="Collision" style={baseStyle} />;
     }
     if (horsePos.x === x && horsePos.y === y) {
-      return <img src="/maze/horse_player.png" alt="Horse" style={baseStyle} />;
+      return (
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <img src="/maze/path.png" alt="Path" style={baseStyle} />
+          <img 
+            src={selectedHorse?.avatar || "/maze/horse_player.png"} 
+            alt="Horse" 
+            style={{
+              ...baseStyle,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              opacity: 1,
+              filter: horseFlash ? `drop-shadow(0 0 8px ${horseFlash})` : 'none',
+              transition: 'filter 0.1s ease-out'
+            }} 
+          />
+        </div>
+      );
     }
     if (minotaurPos.x === x && minotaurPos.y === y) {
       if (minotaurStunned > 0) return <img src="/maze/minotaur_stunned.png" alt="Stunned Minotaur" style={baseStyle} />;
@@ -1248,7 +1475,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
           {/* Maze Grid */}
           <div 
-            className="border-2 border-gray-800 bg-gray-900 w-full rounded-lg overflow-hidden shadow-inner"
+            className="border-2 border-gray-800 bg-gray-900 w-full rounded-lg overflow-hidden shadow-inner relative"
             style={{ 
               display: 'flex',
               flexDirection: 'column',
@@ -1288,6 +1515,46 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                   ))}
                 </div>
               ))}
+              
+              {/* Floating Text Overlay */}
+              {floatingTexts
+                .slice()
+                .sort((a, b) => a.timestamp - b.timestamp) // Sort by oldest first for stable stacking
+                .map((ft, stackIndex) => {
+                  const cellSize = 100 / MAZE_SIZE;
+                  const horseX = (horsePos.x * cellSize) + (cellSize / 2);
+                  const horseY = (horsePos.y * cellSize) + (cellSize / 2);
+                  const age = Date.now() - ft.timestamp;
+                  const opacity = Math.max(0, 1 - (age / 2000));
+                  
+                  // Smoother float animation with easing
+                  const floatDistance = Math.min(age * 0.03, 60); // Cap max float distance
+                  const baseOffset = stackIndex * 18; // Slightly more spacing
+                  const totalOffset = -(baseOffset + floatDistance);
+                  
+                  return (
+                    <div
+                      key={ft.id}
+                      style={{
+                        position: 'absolute',
+                        left: `${horseX}%`,
+                        top: `${horseY}%`,
+                        transform: `translate(-50%, -50%) translateY(${totalOffset}px)`,
+                        color: ft.color,
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        textShadow: '1px 1px 2px rgba(0,0,0,0.9)',
+                        opacity: opacity,
+                        pointerEvents: 'none',
+                        zIndex: 20 + stackIndex,
+                        whiteSpace: 'nowrap',
+                        transition: 'opacity 0.1s ease-out'
+                      }}
+                    >
+                      {ft.text}
+                    </div>
+                  );
+                })}
           </div>
           
           {/* Horse Status Text */}
@@ -1320,20 +1587,52 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 {endReason === 'success' && (
                   <p className="text-green-600">🎉 Escaped successfully!</p>
                 )}
+                {endReason === 'early_exit' && (
+                  <p className="text-orange-600">🚪 Exited early with collected treasures!</p>
+                )}
               </div>
             )}
           </div>
 
           {/* Mobile-optimized Controls */}
           <div className="space-y-3">
-            {/* Primary Action Button */}
-            <button
-              onClick={startGame}
-              disabled={gameState === 'exploring'}
-              className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-base shadow-md"
-            >
-              {gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
-            </button>
+            {/* Primary Action Buttons */}
+            {gameState === 'exploring' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setEndReason('early_exit');
+                    setGameState('ended');
+                    setInventory(prev => [...prev, ...currentRewards]);
+                    // Award partial points for early exit
+                    const basePoints = Math.floor(currentRewards.length / 3) + 1;
+                    const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
+                    const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 6));
+                    const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.1);
+                    setSkillPoints(prev => prev + skillPointsEarned);
+                    onUpdateResearchPoints(prev => prev + researchPointsEarned);
+                  }}
+                  className="py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium text-base shadow-md"
+                >
+                  🚪 End Run
+                </button>
+                <button
+                  onClick={startGame}
+                  disabled={true}
+                  className="py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium text-base shadow-md"
+                >
+                  🔄 New Adventure
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={startGame}
+                disabled={gameState === 'exploring'}
+                className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-base shadow-md"
+              >
+                {gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
+              </button>
+            )}
             
             {/* Settings Row */}
             <div className="grid grid-cols-2 gap-2">
@@ -1464,7 +1763,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             
             {/* Inventory Grid */}
             <div className="grid grid-cols-4 gap-2">
-              {Array.from({ length: 4 }).map((_, index) => {
+              {Array.from({ length: 4 + getSkillLevel('saddlebags') }).map((_, index) => {
                 const item = selectedHorse.inventory?.[index];
                 return (
                   <div
@@ -1783,12 +2082,55 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         </div>
       )}
 
+      {/* Vault Interaction Modal */}
+      {showVaultModal && currentVault && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="text-center space-y-4">
+              <img 
+                src="/maze/vault.png" 
+                alt="Treasure Vault" 
+                className="w-20 h-20 mx-auto object-contain"
+              />
+              <h2 className="text-lg font-bold text-gray-800">
+                {selectedHorse?.name} has found a treasure chest!
+              </h2>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleVaultUnlock}
+                  disabled={availableKeys <= 0}
+                  className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${
+                    availableKeys > 0 
+                      ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  🗝️ Unlock {availableKeys > 0 ? `(${availableKeys} keys)` : '(No keys)'}
+                </button>
+                <button
+                  onClick={handleVaultLeave}
+                  className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+                >
+                  🚶 Leave
+                </button>
+              </div>
+              
+              {availableKeys <= 0 && (
+                <p className="text-xs text-red-600 mt-2">
+                  You need a key to unlock this vault. Find keys scattered throughout the maze!
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ItemSelectionModal */}
       <ItemSelectionModal
         isOpen={showItemSelection}
         horse={selectedHorse}
         collectedItems={collectedItemsThisRun}
-        maxSlots={4}
         onConfirm={handleItemSelectionConfirm}
         onCancel={handleItemSelectionCancel}
       />

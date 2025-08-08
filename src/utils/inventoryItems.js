@@ -14,7 +14,7 @@ export const INVENTORY_ITEMS = {
     description: 'Valuable treasure from the maze',
     image: '/maze/treasure.png',
     category: 'treasure',
-    stackable: true
+    stackable: false
   },
   powerup: {
     id: 'powerup',
@@ -22,7 +22,7 @@ export const INVENTORY_ITEMS = {
     description: 'Magical enhancement item',
     image: '/maze/powerup.png',
     category: 'consumable',
-    stackable: true
+    stackable: false
   },
   vault_treasure: {
     id: 'vault_treasure',
@@ -30,18 +30,18 @@ export const INVENTORY_ITEMS = {
     description: 'Rare treasure from a secured vault',
     image: '/maze/vault.png',
     category: 'rare_treasure',
-    stackable: true
+    stackable: false
   }
 };
 
 // Helper functions for inventory management
 export const inventoryUtils = {
-  // Add item to horse inventory (max 4 slots)
-  addItem: (inventory, item) => {
+  // Add item to horse inventory (dynamic slots based on saddlebags skill)
+  addItem: (inventory, item, maxSlots = 4) => {
     if (!inventory) inventory = [];
     
     // Check if inventory is full
-    if (inventory.length >= 4) {
+    if (inventory.length >= maxSlots) {
       return { success: false, reason: 'Inventory full', inventory };
     }
     
@@ -96,8 +96,8 @@ export const inventoryUtils = {
     return item ? (item.quantity || 1) : 0;
   },
 
-  // Check if inventory has space
-  hasSpace: (inventory) => {
-    return !inventory || inventory.length < 4;
+  // Check if inventory has space (dynamic slots based on saddlebags skill)
+  hasSpace: (inventory, maxSlots = 4) => {
+    return !inventory || inventory.length < maxSlots;
   }
 };
