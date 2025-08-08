@@ -13,6 +13,8 @@ const HorseStable = ({
   horseSkills,
   horseSkillPoints,
   customHorseNames,
+  horseCareStats,
+  onUpdateHorseCareStats,
   onBack,
   onShowLockedHorses,
   onSendToLabyrinth,
@@ -20,6 +22,8 @@ const HorseStable = ({
   onHorseRename,
   dayCount,
   onUpdateDayCount,
+  stableGameTime,
+  onUpdateStableGameTime,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -53,8 +57,8 @@ const HorseStable = ({
   const [lastCareTime, setLastCareTime] = useState(Date.now());
   const [careActionFeedback, setCareActionFeedback] = useState(null);
 
-  // Day/Night cycle state
-  const [gameTime, setGameTime] = useState(0); // 0-24 hours
+  // Day/Night cycle state - initialize with persistent time
+  const [gameTime, setGameTime] = useState(stableGameTime || 0); // 0-24 hours
   const [lastDailyIncome, setLastDailyIncome] = useState(0);
   const [newDayNotification, setNewDayNotification] = useState(null);
 
@@ -70,7 +74,8 @@ const HorseStable = ({
   const individualCareCosts = {
     groom: 5,
     apple: 3,
-    carrot: 2
+    carrot: 2,
+    heal: 15 // Medical care for injured horses
   };
 
   // Get resource status color based on level
@@ -103,8 +108,13 @@ const HorseStable = ({
       opacity: 1
     };
     
+    // Injured horses have special visual effects
+    if (horse.isInjured) {
+      effects.opacity = 0.6; // Injured horses look very faded
+      effects.filter += " sepia(0.5) saturate(0.7)"; // More sepia and desaturated
+    }
     // Health affects overall appearance
-    if (horse.health < 30) {
+    else if (horse.health < 30) {
       effects.opacity = 0.7; // Sick horses look faded
       effects.filter += " sepia(0.3)"; // Slight sepia for sickness
     }
@@ -122,6 +132,7 @@ const HorseStable = ({
   const getHorseStatusIndicators = (horse) => {
     const indicators = [];
     
+    if (horse.isInjured) indicators.push('🏥'); // Injured (highest priority)
     if (horse.health < 40) indicators.push('🤒'); // Sick
     if (horse.cleanliness < 30) indicators.push('💩'); // Dirty
     if (horse.energy < 25) indicators.push('💤'); // Tired
@@ -221,13 +232,16 @@ const HorseStable = ({
       case 'carrot':
         feedbackMessage = `FED ${horseName} A CARROT`;
         break;
+      case 'heal':
+        feedbackMessage = `HEALED ${horseName}`;
+        break;
     }
     setCareActionFeedback({ type: 'success', message: feedbackMessage });
     setTimeout(() => setCareActionFeedback(null), 2000);
 
     // SIMPLEST POSSIBLE APPROACH - Just update the horse directly
-    setStableHorses(prevHorses => 
-      prevHorses.map(horse => {
+    setStableHorses(prevHorses => {
+      const updatedHorses = prevHorses.map(horse => {
         if (horse.id !== horseId) {
           return horse; // Return exact same reference for unchanged horses
         }
@@ -257,13 +271,25 @@ const HorseStable = ({
             updates.isEatingCarrot = true;
             updates.careAnimationEnd = now + 3000;
             break;
+          case 'heal':
+            updates.health = Math.min(100, horse.health + 30); // Major health boost
+            updates.happiness = Math.min(100, horse.happiness + 20); // Feel better
+            updates.energy = Math.min(100, horse.energy + 15); // More energetic
+            updates.isInjured = false; // Heal the injury!
+            updates.isBeingHealed = true;
+            updates.careAnimationEnd = now + 4000; // Longer healing animation
+            break;
           default:
             return horse;
         }
 
         return { ...horse, ...updates };
-      })
-    );
+      });
+      
+      // Save the updated care stats after individual care actions
+      saveHorseCareStats(updatedHorses);
+      return updatedHorses;
+    });
   };
 
   // Calculate viewport bounds for panning
@@ -406,16 +432,10 @@ const HorseStable = ({
     const skills = horseSkills?.[horse.id] || horse.skills || {};
     const skillPoints = horseSkillPoints?.[horse.id] || horse.skillPoints || 0;
     const customName = customHorseNames?.[horse.id] || horse.name;
+    const savedCareStats = horseCareStats?.[horse.id];
+    
     console.log(`🏠 Stable - createHorseData for horse ${horse.id} (${customName}):`);
-    console.log('  - horseInventories:', horseInventories);
-    console.log('  - horseInventories[horse.id]:', horseInventories?.[horse.id]);
-    console.log('  - horseSkills prop:', horseSkills);
-    console.log('  - horseSkills[horse.id]:', horseSkills?.[horse.id]);
-    console.log('  - horseSkillPoints prop:', horseSkillPoints);
-    console.log('  - horseSkillPoints[horse.id]:', horseSkillPoints?.[horse.id]);
-    console.log('  - final inventory:', inventory);
-    console.log('  - final skills:', skills);
-    console.log('  - final skillPoints:', skillPoints);
+    console.log('  - savedCareStats:', savedCareStats);
     
     return {
       ...horse,
@@ -432,17 +452,20 @@ const HorseStable = ({
       isResting: false,
       lastMoveTime: Date.now(),
       inventory, // Use global inventory or fallback
-      // Individual care stats (base values)
-      happiness: 80 + Math.random() * 20, // 80-100
-      health: 75 + Math.random() * 25,    // 75-100
-      cleanliness: 70 + Math.random() * 30, // 70-100
-      energy: 85 + Math.random() * 15,    // 85-100
-      lastCareUpdate: Date.now(),
+      // Individual care stats - use saved values or defaults
+      happiness: savedCareStats?.happiness ?? (80 + Math.random() * 20), // 80-100
+      health: savedCareStats?.health ?? (75 + Math.random() * 25),    // 75-100
+      cleanliness: savedCareStats?.cleanliness ?? (70 + Math.random() * 30), // 70-100
+      energy: savedCareStats?.energy ?? (85 + Math.random() * 15),    // 85-100
+      lastCareUpdate: savedCareStats?.lastCareUpdate ?? Date.now(),
       // Care animations
       isBeingGroomed: false,
       isEatingApple: false,
       isEatingCarrot: false,
+      isBeingHealed: false,
       careAnimationEnd: 0,
+      // Injury status - use saved value or default from horse data
+      isInjured: savedCareStats?.isInjured ?? horse.isInjured ?? false,
     };
   };
 
@@ -584,26 +607,54 @@ const HorseStable = ({
     );
   }, [horseInventories, stableLoaded]);
 
+  // Save horse care stats to parent whenever they change
+  const saveHorseCareStats = (horses) => {
+    if (onUpdateHorseCareStats && horses.length > 0) {
+      const careStatsToSave = {};
+      horses.forEach(horse => {
+        careStatsToSave[horse.id] = {
+          happiness: horse.happiness,
+          health: horse.health,
+          cleanliness: horse.cleanliness,
+          energy: horse.energy,
+          isInjured: horse.isInjured,
+          lastCareUpdate: horse.lastCareUpdate
+        };
+      });
+      onUpdateHorseCareStats(prev => ({ ...prev, ...careStatsToSave }));
+    }
+  };
+
   // Care stats decay system
   useEffect(() => {
     if (!stableLoaded || stableHorses.length === 0) return;
     
     const decayInterval = setInterval(() => {
-      setStableHorses(prevHorses => 
-        prevHorses.map(horse => {
+      setStableHorses(prevHorses => {
+        const updatedHorses = prevHorses.map(horse => {
           // Small gradual decay over time
           const decayAmount = 1 + Math.random() * 2; // 1-3 points decay
           
+          // Music happiness boost - small bonus for healthy horses
+          let musicBonus = 0;
+          if (isPlaying && !horse.isInjured && !horse.isResting) {
+            musicBonus = 0.3 + Math.random() * 0.4; // 0.3-0.7 happiness boost from music
+          }
+          
           return {
             ...horse,
-            happiness: Math.max(10, horse.happiness - decayAmount * 0.8),
+            happiness: Math.max(10, Math.min(100, horse.happiness - decayAmount * 0.8 + musicBonus)),
             health: Math.max(10, horse.health - decayAmount * 0.6),
             cleanliness: Math.max(10, horse.cleanliness - decayAmount * 1.2), // Gets dirty fastest
             energy: Math.max(10, horse.energy - decayAmount * 1.0),
             lastCareUpdate: Date.now()
           };
-        })
-      );
+        });
+        
+        // Save the updated care stats
+        saveHorseCareStats(updatedHorses);
+        return updatedHorses;
+      });
       
       // Also decay stable resources slightly
       setStableResources(prev => ({
@@ -625,6 +676,11 @@ const HorseStable = ({
     const timeInterval = setInterval(() => {
       setGameTime(prevTime => {
         const newTime = (prevTime + 0.08) % 24; // 1 game day = 5 minutes (0.08 hours every second)
+        
+        // Save the time to persistence
+        if (onUpdateStableGameTime) {
+          onUpdateStableGameTime(newTime);
+        }
         
         // Check if we've crossed into a new day (from 23.5+ back to 0-0.5)
         if (prevTime > 23 && newTime < 1) {
@@ -648,7 +704,7 @@ const HorseStable = ({
     }, 1000); // Update every second
     
     return () => clearInterval(timeInterval);
-  }, [stableLoaded, dayCount, coins, onUpdateCoins, onUpdateDayCount]);
+  }, [stableLoaded, dayCount, coins, onUpdateCoins, onUpdateDayCount, onUpdateStableGameTime]);
 
   // Helper functions for day/night cycle
   const getTimeOfDayPhase = () => {
@@ -707,6 +763,7 @@ const HorseStable = ({
               isBeingGroomed: false,
               isEatingApple: false,
               isEatingCarrot: false,
+              isBeingHealed: false,
               careAnimationEnd: 0
             };
           }
@@ -1252,6 +1309,14 @@ const HorseStable = ({
                 animate={
                   horse.isResting
                     ? { scale: [1, 1.02, 1], rotate: [0, 1, -1, 0] }
+                    : horse.isInjured
+                    ? { y: [0, -0.5, 0], rotate: [0, 0.5, -0.5, 0] } // Injured horses barely move
+                    : isPlaying && !horse.isInjured // Dancing to music (only if not injured)
+                    ? { 
+                        y: [0, -8, -4, -8, 0], // Enhanced bouncing pattern
+                        rotate: [0, 5, -5, 3, 0], // Head bobbing side to side
+                        scale: [1, 1.05, 0.98, 1.02, 1] // Slight pulsing to the beat
+                      }
                     : horse.energy < 30
                     ? { y: [0, -1, 0], rotate: [0, 1, -1, 0] } // Tired animation
                     : horse.happiness > 80
@@ -1259,9 +1324,20 @@ const HorseStable = ({
                     : { y: [0, -2, 0], rotate: [0, 2, -2, 0] } // Normal animation
                 }
                 transition={{
-                  duration: horse.isResting ? 3 : horse.energy < 30 ? 2 : horse.happiness > 80 ? 0.8 : 1,
+                  duration: horse.isResting 
+                    ? 3 
+                    : horse.isInjured
+                    ? 4 // Injured horses move very slowly
+                    : isPlaying && !horse.isInjured
+                    ? 1.2 // Rhythmic tempo for dancing
+                    : horse.energy < 30 
+                    ? 2 
+                    : horse.happiness > 80 
+                    ? 0.8 
+                    : 1,
                   repeat: Infinity,
-                  ease: "easeInOut",
+                  ease: horse.isInjured ? "easeOut" : isPlaying ? "easeInOut" : "easeInOut",
+                  delay: isPlaying && !horse.isInjured ? (horse.id * 0.1) : 0, // Slight delay offset for each horse when dancing
                 }}
               >
                 <FadeInImage
@@ -1342,6 +1418,82 @@ const HorseStable = ({
                   </motion.div>
                 )}
                 
+                {horse.isBeingHealed && (
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {/* Healing aura */}
+                    <motion.div
+                      className="absolute inset-0 bg-green-400 rounded-full"
+                      animate={{
+                        scale: [1, 1.3, 1],
+                        opacity: [0.3, 0.6, 0.3],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                    {/* Healing crosses */}
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute text-green-500 text-xl"
+                        style={{
+                          left: `${20 + Math.random() * 60}%`,
+                          top: `${20 + Math.random() * 60}%`,
+                        }}
+                        animate={{
+                          opacity: [0, 1, 0],
+                          scale: [0.5, 1.2, 0.5],
+                          y: [0, -30],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          delay: i * 0.3,
+                        }}
+                      >
+                        ✚
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+                
+                {/* Musical notes for dancing horses */}
+                {isPlaying && !horse.isResting && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute text-blue-400"
+                        style={{
+                          left: `${40 + i * 20}%`,
+                          top: `${30 + i * 15}%`,
+                          fontSize: '14px'
+                        }}
+                        animate={{
+                          opacity: [0, 0.8, 0],
+                          y: [0, -15],
+                          rotate: [0, 5, -5, 0],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          delay: i * 1 + (horse.id * 0.5), // Longer offset per horse
+                          ease: "easeInOut"
+                        }}
+                      >
+                        {i % 2 === 0 ? '🎵' : '🎶'}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Horse Status Indicators */}
                 {getHorseStatusIndicators(horse).map((indicator, index) => (
                   <motion.div
@@ -1869,6 +2021,57 @@ const HorseStable = ({
                 }}
               >
                 <span className="text-amber-100">♪ WILD AND UNBRIDLED</span>
+              </div>
+              
+              <div 
+                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '11px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (isPlaying) {
+                    return; // Don't start playing if already playing
+                  }
+                  
+                  // Stop any currently playing audio
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Clover.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'CLOVER',
+                    image: '/record collection/Clover.png'
+                  });
+                  
+                  // Set up event listeners
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                  });
+                  
+                  audio.addEventListener('error', () => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                    console.log('Audio play failed');
+                  });
+                  
+                  audio.play().catch(err => {
+                    setIsPlaying(false);
+                    setCurrentAudio(null);
+                    setCurrentSong(null);
+                    console.log('Audio play failed:', err);
+                  });
+                }}
+              >
+                <span className="text-amber-100">♪ CLOVER</span>
               </div>
             </div>
             <div className="text-right mt-4">

@@ -68,8 +68,10 @@ export default function RandomPicker() {
   const [horseSkillPoints, setHorseSkillPoints] = useState({});
   const [researchPoints, setResearchPoints] = useState(0);
   const [customHorseNames, setCustomHorseNames] = useState({});
+  const [horseCareStats, setHorseCareStats] = useState({}); // Store care stats by horse index
   const [unlockedMazes, setUnlockedMazes] = useState({ standard: true });
   const [dayCount, setDayCount] = useState(1);
+  const [stableGameTime, setStableGameTime] = useState(0);
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -260,6 +262,11 @@ const horsePersonalities = [
         setHorseSkillPoints(savedData.horseSkillPoints);
       }
       
+      if (savedData.horseCareStats && typeof savedData.horseCareStats === 'object') {
+        console.log('🏠 App - Loading horseCareStats from save:', savedData.horseCareStats);
+        setHorseCareStats(savedData.horseCareStats);
+      }
+      
       if (typeof savedData.researchPoints === 'number') {
         setResearchPoints(savedData.researchPoints);
       }
@@ -274,6 +281,10 @@ const horsePersonalities = [
       
       if (typeof savedData.dayCount === 'number' && savedData.dayCount >= 1) {
         setDayCount(savedData.dayCount);
+      }
+      
+      if (typeof savedData.stableGameTime === 'number' && savedData.stableGameTime >= 0) {
+        setStableGameTime(savedData.stableGameTime);
       }
       
       console.log('Game data loaded successfully');
@@ -297,8 +308,10 @@ const horsePersonalities = [
         horseSkillPoints,
         researchPoints,
         customHorseNames,
+        horseCareStats,
         unlockedMazes,
-        dayCount
+        dayCount,
+        stableGameTime
       };
       
       console.log('🏠 App - Saving game state:', gameState);
@@ -307,7 +320,7 @@ const horsePersonalities = [
       
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, unlockedMazes, dayCount, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1230,6 +1243,7 @@ const horsePersonalities = [
       setHorseSkillPoints({});
       setResearchPoints(0);
       setCustomHorseNames({});
+      setHorseCareStats({});
       setDayCount(1);
       console.log('All save data cleared');
     }
@@ -1677,6 +1691,8 @@ const horsePersonalities = [
         horseSkills={horseSkills}
         horseSkillPoints={horseSkillPoints}
         customHorseNames={customHorseNames}
+        horseCareStats={horseCareStats}
+        onUpdateHorseCareStats={setHorseCareStats}
         onBack={() => {
           setShowStable(false);
           // Randomize horse avatars when returning from stable
@@ -1698,6 +1714,8 @@ const horsePersonalities = [
         onHorseRename={handleHorseRename}
         dayCount={dayCount}
         onUpdateDayCount={setDayCount}
+        stableGameTime={stableGameTime}
+        onUpdateStableGameTime={setStableGameTime}
       />
     );
   }
@@ -1769,6 +1787,26 @@ const horsePersonalities = [
                 return newState;
               });
             }
+            
+            // CRITICAL: Save horse care stats (including injury status)
+            console.log('🏥 App - Saving care stats for horse', updatedHorse.id);
+            console.log('🏥 App - Horse injury status:', updatedHorse.isInjured);
+            console.log('🏥 App - Horse health:', updatedHorse.health);
+            setHorseCareStats(prev => {
+              const newCareStats = {
+                ...prev,
+                [updatedHorse.id]: {
+                  happiness: updatedHorse.happiness,
+                  health: updatedHorse.health,
+                  cleanliness: updatedHorse.cleanliness,
+                  energy: updatedHorse.energy,
+                  isInjured: updatedHorse.isInjured,
+                  lastCareUpdate: updatedHorse.lastCareUpdate || Date.now()
+                }
+              };
+              console.log('🏥 App - Updated horseCareStats:', newCareStats);
+              return newCareStats;
+            });
           }
         }}
       />

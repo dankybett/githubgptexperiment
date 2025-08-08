@@ -315,6 +315,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [trapHits, setTrapHits] = useState(0);
   
+  // Track if horse got injured during current labyrinth session
+  const [horseInjuredThisSession, setHorseInjuredThisSession] = useState(false);
+  
   // Visual feedback states
   const [floatingTexts, setFloatingTexts] = useState([]);
   const [horseFlash, setHorseFlash] = useState(null);
@@ -805,6 +808,35 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         setEndReason('minotaur');
         setGameState('ended');
         setInventory(prev => [...prev, ...currentRewards]);
+        
+        // INJURY CALCULATION - Apply immediately when caught by minotaur
+        const injuryChance = 0.7; // INCREASED FOR TESTING
+        const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+        const injuryRoll = Math.random();
+        const finalInjuryChance = injuryChance * difficultyMultiplier;
+        
+        console.log('🩹 MINOTAUR INJURY DEBUG - Rolling for injury:');
+        console.log('  - Random roll:', injuryRoll);
+        console.log('  - Required threshold:', finalInjuryChance);
+        console.log('  - Will injury occur?', injuryRoll < finalInjuryChance);
+        
+        if (injuryRoll < finalInjuryChance) {
+          console.log('🏥 HORSE INJURED BY MINOTAUR!');
+          setHorseInjuredThisSession(true);
+          
+          const injuryMessages = ['🩹 Injured by minotaur!', '👹 Minotaur inflicted wounds!', '💔 Hurt in minotaur encounter!'];
+          const injuryMessage = injuryMessages[Math.floor(Math.random() * injuryMessages.length)];
+          
+          // Show injury notification
+          setFloatingTexts(prev => [...prev, {
+            id: Date.now() + Math.random(),
+            text: injuryMessage,
+            color: '#ef4444',
+            fontSize: '16px',
+            duration: 4000
+          }]);
+        }
+        
         // Award points based on performance and maze difficulty
         const basePoints = Math.floor(currentRewards.length / 2) + 1;
         const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
@@ -826,6 +858,35 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           setEndReason('minotaur');
           setGameState('ended');
           setInventory(prev => [...prev, ...currentRewards]);
+          
+          // INJURY CALCULATION - Apply immediately when caught by minotaur (second case)
+          const injuryChance = 0.7; // INCREASED FOR TESTING
+          const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+          const injuryRoll = Math.random();
+          const finalInjuryChance = injuryChance * difficultyMultiplier;
+          
+          console.log('🩹 MINOTAUR INJURY DEBUG (Path) - Rolling for injury:');
+          console.log('  - Random roll:', injuryRoll);
+          console.log('  - Required threshold:', finalInjuryChance);
+          console.log('  - Will injury occur?', injuryRoll < finalInjuryChance);
+          
+          if (injuryRoll < finalInjuryChance) {
+            console.log('🏥 HORSE INJURED BY MINOTAUR (Path)!');
+            setHorseInjuredThisSession(true);
+            
+            const injuryMessages = ['🩹 Injured by minotaur!', '👹 Minotaur inflicted wounds!', '💔 Hurt in minotaur encounter!'];
+            const injuryMessage = injuryMessages[Math.floor(Math.random() * injuryMessages.length)];
+            
+            // Show injury notification
+            setFloatingTexts(prev => [...prev, {
+              id: Date.now() + Math.random(),
+              text: injuryMessage,
+              color: '#ef4444',
+              fontSize: '16px',
+              duration: 4000
+            }]);
+          }
+          
           const basePoints = Math.floor(currentRewards.length / 2) + 1;
           const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
           const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
@@ -958,8 +1019,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         });
       } else if (cell === CELL_KEY) {
         const key = vaultKeys.find(k => k.x === nextMove.x && k.y === nextMove.y);
-        if (key) {
-          // Add visual feedback for key collection
+        if (key && !collectedKeys.includes(key.id)) {
+          // Add visual feedback for key collection (only if not already collected)
           addFloatingText('🗝️ Key Found!', '#eab308');
           flashHorse('#eab308');
           
@@ -1014,6 +1075,38 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         setEndReason('trap');
         setGameState('ended');
         setInventory(prev => [...prev, ...currentRewards]);
+        
+        // INJURY CALCULATION - Apply immediately when trapped
+        const injuryChance = 0.8; // INCREASED FOR TESTING
+        const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+        const injuryRoll = Math.random();
+        const finalInjuryChance = injuryChance * difficultyMultiplier;
+        
+        console.log('🩹 TRAP INJURY DEBUG - Rolling for injury:');
+        console.log('  - Random roll:', injuryRoll);
+        console.log('  - Required threshold:', finalInjuryChance);
+        console.log('  - Will injury occur?', injuryRoll < finalInjuryChance);
+        
+        if (injuryRoll < finalInjuryChance) {
+          console.log('🏥 HORSE INJURED BY TRAP!');
+          console.log('🏥 Setting horseInjuredThisSession to TRUE');
+          setHorseInjuredThisSession(true);
+          
+          const injuryMessages = ['🩹 Injured by trap!', '💔 Trap wounds sustained!', '⚡ Badly hurt by trap!'];
+          const injuryMessage = injuryMessages[Math.floor(Math.random() * injuryMessages.length)];
+          
+          // Show injury notification
+          setFloatingTexts(prev => [...prev, {
+            id: Date.now() + Math.random(),
+            text: injuryMessage,
+            color: '#ef4444',
+            fontSize: '16px',
+            duration: 4000
+          }]);
+        } else {
+          console.log('🏥 Horse avoided trap injury');
+        }
+        
         // Award points based on performance and maze difficulty
         const basePoints = Math.floor(currentRewards.length / 2) + 1;
         const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
@@ -1201,11 +1294,17 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     setCollectedKeys([]);
     setCurrentLevel(1);
     setCollectedItemsThisRun([]);
+    // Reset session injury flag for new runs
+    setHorseInjuredThisSession(false);
     // Reset available keys to horse's starting inventory keys
     setAvailableKeys(inventoryUtils.getItemCount(selectedHorse?.inventory || [], 'key'));
   };
 
   const exitLabyrinth = () => {
+    console.log('🚪 EXIT LABYRINTH DEBUG - Function called');
+    console.log('  - horseInjuredThisSession:', horseInjuredThisSession);
+    console.log('  - gameState:', gameState);
+    
     const currentInventoryCount = selectedHorse?.inventory?.length || 0;
     const baseSlotsCount = 4;
     const saddlebagsLevel = getSkillLevel('saddlebags');
@@ -1235,6 +1334,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
 
   const returnHorseWithItems = (itemsToKeep, discardedIndices = []) => {
+    console.log('🔍 RETURN HORSE DEBUG - Function called');
+    console.log('  - horseInjuredThisSession:', horseInjuredThisSession);
+    console.log('  - selectedHorse.isInjured:', selectedHorse?.isInjured);
+    console.log('  - endReason:', endReason);
+    
     if (selectedHorse && onHorseReturn) {
       // Start with current inventory, removing discarded items
       let updatedInventory = [...(selectedHorse.inventory || [])];
@@ -1270,19 +1374,53 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       
       // Apply fatigue and potential injury from labyrinth run
       const fatigueFromRun = Math.min(20, horseMoveCount * 0.5); // More movement = more fatigue
-      const injuryChance = (endReason === 'trap') ? 0.3 : (endReason === 'minotaur') ? 0.2 : 0.1;
+      const injuryChance = (endReason === 'trap') ? 0.8 : (endReason === 'minotaur') ? 0.7 : 0.5; // INCREASED FOR TESTING
       const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+      
+      console.log('🩹 INJURY DEBUG - Calculating injury chance:');
+      console.log('  - End reason:', endReason);
+      console.log('  - Base injury chance:', injuryChance);
+      console.log('  - Difficulty multiplier:', difficultyMultiplier);
+      console.log('  - Final injury chance:', injuryChance * difficultyMultiplier);
       
       let healthReduction = 0;
       let energyReduction = fatigueFromRun;
       let happinessChange = 0;
       
-      // Apply injury if unlucky
-      if (Math.random() < injuryChance * difficultyMultiplier) {
+      // Check if horse was injured during this session or roll for new injury
+      let isInjured = horseInjuredThisSession; // Use session injury status
+      let injuryMessage = '';
+      
+      console.log('🩹 INJURY DEBUG - Checking injury status:');
+      console.log('  - Horse injured this session?', horseInjuredThisSession);
+      console.log('  - Horse already injured?', selectedHorse.isInjured);
+      
+      if (horseInjuredThisSession && !selectedHorse.isInjured) {
+        // Apply injury damage since horse got injured this session
         healthReduction = Math.random() * 25 + 10; // 10-35 health loss
         happinessChange = -15; // Injury makes horses unhappy
         energyReduction += 20; // Extra fatigue from injury
-      } else if (endReason === 'success') {
+        console.log('🩹 APPLYING SESSION INJURY - Health reduction:', healthReduction);
+      } else if (!horseInjuredThisSession && !selectedHorse.isInjured) {
+        // Fallback: roll for injury if somehow wasn't calculated during game
+        const injuryRoll = Math.random();
+        const finalInjuryChance = injuryChance * difficultyMultiplier;
+        
+        console.log('🩹 FALLBACK INJURY ROLL:');
+        console.log('  - Random roll:', injuryRoll);
+        console.log('  - Required threshold:', finalInjuryChance);
+        
+        if (injuryRoll < finalInjuryChance) {
+          healthReduction = Math.random() * 25 + 10; // 10-35 health loss
+          happinessChange = -15; // Injury makes horses unhappy
+          energyReduction += 20; // Extra fatigue from injury
+          isInjured = true; // Mark horse as injured
+          console.log('🩹 FALLBACK INJURY APPLIED - Health reduction:', healthReduction);
+        }
+      }
+      
+      // Apply success bonus if not injured
+      if (endReason === 'success' && !isInjured) {
         happinessChange = 10; // Successful runs make horses happy
       }
       
@@ -1292,6 +1430,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         health: Math.max(0, selectedHorse.health - healthReduction),
         energy: Math.max(0, selectedHorse.energy - energyReduction),
         happiness: Math.max(0, Math.min(100, selectedHorse.happiness + happinessChange)),
+        isInjured: isInjured || selectedHorse.isInjured || false, // Keep existing injury status or add new one
         cleanliness: Math.max(0, selectedHorse.cleanliness - (fatigueFromRun * 0.3)), // Gets dirty from adventure
         lastLabyrinthRun: Date.now(),
         runsSinceRest: (selectedHorse.runsSinceRest || 0) + 1,
@@ -1304,10 +1443,23 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       console.log('  - Health change:', -healthReduction);
       console.log('  - Energy change:', -energyReduction);
       console.log('  - Happiness change:', happinessChange);
+      console.log('  - Injury sustained:', isInjured ? 'YES' : 'No');
       console.log('  - Final inventory:', updatedInventory);
       console.log('  - Skills being saved:', horseSkills);
       console.log('  - Skill points being saved:', skillPoints);
       console.log('  - Updated horse object:', updatedHorse);
+      
+      console.log('🔥 CRITICAL DEBUG - Horse being returned to stable:');
+      console.log('  - updatedHorse.isInjured:', updatedHorse.isInjured);
+      console.log('  - updatedHorse.health:', updatedHorse.health);
+      console.log('  - updatedHorse.happiness:', updatedHorse.happiness);
+      console.log('  - About to call onHorseReturn with:', updatedHorse);
+      
+      // Update the session injury flag to prevent new adventures
+      if (isInjured && !selectedHorse.isInjured) {
+        console.log('🏥 Horse got injured in labyrinth - marking session as injured to prevent new adventures');
+        setHorseInjuredThisSession(true);
+      }
       
       onHorseReturn(updatedHorse);
     }
@@ -1627,10 +1779,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             ) : (
               <button
                 onClick={startGame}
-                disabled={gameState === 'exploring'}
+                disabled={gameState === 'exploring' || selectedHorse.isInjured || horseInjuredThisSession}
                 className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-base shadow-md"
               >
-                {gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
+                {(selectedHorse.isInjured || horseInjuredThisSession) ? '🏥 Horse is Injured - Cannot Enter' : gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
               </button>
             )}
             
@@ -1735,12 +1887,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 </div>
                 
                 {/* Condition Warnings */}
-                {(selectedHorse.health < 50 || selectedHorse.energy < 30) && (
+                {(selectedHorse.health < 50 || selectedHorse.energy < 30 || selectedHorse.isInjured) && (
                   <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
                     <div className="text-xs text-red-700 font-semibold flex items-center gap-1">
                       ⚠️ WARNING
                     </div>
                     <div className="text-xs text-red-600 mt-1">
+                      {selectedHorse.isInjured && "This horse is INJURED and cannot enter the labyrinth! Return to stable for healing. "}
                       {selectedHorse.health < 50 && "This horse is injured and needs medical care! "}
                       {selectedHorse.energy < 30 && "This horse is exhausted and needs rest! "}
                       Sending weak horses on adventures increases injury risk.

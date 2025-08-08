@@ -57,6 +57,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
   const [name, setName] = useState(horse.name);
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'status', 'skills', or 'inventory'
 
+
   const handleSave = () => {
     onRename(horse.id, name);
     onClose();
@@ -163,7 +164,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                 {horse.happiness !== undefined && onCareAction && careCosts && (
                   <div className="p-3 bg-blue-50 rounded-lg">
                     <h3 className="text-sm font-semibold mb-3 text-center">Care Actions</h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-4 gap-2">
                       <button
                         onClick={() => onCareAction(horse.id, 'groom')}
                         disabled={coins < careCosts.groom}
@@ -205,7 +206,37 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                         <div>Carrot</div>
                         <div className="text-xs opacity-75">{careCosts.carrot} 💰</div>
                       </button>
+                      
+                      {/* Heal button - always show, but only enabled if horse is injured */}
+                      {careCosts.heal && (
+                        <button
+                          onClick={() => onCareAction(horse.id, 'heal')}
+                          disabled={coins < careCosts.heal || (!horse.isInjured && horse.health >= 50)}
+                          className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
+                            (coins >= careCosts.heal && (horse.isInjured || horse.health < 50))
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="text-lg mb-1">🏥</div>
+                          <div>Heal</div>
+                          <div className="text-xs opacity-75">{careCosts.heal} 💰</div>
+                        </button>
+                      )}
                     </div>
+                    
+                    {/* Injury Warning */}
+                    {horse.isInjured && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="text-xs text-red-700 font-semibold text-center">
+                          🚨 This horse is INJURED!
+                        </div>
+                        <div className="text-xs text-red-600 text-center mt-1">
+                          Cannot enter labyrinth until healed.
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="mt-2 text-xs text-center text-gray-600">
                       💰 Available: {coins} coins
                     </div>
