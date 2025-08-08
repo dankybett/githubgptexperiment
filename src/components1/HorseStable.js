@@ -18,6 +18,8 @@ const HorseStable = ({
   onSendToLabyrinth,
   onUpdateCoins,
   onHorseRename,
+  dayCount,
+  onUpdateDayCount,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -50,6 +52,11 @@ const HorseStable = ({
   });
   const [lastCareTime, setLastCareTime] = useState(Date.now());
   const [careActionFeedback, setCareActionFeedback] = useState(null);
+
+  // Day/Night cycle state
+  const [gameTime, setGameTime] = useState(0); // 0-24 hours
+  const [lastDailyIncome, setLastDailyIncome] = useState(0);
+  const [newDayNotification, setNewDayNotification] = useState(null);
 
   // Care action costs
   const careCosts = {
@@ -145,6 +152,32 @@ const HorseStable = ({
       ...prev,
       [resourceType]: Math.min(100, prev[resourceType] + 25)
     }));
+    
+    // Also improve all horses' stats based on the resource type
+    setStableHorses(prevHorses => 
+      prevHorses.map(horse => {
+        let updates = {};
+        switch (resourceType) {
+          case 'feed':
+            updates.health = Math.min(100, horse.health + 5);
+            updates.energy = Math.min(100, horse.energy + 8);
+            break;
+          case 'water':
+            updates.health = Math.min(100, horse.health + 6);
+            updates.happiness = Math.min(100, horse.happiness + 4);
+            break;
+          case 'pasture':
+            updates.happiness = Math.min(100, horse.happiness + 8);
+            updates.energy = Math.min(100, horse.energy + 6);
+            break;
+          case 'cleanliness':
+            updates.cleanliness = Math.min(100, horse.cleanliness + 10);
+            updates.health = Math.min(100, horse.health + 3);
+            break;
+        }
+        return { ...horse, ...updates };
+      })
+    );
     
     // Show success feedback
     const actionNames = {
@@ -551,14 +584,109 @@ const HorseStable = ({
     );
   }, [horseInventories, stableLoaded]);
 
-  // DISABLED - Resource decay system (causing re-render issues)
-  // useEffect(() => {
-  //   if (!stableLoaded) return;
-  //   const decayInterval = setInterval(() => {
-  //     // Resource decay logic disabled to prevent re-renders
-  //   }, 30000);
-  //   return () => clearInterval(decayInterval);
-  // }, [stableLoaded, stableHorses.length, lastCareTime]);
+  // Care stats decay system
+  useEffect(() => {
+    if (!stableLoaded || stableHorses.length === 0) return;
+    
+    const decayInterval = setInterval(() => {
+      setStableHorses(prevHorses => 
+        prevHorses.map(horse => {
+          // Small gradual decay over time
+          const decayAmount = 1 + Math.random() * 2; // 1-3 points decay
+          
+          return {
+            ...horse,
+            happiness: Math.max(10, horse.happiness - decayAmount * 0.8),
+            health: Math.max(10, horse.health - decayAmount * 0.6),
+            cleanliness: Math.max(10, horse.cleanliness - decayAmount * 1.2), // Gets dirty fastest
+            energy: Math.max(10, horse.energy - decayAmount * 1.0),
+            lastCareUpdate: Date.now()
+          };
+        })
+      );
+      
+      // Also decay stable resources slightly
+      setStableResources(prev => ({
+        feed: Math.max(0, prev.feed - 0.5 - Math.random() * 1),
+        water: Math.max(0, prev.water - 0.3 - Math.random() * 0.7),
+        pasture: Math.max(0, prev.pasture - 0.2 - Math.random() * 0.5),
+        cleanliness: Math.max(0, prev.cleanliness - 0.4 - Math.random() * 0.8)
+      }));
+      
+    }, 15000); // Every 15 seconds
+    
+    return () => clearInterval(decayInterval);
+  }, [stableLoaded, stableHorses.length]);
+
+  // Day/Night cycle and daily income system
+  useEffect(() => {
+    if (!stableLoaded) return;
+    
+    const timeInterval = setInterval(() => {
+      setGameTime(prevTime => {
+        const newTime = (prevTime + 0.08) % 24; // 1 game day = 5 minutes (0.08 hours every second)
+        
+        // Check if we've crossed into a new day (from 23.5+ back to 0-0.5)
+        if (prevTime > 23 && newTime < 1) {
+          const newDay = dayCount + 1;
+          if (onUpdateDayCount) {
+            onUpdateDayCount(newDay);
+          }
+          
+          // Give daily income
+          if (onUpdateCoins) {
+            onUpdateCoins(coins + 10);
+          }
+          
+          // Show new day notification
+          setNewDayNotification(`Day ${newDay} - Earned 10 coins!`);
+          setTimeout(() => setNewDayNotification(null), 3000);
+        }
+        
+        return newTime;
+      });
+    }, 1000); // Update every second
+    
+    return () => clearInterval(timeInterval);
+  }, [stableLoaded, dayCount, coins, onUpdateCoins, onUpdateDayCount]);
+
+  // Helper functions for day/night cycle
+  const getTimeOfDayPhase = () => {
+    if (gameTime >= 6 && gameTime < 12) return 'morning';
+    if (gameTime >= 12 && gameTime < 18) return 'afternoon';
+    if (gameTime >= 18 && gameTime < 22) return 'evening';
+    return 'night';
+  };
+
+  const getStableBackgroundStyle = () => {
+    const phase = getTimeOfDayPhase();
+    const baseFilter = 'saturate(1.1) contrast(1.05)';
+    
+    switch (phase) {
+      case 'morning':
+        return {
+          filter: `${baseFilter} brightness(1.1) sepia(0.1) hue-rotate(10deg)`,
+          backgroundColor: 'rgba(255, 248, 220, 0.3)' // Light morning tint
+        };
+      case 'afternoon':
+        return {
+          filter: `${baseFilter} brightness(1.2)`,
+          backgroundColor: 'rgba(255, 255, 255, 0.1)' // Bright day
+        };
+      case 'evening':
+        return {
+          filter: `${baseFilter} brightness(0.9) sepia(0.2) hue-rotate(30deg)`,
+          backgroundColor: 'rgba(255, 140, 0, 0.2)' // Golden hour
+        };
+      case 'night':
+        return {
+          filter: `${baseFilter} brightness(0.6) contrast(1.2) saturate(0.8)`,
+          backgroundColor: 'rgba(25, 25, 112, 0.4)' // Night blue tint
+        };
+      default:
+        return { filter: baseFilter };
+    }
+  };
 
   // Remove all complex logic
 
@@ -753,28 +881,67 @@ const HorseStable = ({
                 
               </motion.span>
               <div>
-                <h1 
-                  style={{
-                    fontSize: window.innerWidth < 640 ? '14px' : '24px',
-                    fontWeight: 'bold',
-                    color: '#fef3c7',
-                    margin: '0',
-                    lineHeight: '1.2'
-                  }}
-                >
-                  Horse Stable
-                </h1>
-                {window.innerWidth >= 640 && (
-                  <p 
-                    style={{
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div>
+                    <h1 
+                      style={{
+                        fontSize: window.innerWidth < 640 ? '14px' : '24px',
+                        fontWeight: 'bold',
+                        color: '#fef3c7',
+                        margin: '0',
+                        lineHeight: '1.2'
+                      }}
+                    >
+                      Horse Stable
+                    </h1>
+                    {window.innerWidth >= 640 && (
+                      <p 
+                        style={{
+                          color: '#fed7aa',
+                          fontSize: '14px',
+                          margin: '0'
+                        }}
+                      >
+                        Watch your horses roam freely in their home
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Day/Night Phase Display */}
+                  <div style={{ 
+                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    textAlign: 'center',
+                    minWidth: '100px'
+                  }}>
+                    <div style={{ 
+                      color: '#fef3c7',
+                      fontSize: window.innerWidth < 640 ? '10px' : '12px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      justifyContent: 'center'
+                    }}>
+                      <span>
+                        {getTimeOfDayPhase() === 'morning' && '🌅'}
+                        {getTimeOfDayPhase() === 'afternoon' && '☀️'}
+                        {getTimeOfDayPhase() === 'evening' && '🌇'}
+                        {getTimeOfDayPhase() === 'night' && '🌙'}
+                      </span>
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {getTimeOfDayPhase()}
+                      </span>
+                    </div>
+                    <div style={{ 
                       color: '#fed7aa',
-                      fontSize: '14px',
-                      margin: '0'
-                    }}
-                  >
-                    Watch your horses roam freely in their home
-                  </p>
-                )}
+                      fontSize: window.innerWidth < 640 ? '8px' : '10px'
+                    }}>
+                      Day {dayCount}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div 
@@ -928,7 +1095,8 @@ const HorseStable = ({
             fontSize: '14px',
             fontFamily: 'system-ui, sans-serif',
             borderLeft: '4px solid #8B4513',
-            borderRight: '4px solid #8B4513'
+            borderRight: '4px solid #8B4513',
+            ...getStableBackgroundStyle()
           }}
           onClick={(e) => {
             console.log('🏠 Stable - Background clicked!', e.target);
@@ -1391,6 +1559,36 @@ const HorseStable = ({
               exit={{ opacity: 0, scale: 0.8, y: -20 }}
             >
               {careActionFeedback.message}
+            </motion.div>
+          )}
+
+          {/* New Day Notification */}
+          {newDayNotification && (
+            <motion.div
+              className="absolute top-1/2 left-1/2"
+              style={{
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(251, 191, 36, 0.95)',
+                border: '3px solid #f59e0b',
+                color: '#92400e',
+                padding: '16px 24px',
+                borderRadius: '12px',
+                fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                fontSize: '12px',
+                letterSpacing: '1px',
+                zIndex: '30',
+                textAlign: 'center',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+              }}
+              initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.5, rotate: 10 }}
+            >
+              <div style={{ fontSize: '16px', marginBottom: '8px' }}>🌅 ✨</div>
+              {newDayNotification}
+              <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.8 }}>
+                💰 Daily Income Received!
+              </div>
             </motion.div>
           )}
 

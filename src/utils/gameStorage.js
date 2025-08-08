@@ -11,6 +11,7 @@ const defaultGameState = {
   horseSkillPoints: {},
   researchPoints: 0,
   customHorseNames: {}, // Store custom names by horse index
+  dayCount: 1, // Persistent day counter for stable
   version: STORAGE_VERSION
 };
 
@@ -56,6 +57,7 @@ export const gameStorage = {
         horseSkillPoints: typeof parsed.horseSkillPoints === 'object' && parsed.horseSkillPoints !== null ? parsed.horseSkillPoints : {},
         researchPoints: typeof parsed.researchPoints === 'number' ? parsed.researchPoints : defaultGameState.researchPoints,
         customHorseNames: typeof parsed.customHorseNames === 'object' && parsed.customHorseNames !== null ? parsed.customHorseNames : {},
+        dayCount: typeof parsed.dayCount === 'number' && parsed.dayCount >= 1 ? parsed.dayCount : defaultGameState.dayCount,
         version: STORAGE_VERSION
       };
 

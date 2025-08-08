@@ -69,6 +69,7 @@ export default function RandomPicker() {
   const [researchPoints, setResearchPoints] = useState(0);
   const [customHorseNames, setCustomHorseNames] = useState({});
   const [unlockedMazes, setUnlockedMazes] = useState({ standard: true });
+  const [dayCount, setDayCount] = useState(1);
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -271,6 +272,10 @@ const horsePersonalities = [
         setUnlockedMazes(savedData.unlockedMazes);
       }
       
+      if (typeof savedData.dayCount === 'number' && savedData.dayCount >= 1) {
+        setDayCount(savedData.dayCount);
+      }
+      
       console.log('Game data loaded successfully');
     } else {
       console.warn('localStorage not available, game progress will not be saved');
@@ -292,7 +297,8 @@ const horsePersonalities = [
         horseSkillPoints,
         researchPoints,
         customHorseNames,
-        unlockedMazes
+        unlockedMazes,
+        dayCount
       };
       
       console.log('🏠 App - Saving game state:', gameState);
@@ -301,7 +307,7 @@ const horsePersonalities = [
       
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, unlockedMazes, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, unlockedMazes, dayCount, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1224,6 +1230,7 @@ const horsePersonalities = [
       setHorseSkillPoints({});
       setResearchPoints(0);
       setCustomHorseNames({});
+      setDayCount(1);
       console.log('All save data cleared');
     }
   };
@@ -1689,6 +1696,8 @@ const horsePersonalities = [
         }}
         onUpdateCoins={setCoins}
         onHorseRename={handleHorseRename}
+        dayCount={dayCount}
+        onUpdateDayCount={setDayCount}
       />
     );
   }
