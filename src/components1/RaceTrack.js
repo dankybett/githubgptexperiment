@@ -67,6 +67,11 @@ export default function RaceTrack({
   // State for position snapshots (updated every 5 seconds)
   const [positionSnapshot, setPositionSnapshot] = useState(positions);
   const lastUpdateTime = useRef(0);
+  
+  // Leader stability system - prevents chaotic color changes
+  const [stableLeaderIndex, setStableLeaderIndex] = useState(-1);
+  const leaderChangeTimeRef = useRef(0);
+  const LEADER_STABILITY_DELAY = 1500; // 1.5 seconds
 
   // Update position snapshot every 5 seconds during racing
   useEffect(() => {
@@ -83,11 +88,37 @@ export default function RaceTrack({
     }
   }, [isRacing, positions]);
 
+  // Leader stability effect - updates stable leader with delay
+  useEffect(() => {
+    if (!isRacing || positions.length === 0) {
+      setStableLeaderIndex(-1);
+      leaderChangeTimeRef.current = 0;
+      return;
+    }
+
+    const currentLeaderIndex = positions.indexOf(Math.max(...positions));
+    const currentTime = Date.now();
+
+    // If leader has changed
+    if (currentLeaderIndex !== stableLeaderIndex) {
+      // First leader change or enough time has passed
+      if (leaderChangeTimeRef.current === 0) {
+        leaderChangeTimeRef.current = currentTime;
+      } else if (currentTime - leaderChangeTimeRef.current >= LEADER_STABILITY_DELAY) {
+        // Update stable leader after delay
+        setStableLeaderIndex(currentLeaderIndex);
+        leaderChangeTimeRef.current = 0;
+      }
+    } else {
+      // Same leader, reset timer
+      leaderChangeTimeRef.current = 0;
+    }
+  }, [isRacing, positions, stableLeaderIndex]);
+
   // Use snapshot positions for live positions display, but real positions for everything else
   const displayPositions = isRacing ? positionSnapshot : positions;
-  // Calculate current leader and positions during active racing
-  const currentLeaderIndex = positions.length > 0 ? positions.indexOf(Math.max(...positions)) : -1;
-  const isCurrentLeader = (index) => currentLeaderIndex === index && isRacing && winnerIndex === null;
+  // Use stable leader for visual styling to prevent chaotic color changes
+  const isCurrentLeader = (index) => stableLeaderIndex === index && isRacing && winnerIndex === null;
   
   // Calculate race positions (1st, 2nd, 3rd, etc.) for tight races
   const racePositions = items.map((_, index) => {
@@ -258,17 +289,6 @@ export default function RaceTrack({
                         <span className="text-sm font-bold">
                           {getHorseName(item, index)}
                         </span>
-                        {/* Position indicator for tight races */}
-                        {isRacing && winnerIndex === null && (
-                          <span className={`text-xs font-bold px-1 rounded ${
-                            racePositions[index] === 1 ? 'bg-yellow-200 text-yellow-800' :
-                            racePositions[index] === 2 ? 'bg-gray-200 text-gray-800' :
-                            racePositions[index] === 3 ? 'bg-orange-200 text-orange-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {racePositions[index]}
-                          </span>
-                        )}
                         {winnerIndex === index && (
                           <motion.span
                             initial={{ scale: 0, rotate: -180 }}
@@ -388,13 +408,13 @@ export default function RaceTrack({
           className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.5 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
         >
           <motion.div
             className="text-center p-6 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 1.5, duration: 0.5 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
           >
                 <div className="relative mb-2 flex justify-center">
                   <MotionFadeInImage

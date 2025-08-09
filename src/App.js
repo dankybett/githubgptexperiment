@@ -11,6 +11,7 @@ import SettingsModal from "./components1/SettingsModal";
 import { raceEngineAdapter } from "./racing/RaceEngineAdapter";
 import { createSeededRng } from "./utils/prng";
 import { gameStorage } from "./utils/gameStorage";
+import { themeUtils, DEFAULT_THEME } from "./utils/themes";
 
 const MotionFadeInImage = motion(FadeInImage);
 
@@ -64,6 +65,7 @@ export default function RandomPicker() {
   const [gameLoaded, setGameLoaded] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
+  const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME);
   const [horseInventories, setHorseInventories] = useState({});
   const [horseSkills, setHorseSkills] = useState({});
   const [horseSkillPoints, setHorseSkillPoints] = useState({});
@@ -288,6 +290,10 @@ const horsePersonalities = [
         setStableGameTime(savedData.stableGameTime);
       }
       
+      if (savedData.currentTheme && themeUtils.getThemeNames().includes(savedData.currentTheme)) {
+        setCurrentTheme(savedData.currentTheme);
+      }
+      
       console.log('Game data loaded successfully');
     } else {
       console.warn('localStorage not available, game progress will not be saved');
@@ -312,7 +318,8 @@ const horsePersonalities = [
         horseCareStats,
         unlockedMazes,
         dayCount,
-        stableGameTime
+        stableGameTime,
+        currentTheme
       };
       
       console.log('🏠 App - Saving game state:', gameState);
@@ -321,7 +328,7 @@ const horsePersonalities = [
       
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1247,8 +1254,13 @@ const horsePersonalities = [
       setCustomHorseNames({});
       setHorseCareStats({});
       setDayCount(1);
+      setCurrentTheme(DEFAULT_THEME);
       console.log('All save data cleared');
     }
+  };
+
+  const handleThemeChange = (newTheme) => {
+    setCurrentTheme(newTheme);
   };
 
   const getSaveInfo = () => {
@@ -1843,16 +1855,6 @@ const horsePersonalities = [
                 <span>{coins}</span>
               </div>
               
-              {/* Backup Racing Engine Toggle in Header */}
-              <button
-                onClick={() => {
-                  const newMode = !raceEngineAdapter.useExperimentalEngine;
-                  raceEngineAdapter.setExperimentalMode(newMode);
-                }}
-                className="text-xs sm:text-sm bg-red-500 text-white px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shadow-md border-2 border-yellow-300"
-              >
-                🧪 {raceEngineAdapter.useExperimentalEngine ? 'EXP' : 'CLASSIC'}
-              </button>
               <button
                 onClick={toggleMute}
                 className="text-lg sm:text-xl hover:scale-110 transition-transform p-2 rounded-full hover:bg-gray-100 hidden sm:block"
@@ -2151,6 +2153,8 @@ const horsePersonalities = [
             onResetAll={clearAllSaveData}
             getSaveInfo={getSaveInfo}
             gameStorage={gameStorage}
+            currentTheme={currentTheme}
+            onThemeChange={handleThemeChange}
           />
         </div>
       </div>

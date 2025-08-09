@@ -1,8 +1,9 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { raceEngineAdapter } from "../racing/RaceEngineAdapter";
+import { themeUtils } from "../utils/themes";
 
-const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInfo, gameStorage }) => {
+const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInfo, gameStorage, currentTheme, onThemeChange }) => {
   if (!isOpen) return null;
 
   const handleViewSaveInfo = () => {
@@ -82,6 +83,37 @@ const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInf
                     ❌ Save not available (localStorage disabled)
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* App Theme Section */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                🎨 App Theme
+              </h3>
+              <div className="space-y-3">
+                {themeUtils.getThemeList().map((theme) => (
+                  <button
+                    key={theme.key}
+                    onClick={() => onThemeChange(theme.key)}
+                    className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                      currentTheme === theme.key
+                        ? 'bg-purple-50 hover:bg-purple-100 border-purple-300'
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300'
+                    }`}
+                  >
+                    <div className={`font-medium ${
+                      currentTheme === theme.key ? 'text-purple-800' : 'text-gray-800'
+                    }`}>
+                      {theme.name} {currentTheme === theme.key ? '(Active)' : ''}
+                    </div>
+                    <div className={`text-sm ${
+                      currentTheme === theme.key ? 'text-purple-600' : 'text-gray-600'
+                    }`}>
+                      {theme.description}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
 
