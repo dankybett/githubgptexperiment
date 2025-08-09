@@ -1,5 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { raceEngineAdapter } from "../racing/RaceEngineAdapter";
 
 const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInfo, gameStorage }) => {
   if (!isOpen) return null;
@@ -16,6 +17,16 @@ const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInf
   const handleResetAll = () => {
     onResetAll();
     onClose();
+  };
+
+  const [currentEngine, setCurrentEngine] = React.useState(
+    raceEngineAdapter.useExperimentalEngine ? 'experimental' : 'original'
+  );
+
+  const handleEngineToggle = () => {
+    const newEngine = currentEngine === 'experimental' ? 'original' : 'experimental';
+    setCurrentEngine(newEngine);
+    raceEngineAdapter.setExperimentalMode(newEngine === 'experimental');
   };
 
   return (
@@ -71,6 +82,60 @@ const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInf
                     ❌ Save not available (localStorage disabled)
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Racing Engine Section */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                🏁 Racing Engine
+              </h3>
+              <div className="space-y-3">
+                <button
+                  onClick={handleEngineToggle}
+                  className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                    currentEngine === 'experimental'
+                      ? 'bg-green-50 hover:bg-green-100 border-green-300'
+                      : 'bg-blue-50 hover:bg-blue-100 border-blue-300'
+                  }`}
+                >
+                  <div className={`font-medium ${
+                    currentEngine === 'experimental' ? 'text-green-800' : 'text-blue-800'
+                  }`}>
+                    {currentEngine === 'experimental' ? '🔥 Enhanced Racing (Active)' : '🎲 Classic Racing (Active)'}
+                  </div>
+                  <div className={`text-sm ${
+                    currentEngine === 'experimental' ? 'text-green-600' : 'text-blue-600'
+                  }`}>
+                    {currentEngine === 'experimental'
+                      ? 'Tight pack racing with dramatic overtaking'
+                      : 'Traditional racing with weather and obstacles'
+                    }
+                  </div>
+                </button>
+                
+                <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3">
+                  <div className="font-medium mb-2">
+                    {currentEngine === 'experimental' ? 'Enhanced Racing Features:' : 'Classic Racing Features:'}
+                  </div>
+                  <div className="space-y-1">
+                    {currentEngine === 'experimental' ? (
+                      <>
+                        <div>• Physics-based tight pack racing</div>
+                        <div>• Dynamic surge and comeback systems</div>
+                        <div>• Energy and fatigue mechanics</div>
+                        <div>• Rubber band catch-up effects</div>
+                        <div>• Any horse can win</div>
+                      </>
+                    ) : (
+                      <>
+                        <div>• Weather effects on racing</div>
+                        <div>• Classic surge/fatigue system</div>
+                        <div>• Random-based outcomes</div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

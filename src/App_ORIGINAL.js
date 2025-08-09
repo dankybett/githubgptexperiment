@@ -8,7 +8,6 @@ import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
 import HorseMazeGame from "./components1/labyrinth";
 import SettingsModal from "./components1/SettingsModal";
-import { raceEngineAdapter } from "./racing/RaceEngineAdapter";
 import { createSeededRng } from "./utils/prng";
 import { gameStorage } from "./utils/gameStorage";
 
@@ -48,7 +47,7 @@ export default function RandomPicker() {
   const [raceTime, setRaceTime] = useState(0);
   const [fastestTime, setFastestTime] = useState(null);
   const [nameCategory, setNameCategory] = useState("Default");
-  const [raceDistance, setRaceDistance] = useState("long");
+  const [raceDistance, setRaceDistance] = useState("medium");
   const [currentWeather, setCurrentWeather] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [raceSeed, setRaceSeed] = useState(null);
@@ -441,11 +440,15 @@ const horsePersonalities = [
   const lastCommentaryRef = useRef("");
 
   const getFixedTrackLength = (distance) => {
-    // Always return Classic race length (formerly marathon)
-    return 4800;
+    const lengths = {
+      short: 1200,   // Sprint: 1200px
+      medium: 2400,  // Classic: 2400px  
+      long: 4800     // Marathon: 4800px
+    };
+    return lengths[distance];
   };
 
-  const [trackLength, setTrackLength] = useState(getFixedTrackLength("long"));
+  const [trackLength, setTrackLength] = useState(getFixedTrackLength("medium"));
 
   useEffect(() => {
     setTrackLength(getFixedTrackLength(raceDistance));
@@ -718,24 +721,50 @@ const horsePersonalities = [
   };
 
   const getRaceSettings = (distance) => {
-    // Only one race type now - always return Classic (formerly "long") settings
     const settings = {
-      baseSpeed: 0.0008,
-      speedVariation: 0.0006, // Reduced from 0.0015 for closer racing
-      surgeIntensity: 0.004, // Keep surge strength high when it happens
-      surgeFrequency: 0.22, // Reduced dramatically for more selective surging
-      comebackChance: 0.7, // Keep high for exciting lead changes
-      dramaMoments: 8, // Keep high for excitement
-      staminaFactor: 0.35, // Increased to show more fatigue in long races
-      packTightness: 0.98,
+      short: {
+        baseSpeed: 0.004,
+        speedVariation: 0.001, // Reduced from 0.003 for closer racing
+        surgeIntensity: 0.005,
+        surgeFrequency: 0.15, // Reduced dramatically for more selective surging
+        comebackChance: 0.35, // Keep comeback chance high for tight racing
+        dramaMoments: 2,
+        hurdles: [], // No hurdles for sprint
+        hurdlePixels: [], // Fixed pixel positions
+        staminaFactor: 0.15, // Increased slightly to show more fatigue
+        packTightness: 0.95,
+      },
+      medium: {
+        baseSpeed: 0.002,
+        speedVariation: 0.0008, // Reduced from 0.002 for closer racing
+        surgeIntensity: 0.003,
+        surgeFrequency: 0.18, // Reduced dramatically for more selective surging
+        comebackChance: 0.4, // Keep comeback chance high for tight racing
+        dramaMoments: 3,
+        hurdles: [0.3, 0.65], // Keep for backward compatibility
+        hurdlePixels: [720, 1560], // Fixed pixel positions for 2400px track
+        staminaFactor: 0.25, // Increased to show more fatigue
+        packTightness: 0.97,
+      },
+      long: {
+        baseSpeed: 0.0008,
+        speedVariation: 0.0006, // Reduced from 0.0015 for closer racing
+        surgeIntensity: 0.004, // Keep surge strength high when it happens
+        surgeFrequency: 0.22, // Reduced dramatically for more selective surging
+        comebackChance: 0.7, // Keep high for exciting lead changes
+        dramaMoments: 8, // Keep high for excitement
+        hurdles: [0.15, 0.35, 0.55, 0.75, 0.9], // Keep for backward compatibility
+        hurdlePixels: [720, 1680, 2640, 3600, 4320], // Fixed pixel positions for 4800px track
+        staminaFactor: 0.35, // Increased to show more fatigue in long races
+        packTightness: 0.98,
+      },
     };
-    
     if (currentWeather) {
-      const weatherSettings = { ...settings };
+      const weatherSettings = { ...settings[distance] };
       weatherSettings.baseSpeed *= currentWeather.speedMultiplier;
       return weatherSettings;
     }
-    return settings;
+    return settings[distance];
   };
 
   const getCommentaryForPhase = (phase) => {
@@ -807,7 +836,7 @@ const horsePersonalities = [
     return selectedPhrase;
   };
 
-  const originalStartRace = (seed) => {
+  const startRace = (seed) => {
     rngRef.current = createSeededRng(seed);
     setIsRacing(true);
     if (raceSoundRef.current) {
@@ -1138,40 +1167,6 @@ const horsePersonalities = [
     animationFrameIdRef.current = requestAnimationFrame(updatePositions);
   };
 
-  // New startRace function that uses the adapter
-  const startRace = (seed) => {
-    // Prepare horse data for the adapter
-    const horseData = items.map((item, index) => ({
-      name: getHorseName(item, index),
-      id: index,
-      item: item
-    }));
-
-    // Prepare settings
-    const settings = {
-      distance: raceDistance,
-      weather: currentWeather,
-      seed: seed
-    };
-
-    // Prepare callbacks for the adapter
-    const callbacks = {
-      originalStartRace,
-      setPositions,
-      setRaceTime,
-      setCommentary,
-      setWinner,
-      setWinnerIndex,
-      setIsRacing,
-      setCountdown,
-      setSurgingHorses,
-      setFatiguedHorses
-    };
-
-    // Use the race engine adapter
-    raceEngineAdapter.initializeRace(horseData, settings, callbacks);
-  };
-
   const resetRace = () => {
     setItemCount(0);
     setItems([]);
@@ -1188,7 +1183,6 @@ const horsePersonalities = [
     setBetEnabled(false);
     clearInterval(commentaryIntervalRef.current);
     cancelAnimationFrame(animationFrameIdRef.current);
-    raceEngineAdapter.reset();
 
     if (cheerSoundRef.current) {
       cheerSoundRef.current.pause();
@@ -1299,7 +1293,7 @@ const horsePersonalities = [
     lastCommentaryRef.current = "";
     setBetHorse(null);
     setBetAmount(0);
-    setTimeout(() => startRace(), 500);
+    setTimeout(() => startCountdown(), 500);
   };
 
   const toggleMute = () => setMuted(!muted);
@@ -1309,11 +1303,18 @@ const horsePersonalities = [
     (betEnabled && (!betAmount || betAmount > coins || betHorse === null));
 
   const getRaceDistanceInfo = (distance) => {
-    // Only one race type now - always return "Classic"
-    return {
-      name: "Classic",
-      description: "Epic distance race",
+    const info = {
+      short: {name: "Sprint", description: "Quick & intense" },
+      medium: {
+        name: "Classic",
+        description: "Epic distance race",
+      },
+      long: {
+        name: "Marathon",
+        description: "Ultimate endurance test",
+      },
     };
+    return info[distance];
   };
 
   // Weather Particles Component
@@ -1635,7 +1636,7 @@ const horsePersonalities = [
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => startRace()}
+                  onClick={() => startCountdown()}
                   className="px-8 py-4 btn-retro btn-retro-green text-white font-bold text-lg"
                 >
                   Start {distanceInfo.name} Race!
@@ -1846,17 +1847,6 @@ const horsePersonalities = [
                 <span>💰</span>
                 <span>{coins}</span>
               </div>
-              
-              {/* Backup Racing Engine Toggle in Header */}
-              <button
-                onClick={() => {
-                  const newMode = !raceEngineAdapter.useExperimentalEngine;
-                  raceEngineAdapter.setExperimentalMode(newMode);
-                }}
-                className="text-xs sm:text-sm bg-red-500 text-white px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shadow-md border-2 border-yellow-300"
-              >
-                🧪 {raceEngineAdapter.useExperimentalEngine ? 'EXP' : 'CLASSIC'}
-              </button>
               <button
                 onClick={toggleMute}
                 className="text-lg sm:text-xl hover:scale-110 transition-transform p-2 rounded-full hover:bg-gray-100 hidden sm:block"
@@ -1947,6 +1937,36 @@ const horsePersonalities = [
           )}
 
           {/* Race Length Selector */}
+          <div className="mb-4">
+            <label className="block font-semibold text-gray-200 text-sm mb-2">
+              Race Length
+            </label>
+            <div className="flex gap-2">
+              {["short", "medium", "long"].map((dist) => {
+                const info = getRaceDistanceInfo(dist);
+                const isSelected = raceDistance === dist;
+                return (
+                  <button
+                    key={dist}
+                    onClick={() => setRaceDistance(dist)}
+                    className={`flex-1 px-4 py-3 text-sm font-semibold ${
+                      isSelected
+                        ? "btn-retro btn-retro-blue"
+                        : "btn-retro btn-retro-purple"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>{info.emoji}</span>
+                      <span>{info.name}</span>
+                    </div>
+                    <div className="text-sm mt-1">
+                      {info.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Contestant Inputs */}
           {items.length > 0 && (

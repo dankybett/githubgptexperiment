@@ -64,17 +64,6 @@ export default function RaceTrack({
   betAmount,
   betHorse,
 }) {
-  // Calculate current leader and positions during active racing
-  const currentLeaderIndex = positions.length > 0 ? positions.indexOf(Math.max(...positions)) : -1;
-  const isCurrentLeader = (index) => currentLeaderIndex === index && isRacing && winnerIndex === null;
-  
-  // Calculate race positions (1st, 2nd, 3rd, etc.) for tight races
-  const racePositions = items.map((_, index) => {
-    const sortedByPosition = positions
-      .map((pos, i) => ({ position: pos, index: i }))
-      .sort((a, b) => b.position - a.position);
-    return sortedByPosition.findIndex(item => item.index === index) + 1;
-  });
   // Calculate camera position based on leading horse
   const leadPosition = Math.max(...positions);
   const leadPixelPos = leadPosition * (trackLength - 200);
@@ -110,36 +99,6 @@ export default function RaceTrack({
             }}
           ></div>
 
-          {/* Distance Signs in front of crowd */}
-          {[
-            { percent: 0.25, image: '750.png', distance: '750m' },
-            { percent: 0.5, image: '500.png', distance: '500m' },
-            { percent: 0.75, image: '250.png', distance: '250m' }
-          ].map((sign, sIdx) => {
-            const signPixelPos = sign.percent * (trackLength - 200);
-            return (
-              <div
-                key={sIdx}
-                className="absolute z-10"
-                style={{ 
-                  left: `${signPixelPos}px`,
-                  top: '-24px', // Position so bottom of sign aligns with top edge of race track
-                  transform: 'translateX(-50%) translateY(-100%)' // Center horizontally and position from bottom
-                }}
-                title={`${sign.distance} remaining`}
-              >
-                <img 
-                  src={`/racetrack/${sign.image}`}
-                  alt={`${sign.distance} distance marker`}
-                  className="h-24 w-auto object-contain"
-                  style={{ 
-                    filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
-                  }}
-                />
-              </div>
-            );
-          })}
-
           <div className="space-y-2 relative z-10 py-2 px-2" style={{ marginTop: "80px" }}>
             {items.map((item, index) => (
               <div
@@ -148,6 +107,28 @@ export default function RaceTrack({
                 style={{ height: "64px" }}
               >
                 <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-green-800 opacity-10" />
+                {getRaceSettings(raceDistance).hurdles.map(
+                  (hurdlePercent, hIdx) => {
+                    const hurdlePixelPos = hurdlePercent * (trackLength - 200);
+                    return (
+                      <div
+                        key={hIdx}
+                        className="absolute top-2 bottom-2 w-2 bg-gradient-to-b from-amber-600 to-amber-800 opacity-80 rounded-sm shadow-md z-10"
+                        style={{ left: `${hurdlePixelPos}px` }}
+                        title="Hurdle"
+                      >
+                        <div className="absolute -top-1 -left-1 w-4 h-4 text-xs flex items-center justify-center">
+                          🚧
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+                {/* FINISH LINE - Winner determined here */}
+                <div className="absolute top-0 h-full w-4 bg-gradient-to-b from-white via-black to-white opacity-100 shadow-2xl border-2 border-black z-20" style={{ left: `${trackLength - 200}px` }}>
+                  <div className="absolute -top-3 -left-3 text-lg font-bold text-black bg-white px-1 rounded shadow-lg">🏁</div>
+                  <div className="absolute top-1/2 -left-8 -translate-y-1/2 text-xs font-bold text-black bg-white px-1 rounded shadow transform -rotate-90 whitespace-nowrap">FINISH</div>
+                </div>
                 <motion.div
                   className="absolute top-0 h-full flex items-center z-30"
                   animate={{
@@ -165,57 +146,30 @@ export default function RaceTrack({
                       className={`px-2 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap w-52 flex items-center justify-center ${
                         winnerIndex === index
                           ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
-                          : isCurrentLeader(index)
-                          ? "bg-gradient-to-r from-green-400 to-blue-500 text-white border-green-300 ring-2 ring-green-300"
+                          : surgingHorses[index]
+                          ? "bg-gradient-to-r from-orange-400 to-red-500 text-white border-orange-600"
                           : fatiguedHorses[index]
                           ? "bg-gradient-to-r from-gray-400 to-gray-600 text-gray-200 border-gray-700"
                           : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
                       }`}
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ 
-                        scale: isCurrentLeader(index) ? [1, 1.05, 1] : 1, 
+                        scale: surgingHorses[index] ? [1, 1.1, 1] : 1, 
                         opacity: 1,
-                        boxShadow: isCurrentLeader(index)
-                          ? ["0 0 0px rgba(34,197,94,0)", "0 0 25px rgba(34,197,94,0.9)", "0 0 0px rgba(34,197,94,0)"]
+                        boxShadow: surgingHorses[index] 
+                          ? ["0 0 0px rgba(255,165,0,0)", "0 0 20px rgba(255,165,0,0.8)", "0 0 0px rgba(255,165,0,0)"]
                           : "0 4px 6px rgba(0,0,0,0.1)"
                       }}
                       transition={{ 
                         delay: 0.2,
-                        scale: { 
-                          duration: 0.3, 
-                          repeat: isCurrentLeader(index) ? Infinity : 0 
-                        },
-                        boxShadow: { 
-                          duration: 0.8, 
-                          repeat: isCurrentLeader(index) ? Infinity : 0 
-                        }
+                        scale: { duration: 0.3, repeat: surgingHorses[index] ? Infinity : 0 },
+                        boxShadow: { duration: 0.5, repeat: surgingHorses[index] ? Infinity : 0 }
                       }}
                     >
                       <div className="flex items-center gap-2">
-                        {isCurrentLeader(index) && (
-                          <motion.span
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="text-yellow-200"
-                          >
-                            👑
-                          </motion.span>
-                        )}
                         <span className="text-sm font-bold">
                           {getHorseName(item, index)}
                         </span>
-                        {/* Position indicator for tight races */}
-                        {isRacing && winnerIndex === null && (
-                          <span className={`text-xs font-bold px-1 rounded ${
-                            racePositions[index] === 1 ? 'bg-yellow-200 text-yellow-800' :
-                            racePositions[index] === 2 ? 'bg-gray-200 text-gray-800' :
-                            racePositions[index] === 3 ? 'bg-orange-200 text-orange-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {racePositions[index]}
-                          </span>
-                        )}
                         {winnerIndex === index && (
                           <motion.span
                             initial={{ scale: 0, rotate: -180 }}
@@ -224,6 +178,16 @@ export default function RaceTrack({
                             className="text-yellow-600"
                           >
                             👑
+                          </motion.span>
+                        )}
+                        {surgingHorses[index] && winnerIndex !== index && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: [1, 1.3, 1] }}
+                            transition={{ duration: 0.3, repeat: Infinity }}
+                            className="text-orange-200"
+                          >
+                            ⚡
                           </motion.span>
                         )}
                         {fatiguedHorses[index] && winnerIndex !== index && (
@@ -263,8 +227,8 @@ export default function RaceTrack({
                         filter:
                           winnerIndex === index
                             ? "drop-shadow(0 0 8px gold)"
-                            : isCurrentLeader(index)
-                            ? "drop-shadow(0 0 15px #22c55e) brightness(1.1)"
+                            : surgingHorses[index]
+                            ? "drop-shadow(0 0 12px orange) brightness(1.2)"
                             : fatiguedHorses[index]
                             ? "brightness(0.6) saturate(0.5)"
                             : "none",
@@ -282,39 +246,6 @@ export default function RaceTrack({
         </motion.div>
       </div>
       
-      {/* Live Positions Panel - Shows current standings */}
-      {isRacing && winnerIndex === null && (
-        <motion.div
-          className="absolute top-4 left-4 z-50 bg-black bg-opacity-80 text-white rounded-lg p-3 min-w-[200px]"
-          initial={{ x: -200, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-sm font-bold mb-2 text-center text-yellow-300">🏆 LIVE POSITIONS</h3>
-          <div className="space-y-1">
-            {positions
-              .map((pos, index) => ({ position: pos, index, name: getHorseName(items[index], index) }))
-              .sort((a, b) => b.position - a.position)
-              .slice(0, Math.min(5, items.length))
-              .map((horse, rank) => (
-                <div
-                  key={horse.index}
-                  className={`flex items-center justify-between text-xs px-2 py-1 rounded ${
-                    rank === 0 ? 'bg-green-600 text-white' :
-                    rank === 1 ? 'bg-gray-600 text-white' :
-                    rank === 2 ? 'bg-orange-600 text-white' :
-                    'bg-gray-700 text-gray-200'
-                  }`}
-                >
-                  <span className="font-bold">{rank + 1}.</span>
-                  <span className="truncate ml-2">{horse.name}</span>
-                  {rank === 0 && <span className="ml-1">👑</span>}
-                </div>
-              ))}
-          </div>
-        </motion.div>
-      )}
-
       {/* Live Race Statistics Panel - Phase 1 */}
       {(isRacing || countdown) && (
         <motion.div
@@ -470,7 +401,7 @@ export default function RaceTrack({
                   {winner}
                 </p>
                 <p className="text-base text-gray-700">
-                  Finish Time: {raceTime.toFixed(1)}s
+                  Finish Time: {raceTime}s
                 </p>
                 <p className="text-sm text-gray-600">
                   {getRaceDistanceInfo(raceDistance).name} Race
@@ -517,7 +448,7 @@ export default function RaceTrack({
                             <div style="font-size: 60px; margin-bottom: 10px;">🏆</div>
                             <div style="font-size: 24px; font-weight: bold; color: #7c2d12; margin-bottom: 8px;">WINNER!</div>
                             <div style="font-size: 28px; font-weight: bold; color: #b45309; margin-bottom: 16px;">${winner}</div>
-                            <div style="font-size: 18px; color: #374151; margin-bottom: 8px;">Finish Time: ${raceTime.toFixed(1)}s</div>
+                            <div style="font-size: 18px; color: #374151; margin-bottom: 8px;">Finish Time: ${raceTime}s</div>
                             <div style="font-size: 14px; color: #6b7280;">${
                               getRaceDistanceInfo(raceDistance).name
                             } Race</div>
@@ -561,7 +492,7 @@ export default function RaceTrack({
                                 title: "Horse Race Result",
                                 text: `${winner} won the ${
                                   getRaceDistanceInfo(raceDistance).name
-                                } race in ${raceTime.toFixed(1)}s!`,
+                                } race in ${raceTime}s!`,
                                 files: [file],
                               });
                             } else {
