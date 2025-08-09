@@ -1470,13 +1470,14 @@ const horsePersonalities = [
   // RACE SCREEN
   if (showRaceScreen) {
     const distanceInfo = getRaceDistanceInfo(raceDistance);
+    const theme = themeUtils.getCurrentTheme(currentTheme);
 
     return (
       <div
         className={`min-h-screen bg-gradient-to-br ${
           currentWeather
             ? currentWeather.background
-            : "from-green-100 via-blue-100 to-purple-100"
+            : theme.colors.mainBg
         } w-full overflow-hidden flex flex-col relative`}
       >
         {/* Weather Particles */}
@@ -1493,7 +1494,7 @@ const horsePersonalities = [
                 🏇
               </motion.span>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className={`text-lg sm:text-xl font-bold bg-gradient-to-r ${theme.colors.headerBg.replace('bg-gradient-to-r ', '')} bg-clip-text text-transparent`}>
                   {distanceInfo.emoji} {distanceInfo.name} Race
                 </h1>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -1825,10 +1826,13 @@ const horsePersonalities = [
     return <BattleshipGame onBack={() => setShowBattleship(false)} />;
   }
 
+  // Get current theme for styling
+  const theme = themeUtils.getCurrentTheme(currentTheme);
+
   // SETUP SCREEN
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 w-full overflow-x-hidden">
-      <div className="w-full max-w-none bg-gray-800 bg-opacity-95 backdrop-blur-md shadow-2xl min-h-screen">
+    <div className={`min-h-screen bg-gradient-to-br ${theme.colors.mainBg} w-full overflow-x-hidden`}>
+      <div className={`w-full max-w-none ${theme.components.card} backdrop-blur-md shadow-2xl min-h-screen`}>
         <div className="pt-3 pb-3 pl-3 pr-0 sm:p-4 md:p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative">
@@ -1840,7 +1844,7 @@ const horsePersonalities = [
               >
                 
               </motion.span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r ${theme.colors.headerBg.replace('bg-gradient-to-r ', '')} bg-clip-text text-transparent`}>
                 Winner Decides!
               </h1>
             </div>

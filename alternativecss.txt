@@ -1,0 +1,132 @@
+/* ====== FONTS ====== */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Press+Start+2P&display=swap');
+
+/* ====== COLOR TOKENS ====== */
+:root {
+  --primary: #FFD92F;
+  --primary-shadow: #FF4D73;
+  --secondary: #1F7BF0;
+  --secondary-shadow: #103E7D;
+  --accent-red: #E33B3B;
+  --accent-green: #52D17B;
+
+  --bg-gradient: linear-gradient(180deg, #FF62B6, #8A3FFC);
+  --panel-bg: #1C89D6;
+
+  --text-dark: #1E1E1E;
+  --text-light: #FFFFFF;
+
+  --border-thick: 4px;
+  --shadow-offset: 4px;
+  --shadow-offset-sm: 2px;
+
+  --font-body: 'Nunito', sans-serif;
+  --font-display: 'Press Start 2P', monospace;
+}
+
+/* ====== DARK MODE ====== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-gradient: linear-gradient(180deg, #2B005A, #0B1930);
+    --panel-bg: #103E7D;
+
+    --text-dark: #FFFFFF;
+    --text-light: #FFFFFF;
+
+    --primary: #FFD92F;
+    --primary-shadow: #FF4D73;
+    --secondary: #52D17B;
+    --secondary-shadow: #2C834D;
+  }
+}
+
+/* ====== BASE ====== */
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-gradient);
+  font-family: var(--font-body);
+  color: var(--text-dark);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+p {
+  font-family: var(--font-body);
+}
+
+/* ====== BUTTONS ====== */
+.button {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  padding: 0.8rem 1.2rem;
+  background-color: var(--primary);
+  color: var(--text-dark);
+  border: var(--border-thick) solid var(--secondary-shadow);
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--primary-shadow);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: calc(var(--shadow-offset) + 2px) calc(var(--shadow-offset) + 2px) 0 var(--primary-shadow);
+}
+
+.button:active {
+  transform: translate(var(--shadow-offset-sm), var(--shadow-offset-sm));
+  box-shadow: var(--shadow-offset-sm) var(--shadow-offset-sm) 0 var(--primary-shadow);
+}
+
+.button--secondary {
+  background-color: var(--secondary);
+  color: var(--text-light);
+  border-color: var(--secondary-shadow);
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--secondary-shadow);
+}
+
+/* ====== CARDS / PANELS ====== */
+.card {
+  background-color: var(--panel-bg);
+  border: var(--border-thick) solid var(--secondary-shadow);
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 #0B2B50;
+  padding: 1rem;
+  color: var(--text-light);
+}
+
+/* ====== BADGES ====== */
+.badge {
+  display: inline-block;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  border: var(--border-thick) solid var(--text-dark);
+  background-color: var(--accent-green);
+  color: var(--text-dark);
+  box-shadow: var(--shadow-offset-sm) var(--shadow-offset-sm) 0 rgba(0,0,0,0.3);
+}
+
+/* ====== PROGRESS BAR ====== */
+.progress {
+  background-color: #FFFFFF33;
+  border: var(--border-thick) solid var(--text-dark);
+  height: 1.5rem;
+  position: relative;
+}
+
+.progress > .fill {
+  height: 100%;
+  background-color: var(--primary);
+  box-shadow: inset 0 0 0 var(--border-thick) var(--text-dark);
+  width: var(--value, 50%);
+}
+
+/* ====== PIXEL IMAGE RENDERING ====== */
+.pixel {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
