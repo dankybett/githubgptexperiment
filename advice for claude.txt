@@ -1,0 +1,303 @@
+/* ===========================
+   Winner Decides! — Saturday Morning Arcade
+   Mobile-first CSS starter
+   =========================== */
+
+/* 1) Base + tokens */
+:root{
+  /* Brand palette (sunny cartoon vibes) */
+  --bg-top: #FF914D;      /* orange */
+  --bg-bottom: #FF3E7F;   /* pink */
+  --ink: #1B1B1B;         /* almost black */
+  --ink-soft: #3a3a3a;
+
+  --primary: #FFD93D;     /* yellow button */
+  --primary-ink: #1b1b1b;
+  --secondary: #4D96FF;   /* blue button */
+  --success: #6BCB77;     /* green button */
+  --danger: #FF595E;      /* red button */
+  --surface: #FFF6E3;     /* light card/panel */
+  --surface-2: #FFE7C7;
+
+  --outline: #000;        /* thick arcade outline */
+  --shadow: rgba(0,0,0,0.7);
+
+  --radius: 12px;         /* rounded, but not too soft */
+  --gap: 12px;
+
+  --font-title: "Press Start 2P", system-ui, sans-serif;
+  --font-ui: "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  --focus: 0 0 0 3px #000, 0 0 0 6px #fff, 0 0 0 9px #4D96FF;
+
+  /* Speeds */
+  --t-fast: 120ms;
+  --t-med: 220ms;
+
+  /* Track stripes */
+  --lane-1: #7EE081;
+  --lane-2: #6FD674;
+  --lane-3: #65CD6B;
+}
+
+/* 2) Global */
+html, body{
+  height:100%;
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  image-rendering: pixelated; /* make sprites crisp */
+}
+
+.app{
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 14px 24px;
+}
+
+/* 3) Titles */
+.title{
+  font-family: var(--font-title);
+  font-size: clamp(20px, 6vw, 32px);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-shadow:
+    0 2px 0 #fff,
+    0 4px 0 var(--outline),
+    2px 6px 0 var(--outline);
+  display:flex; align-items:center; gap:10px;
+  animation: title-bounce 1800ms ease-in-out infinite;
+}
+
+/* Optional small crown/emoji next to title */
+.title .badge{
+  font-size: 1.2em;
+  transform-origin: center bottom;
+  animation: crown-bob 1.8s ease-in-out infinite;
+}
+
+/* 4) Panels / cards */
+.panel{
+  background: var(--surface);
+  border: 3px solid var(--outline);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--outline);
+  padding: 14px;
+}
+
+/* 5) Inputs (horse name fields) */
+.input{
+  background: #fff;
+  border: 3px solid var(--outline);
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--outline);
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+}
+.input:focus{
+  outline: none;
+  box-shadow: 4px 4px 0 var(--outline), var(--focus);
+}
+
+/* Segmented row for name + sprite */
+.input-row{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  align-items:center;
+  gap:10px;
+}
+.sprite{
+  width: 40px; height: 40px;
+  image-rendering: pixelated;
+  transform: translateY(0);
+  animation: horse-idle 1.4s steps(2) infinite;
+}
+
+/* 6) Buttons (arcade style) */
+.arcade-btn{
+  --btn-bg: var(--primary);
+  --btn-ink: var(--primary-ink);
+
+  appearance:none;
+  display:inline-flex; align-items:center; justify-content:center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-family: var(--font-title);
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid var(--outline);
+  box-shadow: 6px 6px 0 var(--outline);
+  text-transform: uppercase;
+  transition: transform var(--t-fast), box-shadow var(--t-fast), filter var(--t-fast);
+}
+.arcade-btn:hover{ filter: brightness(1.05); }
+.arcade-btn:active{
+  transform: translate(3px,3px);
+  box-shadow: 3px 3px 0 var(--outline);
+}
+.arcade-btn:focus-visible{ outline:none; box-shadow: 6px 6px 0 var(--outline), var(--focus); }
+
+/* Color variants */
+.arcade-btn.secondary{ --btn-bg: var(--secondary); color:#fff; }
+.arcade-btn.success{ --btn-bg: var(--success); color:#0b2a0d; }
+.arcade-btn.danger{ --btn-bg: var(--danger); color:#fff; }
+
+/* 7) Tabs / chips */
+.tabbar{
+  display:flex; gap:10px; flex-wrap:wrap;
+}
+.tab{
+  padding:10px 12px;
+  border:3px solid var(--outline);
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: 3px 3px 0 var(--outline);
+  font-family: var(--font-title);
+  font-size:12px;
+}
+.tab.active{ background: var(--primary); }
+
+/* 8) Race track presentation */
+.track{
+  border:3px solid var(--outline);
+  border-radius: 10px;
+  overflow:hidden;
+  box-shadow: 6px 6px 0 var(--outline);
+}
+.track .lane{
+  height: 64px;
+  display:flex;
+  align-items:center;
+  padding: 0 10px;
+  background: var(--lane-1);
+  border-bottom: 3px dashed rgba(0,0,0,0.15);
+}
+.track .lane:nth-child(2n){ background: var(--lane-2); }
+.track .lane:nth-child(3n){ background: var(--lane-3); }
+
+/* 9) Commentary CRT-style caption box (but bright) */
+.commentary{
+  margin-top: 12px;
+  background: #ffffffd9;
+  border:3px solid var(--outline);
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--outline);
+  padding: 12px;
+  font-family: var(--font-title);
+  font-size: 12px;
+}
+
+/* 10) Toast / winner banner */
+.winner-banner{
+  background: linear-gradient(180deg, #FFE96A, #FFB84D);
+  border:3px solid var(--outline);
+  border-radius: 12px;
+  box-shadow: 8px 8px 0 var(--outline);
+  padding: 16px;
+  text-align:center;
+  font-family: var(--font-title);
+  text-transform: uppercase;
+  animation: pop-in var(--t-med) cubic-bezier(.2,1.3,.3,1) both;
+}
+
+/* 11) Little helpers */
+.stack{ display:grid; gap: var(--gap); }
+.row{ display:flex; gap: var(--gap); align-items:center; }
+.center{ display:grid; place-items:center; }
+
+/* 12) Animations */
+@keyframes title-bounce{
+  0%,100%{ transform: translateY(0) rotate(0deg); }
+  30%{ transform: translateY(-4px) rotate(-0.5deg); }
+  60%{ transform: translateY(1px) rotate(0.5deg); }
+}
+@keyframes crown-bob{
+  0%,100%{ transform: translateY(0) rotate(0); }
+  50%{ transform: translateY(-3px) rotate(-3deg); }
+}
+@keyframes horse-idle{
+  0%{ transform: translateY(0); }
+  50%{ transform: translateY(-2px); }
+  100%{ transform: translateY(0); }
+}
+@keyframes pop-in{
+  from{ transform: scale(.9) translateY(6px); opacity:0; }
+  to{ transform: scale(1) translateY(0); opacity:1; }
+}
+
+/* 13) Optional confetti layer (toggle by adding .confetti to body) */
+.confetti:before{
+  content:"";
+  position: fixed; inset:0; pointer-events:none;
+  background:
+    radial-gradient(circle, #FFD93D 40%, transparent 41%) -20px -10px/12px 12px repeat,
+    radial-gradient(circle, #FF595E 40%, transparent 41%) 20px 10px/14px 14px repeat,
+    radial-gradient(circle, #4D96FF 40%, transparent 41%) 0 0/16px 16px repeat;
+  opacity:.15;
+  animation: confetti-float 12s linear infinite;
+}
+@keyframes confetti-float{
+  from{ background-position: -20px -10px, 20px 10px, 0 0; }
+  to  { background-position: -20px calc(-10px + 200px), 20px calc(10px + 200px), 0 200px; }
+}
+
+/* 14) Small screens are default. Light desktop polish */
+@media (min-width: 480px){
+  .app{ padding: 20px; }
+  .arcade-btn{ min-height: 52px; }
+}
+
+
+
+Quick wiring tips
+Title:
+
+html
+Copy
+Edit
+<h1 class="title"><span class="badge">👑</span> Winner Decides!</h1>
+Add Options panel:
+
+html
+Copy
+Edit
+<section class="panel stack">
+  <div class="input-row">
+    <input class="input" placeholder="Horse 1 (your option)" />
+    <img class="sprite" src="/sprites/horse1.png" alt="">
+  </div>
+  <div class="input-row">
+    <input class="input" placeholder="Horse 2" />
+    <img class="sprite" src="/sprites/horse2.png" alt="">
+  </div>
+  <button class="arcade-btn">🎮 Add Your Options</button>
+  <button class="arcade-btn secondary">🎲 Randomize Horse</button>
+</section>
+Race track + commentary:
+
+html
+Copy
+Edit
+<div class="track">
+  <div class="lane"><img class="sprite" src="/sprites/horse1.png" alt=""></div>
+  <div class="lane"><img class="sprite" src="/sprites/horse2.png" alt=""></div>
+  <div class="lane"><img class="sprite" src="/sprites/horse3.png" alt=""></div>
+</div>
+<div class="commentary">📢 Live Commentary: You could throw a blanket over the whole field!</div>
+Winner banner + actions:
+
+html
+Copy
+Edit
+<div class="winner-banner">Horse 2 Wins!</div>
+<div class="stack">
+  <button class="arcade-btn success">✅ Decide with Winner</button>
+  <button class="arcade-btn">🏡 Stable Time!</button>
+</div>

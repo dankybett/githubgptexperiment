@@ -66,6 +66,25 @@ export default function RandomPicker() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
   const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME);
+
+  // Apply theme fonts using CSS classes
+  useEffect(() => {
+    const rootElement = document.getElementById('root');
+    const bodyElement = document.body;
+    
+    // Remove all theme font classes
+    ['theme-retro', 'theme-arcade', 'theme-alternative', 'theme-saturday'].forEach(className => {
+      rootElement?.classList.remove(className);
+      bodyElement.classList.remove(className);
+    });
+    
+    // Add the current theme's font class
+    const themeClass = `theme-${currentTheme}`;
+    rootElement?.classList.add(themeClass);
+    bodyElement.classList.add(themeClass);
+    
+    console.log('Applied theme class:', themeClass, 'to theme:', currentTheme);
+  }, [currentTheme]);
   const [horseInventories, setHorseInventories] = useState({});
   const [horseSkills, setHorseSkills] = useState({});
   const [horseSkillPoints, setHorseSkillPoints] = useState({});
@@ -1392,8 +1411,10 @@ const horsePersonalities = [
 
   // TITLE SCREEN
   if (showTitle) {
+    const titleStyles = themeUtils.getScreenStyles(currentTheme, 'title');
+    
     return (
-      <div className="h-screen w-full flex flex-col justify-between bg-gradient-to-br from-blue-900 via-purple-900 to-green-900 relative overflow-hidden">
+      <div className={`h-screen w-full flex flex-col justify-between bg-gradient-to-br ${titleStyles.background} relative overflow-hidden`}>
         <div className="absolute inset-0">
           <motion.div
             className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full opacity-20"
@@ -1431,14 +1452,14 @@ const horsePersonalities = [
               style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
             />
           </motion.div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl bg-gradient-to-r from-yellow-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
+          <h1 className={`text-4xl sm:text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl ${themeUtils.getTextGradient(currentTheme, 'titleGradient')}`}>
             Winner Decides!
           </h1>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-lg sm:text-xl text-yellow-200 mb-6 max-w-md"
+            className={`text-lg sm:text-xl ${titleStyles.subtitle} mb-6 max-w-md`}
           >
             The ultimate way to make decisions! Add your options and watch them
             race to victory!
@@ -1456,7 +1477,7 @@ const horsePersonalities = [
               const availableHorses = horseAvatars.filter((_, index) => unlockedHorses[index]);
               setShuffledAvatars(shuffleArray(availableHorses));
             }}
-            className="px-8 py-4 btn-retro btn-retro-green font-bold text-lg"
+            className={`px-8 py-4 ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} font-bold text-lg`}
           >
             Start Racing!
           </motion.button>
@@ -1471,13 +1492,14 @@ const horsePersonalities = [
   if (showRaceScreen) {
     const distanceInfo = getRaceDistanceInfo(raceDistance);
     const theme = themeUtils.getCurrentTheme(currentTheme);
+    const raceStyles = themeUtils.getScreenStyles(currentTheme, 'race');
 
     return (
       <div
         className={`min-h-screen bg-gradient-to-br ${
           currentWeather
             ? currentWeather.background
-            : theme.colors.mainBg
+            : raceStyles.setup?.background || theme.colors.mainBg
         } w-full overflow-hidden flex flex-col relative`}
       >
         {/* Weather Particles */}
@@ -1528,7 +1550,7 @@ const horsePersonalities = [
               )}
               <button
                 onClick={backToSetup}
-                className="text-sm px-3 py-1 btn-retro btn-retro-gray"
+                className={`text-sm px-3 py-1 ${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')}`}
                 disabled={isRacing}
               >
                 ← Back
@@ -1645,7 +1667,7 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => startRace()}
-                  className="px-8 py-4 btn-retro btn-retro-green text-white font-bold text-lg"
+                  className={`px-8 py-4 ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} text-white font-bold text-lg`}
                 >
                   Start {distanceInfo.name} Race!
                 </motion.button>
@@ -1724,6 +1746,7 @@ const horsePersonalities = [
         onUpdateDayCount={setDayCount}
         stableGameTime={stableGameTime}
         onUpdateStableGameTime={setStableGameTime}
+        currentTheme={currentTheme}
       />
     );
   }
@@ -1755,6 +1778,7 @@ const horsePersonalities = [
         onUpdateCoins={setCoins}
         unlockedMazes={unlockedMazes}
         onUpdateUnlockedMazes={setUnlockedMazes}
+        currentTheme={currentTheme}
         onBack={() => {
           console.log('🏠 App - Horse returning from labyrinth:', selectedHorseForLabyrinth);
           setShowLabyrinth(false);
@@ -1828,11 +1852,12 @@ const horsePersonalities = [
 
   // Get current theme for styling
   const theme = themeUtils.getCurrentTheme(currentTheme);
+  const setupStyles = themeUtils.getScreenStyles(currentTheme, 'race');
 
   // SETUP SCREEN
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${theme.colors.mainBg} w-full overflow-x-hidden`}>
-      <div className={`w-full max-w-none ${theme.components.card} backdrop-blur-md shadow-2xl min-h-screen`}>
+    <div className={`min-h-screen bg-gradient-to-br ${setupStyles.setup?.background || theme.colors.mainBg} w-full overflow-x-hidden`}>
+      <div className={`w-full max-w-none ${setupStyles.setup?.cardBackground || theme.components.card} backdrop-blur-md shadow-2xl min-h-screen`}>
         <div className="pt-3 pb-3 pl-3 pr-0 sm:p-4 md:p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative">
@@ -1844,7 +1869,7 @@ const horsePersonalities = [
               >
                 
               </motion.span>
-              <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r ${theme.colors.headerBg.replace('bg-gradient-to-r ', '')} bg-clip-text text-transparent`}>
+              <h1 className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : `bg-gradient-to-r ${theme.colors.headerBg.replace('bg-gradient-to-r ', '')} bg-clip-text text-transparent`}`}>
                 Winner Decides!
               </h1>
             </div>
@@ -1867,13 +1892,13 @@ const horsePersonalities = [
               </button>
               <button
                 onClick={() => setShowStable(true)}
-                className="text-lg sm:text-sm px-3 py-2 btn-retro btn-retro-yellow text-white"
+                className={`text-lg sm:text-sm px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} text-white`}
               >
                 🏠 Stable
               </button>
               <button
                 onClick={() => setShowSettingsModal(true)}
-                className="text-lg sm:text-sm px-3 py-2 btn-retro btn-retro-settings text-white"
+                className={`text-lg sm:text-sm px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'settings')} text-white`}
                 title="Settings"
               >
                 ⚙️
@@ -1939,7 +1964,7 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={randomizeHorseNames}
-                  className="px-3 py-2 btn-retro btn-retro-purple text-white text-lg"
+                  className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} text-white text-lg`}
                   title="Randomize horse names for selected theme"
                 >
                   🎲
@@ -2085,8 +2110,8 @@ const horsePersonalities = [
                 onClick={goToRaceScreen}
                 className={`w-full sm:w-auto text-white p-4 font-semibold text-sm ${
                   isStartDisabled
-                    ? "btn-retro btn-retro-gray"
-                    : "btn-retro btn-retro-green"
+                    ? themeUtils.getComponentStyles(currentTheme, 'button', 'muted')
+                    : themeUtils.getComponentStyles(currentTheme, 'button', 'success')
                 }`}
                 disabled={isStartDisabled}
               >
@@ -2096,7 +2121,7 @@ const horsePersonalities = [
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={resetRace}
-                className="w-full sm:w-auto px-6 btn-retro btn-retro-red text-white font-semibold py-4 text-sm"
+                className={`w-full sm:w-auto px-6 ${themeUtils.getComponentStyles(currentTheme, 'button', 'danger')} text-white font-semibold py-4 text-sm`}
               >
                 Reset
               </motion.button>
@@ -2118,7 +2143,7 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={clearHistory}
-                  className="text-xs btn-retro btn-retro-red font-medium px-3 py-1"
+                  className={`text-xs ${themeUtils.getComponentStyles(currentTheme, 'button', 'danger')} font-medium px-3 py-1`}
                 >
                   Clear History
                 </motion.button>

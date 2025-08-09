@@ -213,6 +213,508 @@ button {
   box-shadow: 1px 1px 0px #00695C;
 }
 
+/* Countryside Estate Theme Buttons - Premium Style */
+.btn-arcade-primary {
+  background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+  border: 1px solid #047857;
+  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-arcade-primary:hover {
+  background: linear-gradient(135deg, #059669 0%, #22c55e 100%);
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(4, 120, 87, 0.2);
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-arcade-secondary {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-arcade-secondary:hover {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-color: #d1d5db;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn-arcade-success {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: 1px solid #16a34a;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-arcade-success:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-success:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(34, 197, 94, 0.2);
+}
+
+.btn-arcade-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1px solid #d97706;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-arcade-warning:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-warning:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+}
+
+.btn-arcade-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 1px solid #dc2626;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-arcade-danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-danger:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2);
+}
+
+.btn-arcade-muted {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #6b7280;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-arcade-muted:hover {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-muted:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn-arcade-settings {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  border: 1px solid #0d9488;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-arcade-settings:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-arcade-settings:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.2);
+}
+
+/* Premium disabled and focus states for all arcade buttons */
+.btn-arcade-primary:disabled,
+.btn-arcade-secondary:disabled,
+.btn-arcade-success:disabled,
+.btn-arcade-warning:disabled,
+.btn-arcade-danger:disabled,
+.btn-arcade-muted:disabled,
+.btn-arcade-settings:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-arcade-primary:focus,
+.btn-arcade-secondary:focus,
+.btn-arcade-success:focus,
+.btn-arcade-warning:focus,
+.btn-arcade-danger:focus,
+.btn-arcade-muted:focus,
+.btn-arcade-settings:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: rgba(16, 185, 129, 0.5);
+  ring-offset: 2px;
+}
+
+/* Saturday Morning Arcade Theme Buttons - Exact arcade style from advice file */
+.btn-saturday-primary {
+  --btn-bg: #FFD93D; /* yellow */
+  --btn-ink: #1B1B1B; /* almost black */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-primary:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-primary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.btn-saturday-primary:focus-visible { 
+  outline: none; 
+  box-shadow: 6px 6px 0 #000, 0 0 0 3px #000, 0 0 0 6px #fff, 0 0 0 9px #4D96FF; 
+}
+
+.btn-saturday-secondary {
+  --btn-bg: #4D96FF; /* blue */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: #fff;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-secondary:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-secondary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.btn-saturday-success {
+  --btn-bg: #6BCB77; /* green */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: #0b2a0d;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-success:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-success:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.btn-saturday-warning {
+  --btn-bg: #FFD93D; /* yellow */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: #1B1B1B;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-warning:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-warning:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.btn-saturday-danger {
+  --btn-bg: #FF595E; /* red */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: #fff;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-danger:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-danger:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.btn-saturday-muted {
+  --btn-bg: #FFE7C7; /* surface-2 */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: #1B1B1B;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-muted:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-muted:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.btn-saturday-settings {
+  --btn-bg: #4D96FF; /* blue */
+  
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn-bg);
+  color: #fff;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  text-transform: uppercase;
+  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  cursor: pointer;
+}
+
+.btn-saturday-settings:hover { 
+  filter: brightness(1.05); 
+}
+
+.btn-saturday-settings:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+/* Standardized screen headers */
+.screen-header {
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1.2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .screen-header {
+    font-size: 1.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .screen-header {
+    font-size: 2rem;
+  }
+}
+
+/* Theme-specific font families */
+.theme-retro {
+  font-family: 'Press Start 2P', 'Courier New', 'Monaco', 'Menlo', monospace !important;
+}
+
+.theme-arcade {
+  font-family: 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  letter-spacing: -0.01em !important;
+}
+
+.theme-alternative {
+  font-family: 'Nunito', sans-serif !important;
+}
+
+.theme-saturday {
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  image-rendering: pixelated !important; /* make sprites crisp */
+}
+
+/* Saturday Morning Arcade title styling - from advice file */
+.saturday-title {
+  font-family: 'Press Start 2P', system-ui, sans-serif !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  color: #1B1B1B !important; /* ink color */
+  text-shadow: 
+    0 2px 0 #fff,
+    0 4px 0 #000,
+    2px 6px 0 #000 !important;
+  animation: title-bounce 1800ms ease-in-out infinite;
+}
+
+@keyframes title-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-4px) rotate(-0.5deg); }
+  60% { transform: translateY(1px) rotate(0.5deg); }
+}
+
 /* Mobile-responsive font sizes */
 .text-mobile-xs {
   font-size: 8px;

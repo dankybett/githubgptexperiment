@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
+import { themeUtils } from "../utils/themes";
 
 const HorseStable = ({
   horseAvatars,
@@ -24,6 +25,7 @@ const HorseStable = ({
   onUpdateDayCount,
   stableGameTime,
   onUpdateStableGameTime,
+  currentTheme = 'retro', // Add currentTheme prop
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -843,8 +845,10 @@ const HorseStable = ({
   }, [stableLoaded]);
 
   if (!stableLoaded) {
+    const stableStyles = themeUtils.getScreenStyles(currentTheme, 'stable');
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 flex flex-col justify-center items-center p-4">
+      <div className={`min-h-screen bg-gradient-to-br ${stableStyles.background} flex flex-col justify-center items-center p-4`}>
         <motion.div
           className="text-center"
           initial={{ opacity: 0 }}
@@ -878,15 +882,17 @@ const HorseStable = ({
     );
   }
 
+  const stableStyles = themeUtils.getScreenStyles(currentTheme, 'stable');
+  
   return (
     <div 
+      className={`bg-gradient-to-br ${stableStyles.background}`}
       style={{
         position: 'fixed',
         top: '0',
         left: '0',
         width: '100vw',
         height: '100vh',
-        background: 'linear-gradient(to bottom right, #fef3c7, #fefce8, #fed7aa)',
         overflow: 'hidden',
         zIndex: '1000'
       }}
@@ -898,7 +904,7 @@ const HorseStable = ({
           top: '0',
           left: '0',
           right: '0',
-          backgroundColor: 'rgba(120, 53, 15, 0.9)',
+          backgroundColor: stableStyles.header,
           backdropFilter: 'blur(12px)',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
           padding: '16px',
@@ -941,15 +947,12 @@ const HorseStable = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div>
                     <h1 
+                      className="screen-header"
                       style={{
-                        fontSize: window.innerWidth < 640 ? '14px' : '24px',
-                        fontWeight: 'bold',
-                        color: '#fef3c7',
-                        margin: '0',
-                        lineHeight: '1.2'
+                        color: '#fef3c7' // Keep consistent light color for stable
                       }}
                     >
-                      Horse Stable
+                      🏠 Horse Stable
                     </h1>
                     {window.innerWidth >= 640 && (
                       <p 
@@ -1025,7 +1028,7 @@ const HorseStable = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onBack}
-              className="btn-retro btn-retro-yellow"
+              className={themeUtils.getComponentStyles(currentTheme, 'button', 'warning')}
               style={{
                 padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
                 fontSize: window.innerWidth < 640 ? '8px' : '10px',
@@ -1040,7 +1043,7 @@ const HorseStable = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowSelector(true)}
-              className="btn-retro btn-retro-purple"
+              className={themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')}
               style={{
                 padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
                 fontSize: window.innerWidth < 640 ? '8px' : '10px',
@@ -1056,7 +1059,7 @@ const HorseStable = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onShowLockedHorses}
-                className="btn-retro btn-retro-green"
+                className={themeUtils.getComponentStyles(currentTheme, 'button', 'success')}
                 style={{
                   padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
                   fontSize: window.innerWidth < 640 ? '8px' : '10px',
@@ -1072,7 +1075,7 @@ const HorseStable = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowNameTags(!showNameTags)}
-              className={`btn-retro ${showNameTags ? 'btn-retro-orange' : 'btn-retro-gray'}`}
+              className={showNameTags ? themeUtils.getComponentStyles(currentTheme, 'button', 'warning') : themeUtils.getComponentStyles(currentTheme, 'button', 'muted')}
               style={{
                 padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
                 fontSize: window.innerWidth < 640 ? '8px' : '10px',
@@ -1556,8 +1559,8 @@ const HorseStable = ({
           <motion.div
             className="absolute top-4 right-4 border-2"
             style={{
-              backgroundColor: 'rgba(146, 64, 14, 0.9)',
-              borderColor: '#d97706',
+              backgroundColor: stableStyles.panel,
+              borderColor: stableStyles.panelBorder,
               color: '#fef3c7',
               padding: '16px',
               fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',

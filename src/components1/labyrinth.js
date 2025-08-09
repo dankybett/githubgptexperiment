@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { INVENTORY_ITEMS, inventoryUtils } from "../utils/inventoryItems";
 import ItemSelectionModal from "./ItemSelectionModal";
+import { themeUtils } from "../utils/themes";
 
 const MAZE_SIZE = 12;
 const CELL_EMPTY = 0;
@@ -241,7 +242,7 @@ const SKILL_TREE = {
   }
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, currentTheme = 'retro' }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [minotaurPos, setMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
@@ -291,6 +292,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   // Research system
   const [selectedMazeType, setSelectedMazeType] = useState('standard');
   const [showResearchTree, setShowResearchTree] = useState(false);
+  
+  // Get theme styles
+  const labyrinthStyles = themeUtils.getScreenStyles(currentTheme, 'labyrinth');
   
   // Stable upgrades system
   const [stableUpgrades, setStableUpgrades] = useState({});
@@ -1590,7 +1594,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     .sort((a, b) => b.count - a.count);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-100 to-green-200 flex flex-col">
+    <div className={`min-h-screen bg-gradient-to-br ${labyrinthStyles.background} flex flex-col`}>
       <div className="flex-1 flex flex-col w-full p-3">
         
         {/* Header with Back Button */}
@@ -1598,19 +1602,19 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           {onBack && (
             <button
               onClick={exitLabyrinth}
-              className="px-3 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-1 shadow-md"
+              className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} flex items-center gap-1`}
             >
               ← Back
             </button>
           )}
-          <h1 className="text-lg font-bold text-green-800 flex items-center gap-2">
+          <h1 className="screen-header" style={{ color: labyrinthStyles.reward }}>
             🐎 Labyrinth
           </h1>
           <div className="w-16" /> {/* Spacer */}
         </div>
 
         {/* 1. Mobile-optimized Maze Display */}
-        <div className="bg-white rounded-xl p-4 shadow-lg mb-3">
+        <div className={`${themeUtils.getComponentStyles(currentTheme, 'card')} rounded-xl p-4 shadow-lg mb-3`}>
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
@@ -1627,7 +1631,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
           {/* Maze Grid */}
           <div 
-            className="border-2 border-gray-800 bg-gray-900 w-full rounded-lg overflow-hidden shadow-inner relative"
+            className={`border-2 border-gray-800 w-full rounded-lg overflow-hidden shadow-inner relative`}
+            style={{ backgroundColor: labyrinthStyles.wall }}
             style={{ 
               display: 'flex',
               flexDirection: 'column',
@@ -1764,14 +1769,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                     setSkillPoints(prev => prev + skillPointsEarned);
                     onUpdateResearchPoints(prev => prev + researchPointsEarned);
                   }}
-                  className="py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium text-base shadow-md"
+                  className={`py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} font-medium text-base shadow-md`}
                 >
                   🚪 End Run
                 </button>
                 <button
                   onClick={startGame}
                   disabled={true}
-                  className="py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium text-base shadow-md"
+                  className={`py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')} cursor-not-allowed font-medium text-base shadow-md`}
                 >
                   🔄 New Adventure
                 </button>
@@ -1780,7 +1785,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               <button
                 onClick={startGame}
                 disabled={gameState === 'exploring' || selectedHorse.isInjured || horseInjuredThisSession}
-                className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-base shadow-md"
+                className={`w-full py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} font-medium text-base shadow-md`}
               >
                 {(selectedHorse.isInjured || horseInjuredThisSession) ? '🏥 Horse is Injured - Cannot Enter' : gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
               </button>
@@ -1791,7 +1796,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               <select
                 value={selectedMazeType}
                 onChange={(e) => setSelectedMazeType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'input')}`}
                 disabled={gameState === 'exploring'}
               >
                 {Object.entries(MAZE_TYPES).map(([key, maze]) => (
@@ -1804,7 +1809,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               <select
                 value={gameSpeed}
                 onChange={(e) => setGameSpeed(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'input')}`}
                 disabled={gameState === 'exploring'}
               >
                 <option value={1200}>🐌 Slow</option>
@@ -1818,14 +1823,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setShowSkillTree(!showSkillTree)}
-                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium shadow-md"
+                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} text-sm font-medium`}
               >
                 💎 Skills ({skillPoints})
               </button>
               
               <button
                 onClick={() => setShowResearchTree(!showResearchTree)}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium shadow-md"
+                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'primary')} text-sm font-medium shadow-md`}
               >
                 🔬 Research ({researchPoints})
               </button>
@@ -1835,7 +1840,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
         {/* 2. Horse Display with Inventory */}
         {selectedHorse && (
-          <div className="bg-white rounded-xl p-4 shadow-lg mb-3 border-2 border-green-200">
+          <div className={`${themeUtils.getComponentStyles(currentTheme, 'card')} rounded-xl p-4 shadow-lg mb-3`}>
             <div className="flex items-center gap-3 mb-3">
               <img 
                 src={selectedHorse.avatar} 
@@ -1995,8 +2000,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
       {/* Mobile Skill Tree Modal */}
       {showSkillTree && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
-          <div className="bg-white rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
+        <div className={`${themeUtils.getComponentStyles(currentTheme, 'modal')} z-50`}>
+          <div className={`${themeUtils.getComponentStyles(currentTheme, 'modalContent')} rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl`}>
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">
@@ -2008,7 +2013,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               </div>
               <button
                 onClick={() => setShowSkillTree(false)}
-                className="text-gray-500 hover:text-gray-700 text-xl"
+                className={`${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')} text-xl`}
               >
                 ×
               </button>
@@ -2067,15 +2072,15 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
       {/* Mobile Research Tree Modal */}
       {showResearchTree && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
-          <div className="bg-white rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
+        <div className={`${themeUtils.getComponentStyles(currentTheme, 'modal')} z-50`}>
+          <div className={`${themeUtils.getComponentStyles(currentTheme, 'modalContent')} rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl`}>
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-800">
                 🔬 Research ({researchPoints} points)
               </h2>
               <button
                 onClick={() => setShowResearchTree(false)}
-                className="text-gray-500 hover:text-gray-700 text-xl"
+                className={`${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')} text-xl`}
               >
                 ×
               </button>
@@ -2263,7 +2268,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 </button>
                 <button
                   onClick={handleVaultLeave}
-                  className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+                  className={`flex-1 py-2 px-4 ${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')} font-semibold transition-colors`}
                 >
                   🚶 Leave
                 </button>
