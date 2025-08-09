@@ -13,6 +13,7 @@ export class ExcitingRaceEngine {
     this.raceState = 'waiting';
     this.raceTime = 0;
     this.settings = {};
+    this.winner = null;            // Track the definitive winner
     this.lastSurgeTime = 0;        // Track timing for alternating surges
     this.surgeTargetBias = 0;      // 0 = target leaders, 1 = target trailing horses
     this.lastBreakawayTime = 0;    // Track timing for rare breakaways
@@ -96,7 +97,7 @@ export class ExcitingRaceEngine {
 
   // Main update loop - designed for maximum excitement
   updatePositions(deltaTime) {
-    if (this.raceState !== 'racing') return;
+    if (this.raceState !== 'racing' && this.raceState !== 'finished') return;
     
     this.raceTime += deltaTime;
     
@@ -121,10 +122,20 @@ export class ExcitingRaceEngine {
       this.trackPositionHistory(horse);
     });
     
-    // Check for race completion
-    const winner = this.horses.find(horse => horse.position >= 1);
-    if (winner && this.raceState === 'racing') {
-      this.raceState = 'finished';
+    // Check for winner declaration (at 90%) - only declare winner once
+    if (this.raceState === 'racing' && !this.winner) {
+      // Find the first horse to reach 90%
+      const leadingHorse = this.horses.find(horse => horse.position >= 0.9);
+      if (leadingHorse) {
+        this.winner = leadingHorse; // Lock in the winner
+        this.raceState = 'finished';
+      }
+    }
+    
+    // Check for complete race end (when all horses reach 99%)
+    const allFinished = this.horses.every(horse => horse.position >= 0.99);
+    if (allFinished && this.raceState === 'finished') {
+      this.raceState = 'complete';
     }
   }
 
@@ -474,6 +485,13 @@ export class ExcitingRaceEngine {
     targetSpeed *= horse.finalStretchBoost;     // Final stretch
     targetSpeed *= fatigueMultiplier;           // Energy/fatigue impact
     
+    // Natural deceleration after winner is declared (race finished)
+    if (this.raceState === 'finished') {
+      // Gradually slow down horses after winner declared
+      const decelerationFactor = Math.max(0.1, 1 - ((horse.position - 0.9) / 0.09)); // Slow from 90% to 99%
+      targetSpeed *= decelerationFactor;
+    }
+    
     // Add small random variation for natural movement
     targetSpeed *= (0.95 + Math.random() * 0.1); // ±5% variation
     
@@ -486,6 +504,9 @@ export class ExcitingRaceEngine {
     
     // Ensure no horse goes backwards
     horse.position = Math.max(horse.position, Math.max(...horse.recentPositionHistory) - 0.01);
+    
+    // Cap horses at 99% (0.99) - they stop visibly on screen
+    horse.position = Math.min(horse.position, 0.99);
   }
 
   // Track position history for overtaking detection
@@ -631,6 +652,7 @@ export class ExcitingRaceEngine {
     this.settings = settings;
     this.raceState = 'countdown';
     this.raceTime = 0;
+    this.winner = null;            // Reset winner for new race
     this.lastSurgeTime = 0;
     this.lastBreakawayTime = 0;
     this.breakawayActive = false;
@@ -684,6 +706,7 @@ export class ExcitingRaceEngine {
   reset() {
     this.raceState = 'waiting';
     this.raceTime = 0;
+    this.winner = null;
   }
 }
 

@@ -14,6 +14,7 @@ export class RaceEngineAdapter {
     this.originalCallbacks = {};
     this.lastCommentaryTime = 0;
     this.commentaryInterval = 2000; // Commentary every 2 seconds
+    this.winnerAnnounced = false; // Track if winner announcement has been made
   }
 
   // Toggle between racing engines
@@ -37,13 +38,15 @@ export class RaceEngineAdapter {
 
   // Start experimental race and handle updates
   startExperimentalRace(settings) {
-    // Reset commentary timer for new race
+    // Reset commentary timer and winner announcement flag for new race
     this.lastCommentaryTime = 0;
+    this.winnerAnnounced = false;
     
     // Initialize the engine but don't start its internal countdown
     excitingRaceEngine.settings = settings;
     excitingRaceEngine.raceState = 'countdown';
     excitingRaceEngine.raceTime = 0;
+    excitingRaceEngine.winner = null;  // Reset winner for new race
     excitingRaceEngine.lastSurgeTime = 0;
     excitingRaceEngine.lastBreakawayTime = 0;
     excitingRaceEngine.breakawayActive = false;
@@ -71,7 +74,7 @@ export class RaceEngineAdapter {
     
     // Start the update loop for experimental engine
     const updateLoop = () => {
-      if (excitingRaceEngine.raceState === 'racing') {
+      if (excitingRaceEngine.raceState === 'racing' || excitingRaceEngine.raceState === 'finished') {
         excitingRaceEngine.updatePositions(0.016); // ~60fps
         
         const raceData = excitingRaceEngine.getRaceData();
@@ -90,13 +93,32 @@ export class RaceEngineAdapter {
           }
         }
         
-        // Check for winner
-        const winner = raceData.horses.find(horse => horse.position >= 1);
-        if (winner && excitingRaceEngine.raceState === 'finished') {
-          this.originalCallbacks.setWinner(winner.name);
-          this.originalCallbacks.setWinnerIndex(winner.id);
+        // Check for winner declaration (at 90%) - only announce once
+        if (excitingRaceEngine.winner && excitingRaceEngine.raceState === 'finished' && !this.winnerAnnounced) {
+          this.originalCallbacks.setWinner(excitingRaceEngine.winner.name);
+          this.originalCallbacks.setWinnerIndex(excitingRaceEngine.winner.id);
+          
+          // Immediate winner announcement commentary (only once)
+          const winnerAnnouncements = [
+            `${excitingRaceEngine.winner.name} crosses the line first! What a victory!`,
+            `AND THE WINNER IS ${excitingRaceEngine.winner.name}! Incredible finish!`,
+            `${excitingRaceEngine.winner.name} takes the victory! What a race!`,
+            `IT'S ${excitingRaceEngine.winner.name}! They've done it!`,
+            `Victory to ${excitingRaceEngine.winner.name}! What an amazing performance!`,
+            `${excitingRaceEngine.winner.name} wins it! Sensational racing!`
+          ];
+          const announcement = winnerAnnouncements[Math.floor(Math.random() * winnerAnnouncements.length)];
+          this.originalCallbacks.setCommentary(announcement);
+          this.winnerAnnounced = true; // Mark as announced
+          
+          // Don't set isRacing to false yet - let horses continue running
+        }
+        
+        // Check if race is completely finished (all horses reach 99%)
+        const allFinished = raceData.horses.every(horse => horse.position >= 0.99);
+        if (allFinished) {
           this.originalCallbacks.setIsRacing(false);
-          return; // Stop the loop
+          return; // Stop the loop only when all horses finish
         }
         
         // Update special states for enhanced UI

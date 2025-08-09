@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import FadeInImage from "./FadeInImage";
@@ -64,6 +64,27 @@ export default function RaceTrack({
   betAmount,
   betHorse,
 }) {
+  // State for position snapshots (updated every 5 seconds)
+  const [positionSnapshot, setPositionSnapshot] = useState(positions);
+  const lastUpdateTime = useRef(0);
+
+  // Update position snapshot every 5 seconds during racing
+  useEffect(() => {
+    if (isRacing && positions.length > 0) {
+      const currentTime = Date.now();
+      if (currentTime - lastUpdateTime.current >= 5000) { // 5 seconds
+        setPositionSnapshot([...positions]);
+        lastUpdateTime.current = currentTime;
+      }
+    } else if (!isRacing) {
+      // Reset for new race
+      lastUpdateTime.current = 0;
+      setPositionSnapshot(positions);
+    }
+  }, [isRacing, positions]);
+
+  // Use snapshot positions for live positions display, but real positions for everything else
+  const displayPositions = isRacing ? positionSnapshot : positions;
   // Calculate current leader and positions during active racing
   const currentLeaderIndex = positions.length > 0 ? positions.indexOf(Math.max(...positions)) : -1;
   const isCurrentLeader = (index) => currentLeaderIndex === index && isRacing && winnerIndex === null;
@@ -75,11 +96,12 @@ export default function RaceTrack({
       .sort((a, b) => b.position - a.position);
     return sortedByPosition.findIndex(item => item.index === index) + 1;
   });
-  // Calculate camera position based on leading horse
+  // Calculate camera position based on leading horse - centered for mobile
   const leadPosition = Math.max(...positions);
   const leadPixelPos = leadPosition * (trackLength - 200);
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
-  const cameraOffset = Math.max(0, Math.min(leadPixelPos - viewportWidth * 0.3, trackLength - viewportWidth));
+  // Reduce offset to keep horses more centered (smaller value = more centered)
+  const cameraOffset = Math.max(0, Math.min(leadPixelPos - viewportWidth * 0.1, trackLength - viewportWidth));
 
   return (
     <div className="flex-1 relative flex flex-col">
@@ -123,7 +145,7 @@ export default function RaceTrack({
                 className="absolute z-10"
                 style={{ 
                   left: `${signPixelPos}px`,
-                  top: '-24px', // Position so bottom of sign aligns with top edge of race track
+                  top: '0px', // Right at the top edge of the race track
                   transform: 'translateX(-50%) translateY(-100%)' // Center horizontally and position from bottom
                 }}
                 title={`${sign.distance} remaining`}
@@ -131,7 +153,7 @@ export default function RaceTrack({
                 <img 
                   src={`/racetrack/${sign.image}`}
                   alt={`${sign.distance} distance marker`}
-                  className="h-24 w-auto object-contain"
+                  className="h-28 w-auto object-contain" // Slightly bigger: h-24 (96px) to h-28 (112px) = ~17% increase
                   style={{ 
                     filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
                   }}
@@ -139,6 +161,23 @@ export default function RaceTrack({
               </div>
             );
           })}
+
+          {/* Finish Line at 90% - positioned for horse avatar, not banner */}
+          <div 
+            className="absolute top-0 bottom-0 w-1 bg-red-600 opacity-80 z-20 shadow-lg"
+            style={{ 
+              left: `${8 + (0.9 * (trackLength - 200)) + 208 + 12 + 32}px`, // padding + 90% + banner width + gap + half horse width
+              backgroundImage: 'repeating-linear-gradient(0deg, #dc2626 0px, #dc2626 10px, #ffffff 10px, #ffffff 20px)'
+            }}
+          >
+            {/* Finish Line Flag */}
+            <div 
+              className="absolute -top-8 -left-4 bg-red-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg"
+              style={{ transform: 'rotate(-5deg)' }}
+            >
+              🏁 FINISH
+            </div>
+          </div>
 
           <div className="space-y-2 relative z-10 py-2 px-2" style={{ marginTop: "80px" }}>
             {items.map((item, index) => (
@@ -161,12 +200,13 @@ export default function RaceTrack({
                   }}
                 >
                   <div className="flex items-center gap-3">
+                    {/* Always render banner but fade out non-winners */}
                     <motion.div
                       className={`px-2 py-1 rounded-lg shadow-lg border-2 whitespace-nowrap w-52 flex items-center justify-center ${
                         winnerIndex === index
                           ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500"
                           : isCurrentLeader(index)
-                          ? "bg-gradient-to-r from-green-400 to-blue-500 text-white border-green-300 ring-2 ring-green-300"
+                          ? "bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 border-yellow-500 ring-2 ring-yellow-400"
                           : fatiguedHorses[index]
                           ? "bg-gradient-to-r from-gray-400 to-gray-600 text-gray-200 border-gray-700"
                           : "bg-white bg-opacity-95 text-gray-800 border-gray-200"
@@ -174,7 +214,7 @@ export default function RaceTrack({
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ 
                         scale: isCurrentLeader(index) ? [1, 1.05, 1] : 1, 
-                        opacity: 1,
+                        opacity: winnerIndex !== null && winnerIndex !== index ? 0 : 1,
                         boxShadow: isCurrentLeader(index)
                           ? ["0 0 0px rgba(34,197,94,0)", "0 0 25px rgba(34,197,94,0.9)", "0 0 0px rgba(34,197,94,0)"]
                           : "0 4px 6px rgba(0,0,0,0.1)"
@@ -188,6 +228,19 @@ export default function RaceTrack({
                         boxShadow: { 
                           duration: 0.8, 
                           repeat: isCurrentLeader(index) ? Infinity : 0 
+                        },
+                        opacity: { 
+                          duration: winnerIndex !== null && winnerIndex !== index ? 3.0 : 0.3,
+                          delay: winnerIndex !== null && winnerIndex !== index ? index * 0.2 : 0,
+                          ease: "easeOut"
+                        },
+                        backgroundColor: { 
+                          duration: 0.5, 
+                          ease: "easeOut" 
+                        },
+                        borderColor: { 
+                          duration: 0.5, 
+                          ease: "easeOut" 
                         }
                       }}
                     >
@@ -282,40 +335,7 @@ export default function RaceTrack({
         </motion.div>
       </div>
       
-      {/* Live Positions Panel - Shows current standings */}
-      {isRacing && winnerIndex === null && (
-        <motion.div
-          className="absolute top-4 left-4 z-50 bg-black bg-opacity-80 text-white rounded-lg p-3 min-w-[200px]"
-          initial={{ x: -200, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-sm font-bold mb-2 text-center text-yellow-300">🏆 LIVE POSITIONS</h3>
-          <div className="space-y-1">
-            {positions
-              .map((pos, index) => ({ position: pos, index, name: getHorseName(items[index], index) }))
-              .sort((a, b) => b.position - a.position)
-              .slice(0, Math.min(5, items.length))
-              .map((horse, rank) => (
-                <div
-                  key={horse.index}
-                  className={`flex items-center justify-between text-xs px-2 py-1 rounded ${
-                    rank === 0 ? 'bg-green-600 text-white' :
-                    rank === 1 ? 'bg-gray-600 text-white' :
-                    rank === 2 ? 'bg-orange-600 text-white' :
-                    'bg-gray-700 text-gray-200'
-                  }`}
-                >
-                  <span className="font-bold">{rank + 1}.</span>
-                  <span className="truncate ml-2">{horse.name}</span>
-                  {rank === 0 && <span className="ml-1">👑</span>}
-                </div>
-              ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Live Race Statistics Panel - Phase 1 */}
+      {/* Live Commentary Panel */}
       {(isRacing || countdown) && (
         <motion.div
           className="mt-4 mx-3 bg-white bg-opacity-95 rounded-2xl shadow-lg border-2 border-gray-200 p-4"
@@ -323,116 +343,42 @@ export default function RaceTrack({
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0, duration: 0.3 }}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Race Info */}
-            <div className="text-center lg:text-left">
-              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 justify-center lg:justify-start">
-                <span>⏱️</span>
-                <span>Race Status</span>
-              </h3>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Time:</span>
-                  <span className="font-bold text-blue-600">{raceTime.toFixed(1)}s</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Distance:</span>
-                  <span className="font-bold">{getRaceDistanceInfo(raceDistance).name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Progress:</span>
-                  <span className="font-bold text-green-600">
-                    {Math.round(Math.max(...positions) * 100)}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Live Commentary */}
-            <div className="lg:col-span-2">
-              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 justify-center lg:justify-start">
-                <motion.span
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+          <h3 className="font-bold text-gray-800 mb-3 text-center flex items-center justify-center gap-2">
+            <motion.span
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              📢
+            </motion.span>
+            <span>Live Commentary</span>
+          </h3>
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 min-h-[80px] flex items-center justify-center">
+            <div className="text-center">
+              {commentary ? (
+                <motion.p
+                  key={commentary}
+                  className="text-sm font-medium text-gray-800 leading-relaxed"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  📢
-                </motion.span>
-                <span>Live Commentary</span>
-              </h3>
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 min-h-[100px] flex items-center justify-center">
-                <div className="text-center">
-                  {commentary ? (
-                    <motion.p
-                      key={commentary}
-                      className="text-sm font-medium text-gray-800 leading-relaxed"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {commentary}
-                    </motion.p>
-                  ) : countdown ? (
-                    <motion.p
-                      className="text-lg font-bold text-blue-600"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 0.5, repeat: Infinity }}
-                    >
-                      Get ready... {countdown}!
-                    </motion.p>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">
-                      Commentary will appear here during the race...
-                    </p>
-                  )}
-                </div>
-              </div>
+                  {commentary}
+                </motion.p>
+              ) : countdown ? (
+                <motion.p
+                  className="text-lg font-bold text-blue-600"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 0.5, repeat: Infinity }}
+                >
+                  Get ready... {countdown}!
+                </motion.p>
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  Commentary will appear here during the race...
+                </p>
+              )}
             </div>
           </div>
-
-          {/* Your Bet Status - if betting is enabled */}
-          {betEnabled && betAmount > 0 && betHorse !== null && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 justify-center">
-                <span>🎯</span>
-                <span>Your Bet</span>
-              </h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm text-gray-600">Betting on:</span>
-                  <span className="font-bold text-blue-600">
-                    {getHorseName(items[betHorse], betHorse)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm text-gray-600">Bet amount:</span>
-                  <span className="font-bold">{betAmount} coins</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Current position:</span>
-                  <span className={`font-bold ${
-                    items
-                      .map((item, index) => ({ position: positions[index] || 0, index }))
-                      .sort((a, b) => b.position - a.position)
-                      .findIndex(horse => horse.index === betHorse) === 0
-                      ? "text-green-600" 
-                      : "text-gray-600"
-                  }`}>
-                    {items
-                      .map((item, index) => ({ position: positions[index] || 0, index }))
-                      .sort((a, b) => b.position - a.position)
-                      .findIndex(horse => horse.index === betHorse) + 1}
-                    {items
-                      .map((item, index) => ({ position: positions[index] || 0, index }))
-                      .sort((a, b) => b.position - a.position)
-                      .findIndex(horse => horse.index === betHorse) === 0 ? " 🥇" : ""}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Potential payout: {Math.floor(betAmount * Math.min(3, Math.max(1.5, items.length * 0.5)))} coins
-                </div>
-              </div>
-            </div>
-          )}
         </motion.div>
       )}
       

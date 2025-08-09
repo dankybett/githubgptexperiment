@@ -1053,7 +1053,8 @@ const horsePersonalities = [
           updatedPositions[leaderIndex] = second + maxLead;
         }
 
-        const winnerIdx = updatedPositions.findIndex((p) => p >= 1);
+        const winnerIdx = updatedPositions.findIndex((p) => p >= 0.98);
+        console.log('Max position:', Math.max(...updatedPositions), 'Winner found at 98%:', winnerIdx !== -1);
         if (winnerIdx !== -1 && !winnerDeclared) {
           winnerDeclared = true;
           
@@ -1111,13 +1112,8 @@ const horsePersonalities = [
           
         }
  
-        if (updatedPositions.every((p) => p >= 1)) {
-          finished = true;
-          setIsRacing(false);
-          if (raceSoundRef.current) {
-            raceSoundRef.current.pause();
-          }
-        }
+        // Let the timeout from winner declaration handle race ending
+        // Removed automatic race ending when all horses finish
 
 
         // Update surging and fatigued horses state for visual effects
