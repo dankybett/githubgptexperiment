@@ -908,76 +908,36 @@ const HorseStable = ({
           backgroundColor: stableStyles.header,
           backdropFilter: 'blur(12px)',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          padding: window.innerWidth < 640 ? '12px' : '16px',
+          padding: window.innerWidth < 640 ? '8px' : '16px',
           zIndex: '20'
         }}
       >
-        <div 
-          style={{
-            display: 'flex',
-            flexDirection: window.innerWidth < 640 ? 'column' : 'row',
-            justifyContent: 'space-between',
-            alignItems: window.innerWidth < 640 ? 'stretch' : 'center',
-            gap: window.innerWidth < 640 ? '8px' : '16px'
-          }}
-        >
-          {/* Title Row */}
+        {/* Header with Title and Back Button */}
+        <div className="flex items-center justify-between mb-3">
+          <h1 className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`} style={{ color: labyrinthStyles.reward }}>
+            Horse Stable
+          </h1>
+          
+          {/* Coins and Back Button */}
           <div 
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px'
+              gap: window.innerWidth < 640 ? '4px' : '12px',
+              flexWrap: 'wrap'
             }}
           >
-            <div 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: window.innerWidth < 640 ? '6px' : '12px'
-              }}
-            >
-              <h1 
-                className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`}
-                style={{
-                  color: labyrinthStyles.reward
-                }}
-              >
-                Horse Stable
-              </h1>
-              {window.innerWidth >= 640 && (
-                <p 
-                  style={{
-                    color: '#fed7aa',
-                    fontSize: '14px',
-                    margin: '0'
-                  }}
-                >
-                  Watch your horses roam freely in their home
-                </p>
-              )}
-            </div>
-            
-            {/* Coins and Back Button */}
-            <div 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: window.innerWidth < 640 ? '4px' : '12px',
-                flexWrap: 'wrap'
-              }}
-            >
               <div 
                 style={{
-                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                  fontSize: window.innerWidth < 640 ? '7px' : '10px',
                   backgroundColor: '#fef3c7',
-                  padding: window.innerWidth < 640 ? '2px 4px' : '2px 6px',
-                  borderRadius: '10px',
+                  padding: window.innerWidth < 640 ? '2px 3px' : '2px 6px',
+                  borderRadius: '8px',
                   whiteSpace: 'nowrap',
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '2px',
+                  gap: '1px',
                   color: '#000'
                 }}
               >
@@ -990,8 +950,8 @@ const HorseStable = ({
                 onClick={onBack}
                 className={themeUtils.getComponentStyles(currentTheme, 'button', 'warning')}
                 style={{
-                  padding: window.innerWidth < 640 ? '6px 12px' : '8px 20px',
-                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                  padding: window.innerWidth < 640 ? '4px 16px' : '8px 20px',
+                  fontSize: window.innerWidth < 640 ? '7px' : '10px',
                   flex: 'none',
                   minWidth: window.innerWidth < 640 ? '0' : 'auto',
                   letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
@@ -1000,7 +960,6 @@ const HorseStable = ({
                 Back
               </motion.button>
             </div>
-          </div>
         </div>
       </div>
 

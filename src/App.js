@@ -1898,7 +1898,7 @@ const horsePersonalities = [
               <button
                 onClick={() => setShowStable(true)}
                 className={`text-xs px-2 py-1 ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} text-white`}
-                style={{ fontSize: '10px', padding: '4px 8px' }}
+                style={{ fontSize: '7px', padding: '4px 26px' }}
               >
                 Stable
               </button>
@@ -1978,7 +1978,8 @@ const horsePersonalities = [
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={randomizeHorseNames}
-                  className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} text-white text-lg`}
+                  className={`${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} text-white`}
+                  style={{ padding: '4px 12px', fontSize: '16px', minWidth: 'auto', width: 'auto' }}
                   title="Randomize horse names for selected theme"
                 >
                   🎲

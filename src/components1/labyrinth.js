@@ -1819,9 +1819,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               <button
                 onClick={startGame}
                 disabled={gameState === 'exploring' || selectedHorse.isInjured || horseInjuredThisSession}
-                className={`w-full py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} font-medium text-base shadow-md`}
+                className={`w-full py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} font-medium shadow-md`}
+                style={{ fontSize: currentTheme === 'saturday' ? '12px' : undefined }}
               >
-                {(selectedHorse.isInjured || horseInjuredThisSession) ? '🏥 Horse is Injured - Cannot Enter' : gameState === 'waiting' ? '🚀 Start Adventure' : '🔄 New Adventure'}
+                {(selectedHorse.isInjured || horseInjuredThisSession) ? 'Horse is Injured - Cannot Enter' : gameState === 'waiting' ? 'Start Adventure' : '🔄 New Adventure'}
               </button>
             )}
             
@@ -1846,10 +1847,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'input')}`}
                 disabled={gameState === 'exploring'}
               >
-                <option value={1200}>🐌 Slow</option>
-                <option value={800}>🚶 Normal</option>
-                <option value={400}>🏃 Fast</option>
-                <option value={200}>⚡ Very Fast</option>
+                <option value={1200}>Slow</option>
+                <option value={800}>Normal</option>
+                <option value={400}>Fast</option>
+                <option value={200}>Very Fast</option>
               </select>
             </div>
             
@@ -1857,16 +1858,18 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setShowSkillTree(!showSkillTree)}
-                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} text-sm font-medium`}
+                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} font-medium`}
+                style={{ fontSize: currentTheme === 'saturday' ? '10px' : '14px' }}
               >
-                💎 Skills ({skillPoints})
+                Skills ({skillPoints})
               </button>
               
               <button
                 onClick={() => setShowResearchTree(!showResearchTree)}
-                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'primary')} text-sm font-medium shadow-md`}
+                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'primary')} font-medium shadow-md`}
+                style={{ fontSize: currentTheme === 'saturday' ? '10px' : '14px' }}
               >
-                🔬 Research ({researchPoints})
+                Research ({researchPoints})
               </button>
             </div>
           </div>
