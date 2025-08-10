@@ -701,12 +701,112 @@ button {
   font-family: 'Press Start 2P', system-ui, sans-serif !important;
   letter-spacing: 1px !important;
   text-transform: uppercase !important;
-  color: #1B1B1B !important; /* ink color */
-  text-shadow: 
-    0 2px 0 #fff,
-    0 4px 0 #000,
-    2px 6px 0 #000 !important;
-  animation: title-bounce 1800ms ease-in-out infinite;
+  color: #1B1B1B !important;
+}
+
+/* Saturday Morning Arcade input styling - maximum specificity to override Tailwind bg-white */
+body.theme-saturday input.bg-white,
+body.theme-saturday select.bg-white,
+body.theme-saturday textarea.bg-white,
+body.theme-saturday input[type="text"],
+body.theme-saturday input[type="number"],
+body.theme-saturday input[type="email"],
+body.theme-saturday input[type="password"],
+body.theme-saturday textarea,
+body.theme-saturday select,
+.theme-saturday input.bg-white,
+.theme-saturday select.bg-white, 
+.theme-saturday textarea.bg-white,
+.theme-saturday input[type="text"],
+.theme-saturday input[type="number"],
+.theme-saturday input[type="email"],
+.theme-saturday input[type="password"],
+.theme-saturday textarea,
+.theme-saturday select {
+  background-color: #FFF6E3 !important; /* soft cream */
+  border-color: #FFD93D !important; /* yellow */
+  background: #FFF6E3 !important; /* override any bg utilities */
+}
+
+body.theme-saturday input.bg-white:focus,
+body.theme-saturday select.bg-white:focus,
+body.theme-saturday textarea.bg-white:focus,
+body.theme-saturday input[type="text"]:focus,
+body.theme-saturday input[type="number"]:focus,
+body.theme-saturday input[type="email"]:focus,
+body.theme-saturday input[type="password"]:focus,
+body.theme-saturday textarea:focus, 
+body.theme-saturday select:focus,
+.theme-saturday input.bg-white:focus,
+.theme-saturday select.bg-white:focus,
+.theme-saturday textarea.bg-white:focus,
+.theme-saturday input[type="text"]:focus,
+.theme-saturday input[type="number"]:focus,
+.theme-saturday input[type="email"]:focus,
+.theme-saturday input[type="password"]:focus,
+.theme-saturday textarea:focus, 
+.theme-saturday select:focus {
+  border-color: #1B1B1B !important; /* black on focus */
+  background-color: #FFF6E3 !important; /* keep cream background */
+  background: #FFF6E3 !important; /* override any bg utilities */
+}
+
+/* Nuclear option - target all white backgrounds in Saturday theme */
+.theme-saturday .bg-white,
+body.theme-saturday .bg-white,
+html.theme-saturday input,
+html.theme-saturday select,
+html.theme-saturday textarea {
+  background-color: #FFF6E3 !important;
+  background: #FFF6E3 !important;
+  border-color: #FFD93D !important;
+}
+
+/* Even more specific targeting */
+body.theme-saturday input[class*="bg-white"],
+body.theme-saturday select[class*="bg-white"],
+body.theme-saturday textarea[class*="bg-white"],
+body.theme-saturday *[class*="bg-white"] input,
+body.theme-saturday *[class*="bg-white"] select,
+body.theme-saturday *[class*="bg-white"] textarea {
+  background-color: #FFF6E3 !important;
+  background: #FFF6E3 !important;
+  border-color: #FFD93D !important;
+}
+
+/* Saturday theme CSS variables approach */
+:root.theme-saturday {
+  --input-bg: #FFF6E3;
+  --input-border: #FFD93D;
+  --input-focus-border: #1B1B1B;
+}
+
+/* Apply Saturday theme variables */
+.theme-saturday input,
+.theme-saturday select, 
+.theme-saturday textarea {
+  background: var(--input-bg) !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+}
+
+.theme-saturday input:focus,
+.theme-saturday select:focus,
+.theme-saturday textarea:focus {
+  border-color: var(--input-focus-border) !important;
+}
+
+/* Direct Saturday input class styling */
+.saturday-input {
+  background-color: #FFF6E3 !important;
+  background: #FFF6E3 !important; 
+  border-color: #FFD93D !important;
+}
+
+.saturday-input:focus {
+  background-color: #FFF6E3 !important;
+  background: #FFF6E3 !important;
+  border-color: #1B1B1B !important;
 }
 
 @keyframes title-bounce {

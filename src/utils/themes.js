@@ -47,7 +47,7 @@ export const THEMES = {
       
       race: {
         setup: {
-          background: 'from-slate-900 via-gray-800 to-indigo-900',
+          background: 'from-gray-800 via-gray-900 to-black',
           cardBackground: 'bg-white bg-opacity-20 backdrop-blur-sm',
         },
         track: {
@@ -58,8 +58,8 @@ export const THEMES = {
       },
       
       stable: {
-        background: 'from-amber-100 via-yellow-50 to-orange-100',
-        header: 'rgba(120, 53, 15, 0.9)',
+        background: 'from-gray-800 via-gray-900 to-black',
+        header: 'rgba(0, 0, 0, 0.8)',
         panel: 'rgba(146, 64, 14, 0.9)',
         panelBorder: '#d97706',
       },
@@ -370,7 +370,7 @@ export const THEMES = {
       
       card: 'bg-yellow-50 rounded-xl border-4 border-black shadow-lg',
       
-      input: 'w-full px-4 py-3 border-4 border-black rounded-xl bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 font-bold shadow-md',
+      input: 'w-full px-4 py-3 border-4 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none font-bold shadow-md saturday-input',
       
       modal: 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50',
       modalContent: 'bg-yellow-50 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border-4 border-black',

@@ -883,6 +883,7 @@ const HorseStable = ({
   }
 
   const stableStyles = themeUtils.getScreenStyles(currentTheme, 'stable');
+  const labyrinthStyles = themeUtils.getScreenStyles(currentTheme, 'labyrinth');
   
   return (
     <div 
@@ -907,7 +908,7 @@ const HorseStable = ({
           backgroundColor: stableStyles.header,
           backdropFilter: 'blur(12px)',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          padding: '16px',
+          padding: window.innerWidth < 640 ? '12px' : '16px',
           zIndex: '20'
         }}
       >
@@ -936,156 +937,69 @@ const HorseStable = ({
                 gap: window.innerWidth < 640 ? '6px' : '12px'
               }}
             >
-              <motion.span
-                style={{ fontSize: window.innerWidth < 640 ? '20px' : '32px' }}
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
+              <h1 
+                className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`}
+                style={{
+                  color: labyrinthStyles.reward
+                }}
               >
-                
-              </motion.span>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div>
-                    <h1 
-                      className="screen-header"
-                      style={{
-                        color: '#fef3c7' // Keep consistent light color for stable
-                      }}
-                    >
-                      🏠 Horse Stable
-                    </h1>
-                    {window.innerWidth >= 640 && (
-                      <p 
-                        style={{
-                          color: '#fed7aa',
-                          fontSize: '14px',
-                          margin: '0'
-                        }}
-                      >
-                        Watch your horses roam freely in their home
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Day/Night Phase Display */}
-                  <div style={{ 
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    padding: '6px 12px',
-                    borderRadius: '20px',
-                    textAlign: 'center',
-                    minWidth: '100px'
-                  }}>
-                    <div style={{ 
-                      color: '#fef3c7',
-                      fontSize: window.innerWidth < 640 ? '10px' : '12px',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      justifyContent: 'center'
-                    }}>
-                      <span>
-                        {getTimeOfDayPhase() === 'morning' && '🌅'}
-                        {getTimeOfDayPhase() === 'afternoon' && '☀️'}
-                        {getTimeOfDayPhase() === 'evening' && '🌇'}
-                        {getTimeOfDayPhase() === 'night' && '🌙'}
-                      </span>
-                      <span style={{ textTransform: 'capitalize' }}>
-                        {getTimeOfDayPhase()}
-                      </span>
-                    </div>
-                    <div style={{ 
-                      color: '#fed7aa',
-                      fontSize: window.innerWidth < 640 ? '8px' : '10px'
-                    }}>
-                      Day {dayCount}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                Horse Stable
+              </h1>
+              {window.innerWidth >= 640 && (
+                <p 
+                  style={{
+                    color: '#fed7aa',
+                    fontSize: '14px',
+                    margin: '0'
+                  }}
+                >
+                  Watch your horses roam freely in their home
+                </p>
+              )}
             </div>
+            
+            {/* Coins and Back Button */}
             <div 
               style={{
-                color: '#fef3c7',
-                fontWeight: 'bold',
-                fontSize: window.innerWidth < 640 ? '12px' : '16px'
+                display: 'flex',
+                alignItems: 'center',
+                gap: window.innerWidth < 640 ? '4px' : '12px',
+                flexWrap: 'wrap'
               }}
             >
-              💰 {coins}
-            </div>
-          </div>
-          
-          {/* Button Row */}
-          <div 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: window.innerWidth < 640 ? '4px' : '12px',
-              flexWrap: 'wrap'
-            }}
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onBack}
-              className={themeUtils.getComponentStyles(currentTheme, 'button', 'warning')}
-              style={{
-                padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
-                fontSize: window.innerWidth < 640 ? '8px' : '10px',
-                flex: window.innerWidth < 640 ? '1' : 'none',
-                minWidth: window.innerWidth < 640 ? '0' : 'auto',
-                letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
-              }}
-            >
-              ← Back
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSelector(true)}
-              className={themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')}
-              style={{
-                padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
-                fontSize: window.innerWidth < 640 ? '8px' : '10px',
-                flex: window.innerWidth < 640 ? '1' : 'none',
-                minWidth: window.innerWidth < 640 ? '0' : 'auto',
-                letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
-              }}
-            >
-              {window.innerWidth < 640 ? 'Manage' : 'Manage Horses'}
-            </motion.button>
-            {onShowLockedHorses && (
+              <div 
+                style={{
+                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                  backgroundColor: '#fef3c7',
+                  padding: window.innerWidth < 640 ? '2px 4px' : '2px 6px',
+                  borderRadius: '10px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px',
+                  color: '#000'
+                }}
+              >
+                <span>💰</span>
+                <span>{coins}</span>
+              </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={onShowLockedHorses}
-                className={themeUtils.getComponentStyles(currentTheme, 'button', 'success')}
+                onClick={onBack}
+                className={themeUtils.getComponentStyles(currentTheme, 'button', 'warning')}
                 style={{
-                  padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
+                  padding: window.innerWidth < 640 ? '6px 12px' : '8px 20px',
                   fontSize: window.innerWidth < 640 ? '8px' : '10px',
-                  flex: window.innerWidth < 640 ? '1' : 'none',
+                  flex: 'none',
                   minWidth: window.innerWidth < 640 ? '0' : 'auto',
                   letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
                 }}
               >
-                Unlock
+                Back
               </motion.button>
-            )}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowNameTags(!showNameTags)}
-              className={showNameTags ? themeUtils.getComponentStyles(currentTheme, 'button', 'warning') : themeUtils.getComponentStyles(currentTheme, 'button', 'muted')}
-              style={{
-                padding: window.innerWidth < 640 ? '6px 8px' : '8px 16px',
-                fontSize: window.innerWidth < 640 ? '8px' : '10px',
-                flex: window.innerWidth < 640 ? '1' : 'none',
-                minWidth: window.innerWidth < 640 ? '0' : 'auto',
-                letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
-              }}
-            >
-              {window.innerWidth < 640 ? 'Tags' : showNameTags ? 'Hide Names' : 'Show Names'}
-            </motion.button>
+            </div>
           </div>
         </div>
       </div>
@@ -1191,16 +1105,21 @@ const HorseStable = ({
           }}></div>
 
           {/* Decorative Assets */}
-          {/* Farm Building */}
-          <div 
+          {/* Farm Building - Clickable to open manage horses */}
+          <motion.div 
             style={{
               position: 'absolute',
               top: '-100px',
               left: '-50px',
               width: '480px',
               height: '400px',
-              zIndex: '10'
+              zIndex: '10',
+              cursor: 'pointer'
             }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowSelector(true)}
+            title="Click to manage horses"
           >
             <img 
               src="/stable/house.png" 
@@ -1209,10 +1128,11 @@ const HorseStable = ({
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))'
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
+                transition: 'filter 0.2s ease'
               }}
             />
-          </div>
+          </motion.div>
           
           {/* Truck */}
           <div 
@@ -1593,6 +1513,40 @@ const HorseStable = ({
                 🐎 HORSES: {stableHorses.length}/5
               </p>
               
+              {/* Day/Night Cycle Info */}
+              <div style={{ 
+                marginBottom: '4px',
+                padding: '2px 0',
+                borderBottom: '1px solid #d97706'
+              }}>
+                <div style={{ 
+                  color: '#fef3c7',
+                  fontSize: '7px',
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  marginBottom: '2px'
+                }}>
+                  <span>
+                    {getTimeOfDayPhase() === 'morning' && '🌅'}
+                    {getTimeOfDayPhase() === 'afternoon' && '☀️'}
+                    {getTimeOfDayPhase() === 'evening' && '🌇'}
+                    {getTimeOfDayPhase() === 'night' && '🌙'}
+                  </span>
+                  <span style={{ textTransform: 'capitalize' }}>
+                    {getTimeOfDayPhase().toUpperCase()}
+                  </span>
+                </div>
+                <div style={{ 
+                  color: '#fed7aa',
+                  fontSize: '7px',
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace'
+                }}>
+                  📅 DAY {dayCount}
+                </div>
+              </div>
+              
               {/* Interactive Feed Status */}
               <div 
                 style={{ 
@@ -1803,7 +1757,7 @@ const HorseStable = ({
         </div>
         {showSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
-          <div className="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Grazing Horses</h2>
             <p className="text-sm text-gray-600 mb-3">Maximum 5 horses can graze at once ({selectedHorseIds.length}/5)</p>
             <div className="space-y-2">
@@ -1824,12 +1778,25 @@ const HorseStable = ({
                 );
               })}
             </div>
-            <div className="text-right mt-4">
+            <div className="flex justify-between items-center gap-4 mt-4">
+              {onShowLockedHorses && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setShowSelector(false);
+                    onShowLockedHorses();
+                  }}
+                  className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-lg"
+                >
+                  Unlock Horses
+                </motion.button>
+              )}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowSelector(false)}
-                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow-lg"
+                className="px-8 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow-lg min-w-[100px]"
               >
                 Done
               </motion.button>

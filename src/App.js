@@ -1513,11 +1513,11 @@ const horsePersonalities = [
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🏇
+                
               </motion.span>
               <div>
                 <h1 className={`text-lg sm:text-xl font-bold bg-gradient-to-r ${theme.colors.headerBg.replace('bg-gradient-to-r ', '')} bg-clip-text text-transparent`}>
-                  {distanceInfo.emoji} {distanceInfo.name} Race
+                  {distanceInfo.name} Race
                 </h1>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <span>{distanceInfo.description}</span>
@@ -1619,8 +1619,8 @@ const horsePersonalities = [
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
               >
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
-                  🏁 {distanceInfo.name} Race Ready!
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
+                  {distanceInfo.name} Race Ready!
                 </h2>
                 {currentWeather && (
                   <div className="mb-4 p-3 bg-white bg-opacity-80 rounded-xl">
@@ -1658,7 +1658,7 @@ const horsePersonalities = [
                           </div>
                         </div>
                       </div>
-                      <div className="text-2xl">🏃‍♂️</div>
+                      <div className="text-2xl"></div>
                     </motion.div>
                   ))}
                 </div>
@@ -1853,23 +1853,20 @@ const horsePersonalities = [
   // Get current theme for styling
   const theme = themeUtils.getCurrentTheme(currentTheme);
   const setupStyles = themeUtils.getScreenStyles(currentTheme, 'race');
+  const labyrinthStyles = themeUtils.getScreenStyles(currentTheme, 'labyrinth');
+  
+  // Debug theme
+  console.log('Current theme:', currentTheme, 'is saturday?', currentTheme === 'saturday');
 
   // SETUP SCREEN
   return (
     <div className={`min-h-screen bg-gradient-to-br ${setupStyles.setup?.background || theme.colors.mainBg} w-full overflow-x-hidden`}>
-      <div className={`w-full max-w-none ${setupStyles.setup?.cardBackground || theme.components.card} backdrop-blur-md shadow-2xl min-h-screen`}>
-        <div className="pt-3 pb-3 pl-3 pr-0 sm:p-4 md:p-6">
+      <div className="w-full max-w-none backdrop-blur-md shadow-2xl min-h-screen" style={{ backgroundColor: 'transparent' }}>
+        <div style={{ paddingTop: window.innerWidth < 640 ? '12px' : '16px', paddingBottom: '12px', paddingLeft: window.innerWidth < 640 ? '12px' : '16px', paddingRight: window.innerWidth < 640 ? '12px' : '16px' }}>
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3 relative">
             <div className="flex items-center gap-2 sm:gap-3">
-              <motion.span
-                className="text-2xl sm:text-3xl"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                
-              </motion.span>
-              <h1 className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : `bg-gradient-to-r ${theme.colors.headerBg.replace('bg-gradient-to-r ', '')} bg-clip-text text-transparent`}`}>
+              <h1 className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`} style={{ color: labyrinthStyles.reward, marginTop: window.innerWidth < 640 ? '8px' : '0' }}>
                 Winner Decides!
               </h1>
             </div>
@@ -1891,24 +1888,29 @@ const horsePersonalities = [
                 {muted ? "🔇" : "🔊"}
               </button>
               <button
-                onClick={() => setShowStable(true)}
-                className={`text-lg sm:text-sm px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} text-white`}
-              >
-                🏠 Stable
-              </button>
-              <button
                 onClick={() => setShowSettingsModal(true)}
-                className={`text-lg sm:text-sm px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'settings')} text-white`}
+                className={`text-xs px-2 py-1 ${themeUtils.getComponentStyles(currentTheme, 'button', 'settings')} text-white`}
+                style={{ fontSize: '10px', padding: '4px 8px' }}
                 title="Settings"
               >
                 ⚙️
+              </button>
+              <button
+                onClick={() => setShowStable(true)}
+                className={`text-xs px-2 py-1 ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} text-white`}
+                style={{ fontSize: '10px', padding: '4px 8px' }}
+              >
+                Stable
               </button>
             </div>
           </div>
 
           {/* Number Input */}
           <div className="mb-4 mt-12 sm:mt-4">
-            <label className="block mb-2 font-semibold text-gray-200 text-sm">
+            <label 
+              className="block mb-2 font-semibold text-sm"
+              style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
+            >
               Number of Horses (1-{maxItems})
             </label>
             <div className="flex gap-2">
@@ -1916,7 +1918,12 @@ const horsePersonalities = [
                 type="number"
                 min="1"
                 max={maxItems}
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none text-sm bg-white shadow-md"
+                className="flex-1 px-4 py-3 rounded-xl border-2 focus:outline-none text-sm shadow-md"
+                style={{
+                  borderColor: currentTheme === 'saturday' ? '#FFD93D' : '#d1d5db',
+                  border: currentTheme === 'saturday' ? '3px solid #FFD93D' : '2px solid #d1d5db',
+                  boxShadow: currentTheme === 'saturday' ? 'inset 0 0 0 1000px #FFE4B5' : 'none',
+                }}
                 onChange={handleCountChange}
                 value={itemCount || ""}
                 defaultValue="5"
@@ -1928,7 +1935,10 @@ const horsePersonalities = [
           {/* Theme Selection and Randomize Button */}
           {items.length > 0 && (
             <div className="mb-4">
-              <label className="block font-semibold text-gray-200 text-sm mb-2">
+              <label 
+                className="block font-semibold text-sm mb-2"
+                style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
+              >
                 Theme
               </label>
               <div className="flex gap-2">
@@ -1952,7 +1962,11 @@ const horsePersonalities = [
                       setBetEnabled(false);
                     }
                   }}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none text-sm bg-white shadow-md"
+                  className="flex-1 px-4 py-3 rounded-xl border-2 focus:outline-none text-sm shadow-md"
+                  style={{
+                    borderColor: currentTheme === 'saturday' ? '#FFD93D' : '#d1d5db',
+                    boxShadow: currentTheme === 'saturday' ? 'inset 0 0 0 1000px #FFF6E3' : 'none',
+                  }}
                 >
                   {Object.keys(horseNameCategories).map((cat) => (
                     <option key={cat} value={cat}>
@@ -1978,7 +1992,10 @@ const horsePersonalities = [
           {/* Contestant Inputs */}
           {items.length > 0 && (
             <div className="mb-4">
-              <h3 className="font-semibold text-gray-200 mb-3 text-sm">
+              <h3 
+                className="font-semibold mb-3 text-sm"
+                style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
+              >
                 Horses:
               </h3>
               <div className="grid grid-cols-1 gap-2">
@@ -2002,7 +2019,11 @@ const horsePersonalities = [
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
                       maxLength={20}
-                      className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all pl-24 pr-12 focus:shadow-lg contestant-input"
+                      className="w-full p-3 border-2 rounded-xl text-sm focus:outline-none transition-all pl-24 pr-12 focus:shadow-lg contestant-input"
+                      style={{
+                        borderColor: currentTheme === 'saturday' ? '#FFD93D' : '#d1d5db',
+                        boxShadow: currentTheme === 'saturday' ? 'inset 0 0 0 1000px #FFE4B5' : 'none',
+                      }}
                     />
                     <FadeInImage
                       src={shuffledAvatars[index % shuffledAvatars.length]}
@@ -2023,10 +2044,16 @@ const horsePersonalities = [
           {items.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="font-semibold text-gray-200 text-sm">
+                <label 
+                  className="font-semibold text-sm"
+                  style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
+                >
                   Place Your Bet (Coins: {coins})
                 </label>
-                <label className="flex items-center text-xs text-gray-300">
+                <label 
+                  className="flex items-center text-xs"
+                  style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#d1d5db' }}
+                >
                   <input
                     type="checkbox"
                     className="mr-1"
@@ -2049,7 +2076,11 @@ const horsePersonalities = [
                     <input
                       type="number"
                       min="1"
-                      className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-sm focus:border-blue-500 focus:outline-none shadow-md"
+                      className="flex-1 p-3 border-2 rounded-xl text-sm focus:outline-none shadow-md"
+                      style={{
+                        borderColor: currentTheme === 'saturday' ? '#FFD93D' : '#d1d5db',
+                        boxShadow: currentTheme === 'saturday' ? 'inset 0 0 0 1000px #FFE4B5' : 'none',
+                      }}
                       value={betAmount || ""}
                       onChange={(e) =>
                         setBetAmount(parseInt(e.target.value, 10) || 0)
@@ -2152,7 +2183,12 @@ const horsePersonalities = [
                 {history.map((race, idx) => (
                   <motion.div
                     key={idx}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs bg-white p-3 rounded-lg gap-1 sm:gap-0 shadow-sm border border-gray-100"
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs p-3 rounded-lg gap-1 sm:gap-0 shadow-sm border border-gray-100"
+                    style={{
+                      borderColor: currentTheme === 'saturday' ? '#FFD93D' : '#f3f4f6',
+                      boxShadow: currentTheme === 'saturday' ? 'inset 0 0 0 1000px #FFE4B5' : 'none',
+                      backgroundColor: currentTheme === 'saturday' ? 'transparent' : 'white',
+                    }}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.1 }}

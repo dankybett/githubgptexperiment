@@ -1595,22 +1595,56 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${labyrinthStyles.background} flex flex-col`}>
-      <div className="flex-1 flex flex-col w-full p-3">
+      <div className="flex-1 flex flex-col w-full" style={{ padding: window.innerWidth < 640 ? '12px' : '16px' }}>
         
-        {/* Header with Back Button */}
+        {/* Header with Title and Back Button */}
         <div className="flex items-center justify-between mb-3">
-          {onBack && (
-            <button
-              onClick={exitLabyrinth}
-              className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} flex items-center gap-1`}
-            >
-              ← Back
-            </button>
-          )}
-          <h1 className="screen-header" style={{ color: labyrinthStyles.reward }}>
-            🐎 Labyrinth
+          <h1 className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`} style={{ color: labyrinthStyles.reward }}>
+            Labyrinth
           </h1>
-          <div className="w-16" /> {/* Spacer */}
+          
+          {/* Coins and Back Button */}
+          <div 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: window.innerWidth < 640 ? '4px' : '12px',
+              flexWrap: 'wrap'
+            }}
+          >
+            <div 
+              style={{
+                fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                backgroundColor: '#fef3c7',
+                padding: window.innerWidth < 640 ? '2px 4px' : '2px 6px',
+                borderRadius: '10px',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+                color: '#000'
+              }}
+            >
+              <span>💰</span>
+              <span>{coins}</span>
+            </div>
+            {onBack && (
+              <button
+                onClick={exitLabyrinth}
+                className={themeUtils.getComponentStyles(currentTheme, 'button', 'warning')}
+                style={{
+                  padding: window.innerWidth < 640 ? '6px 12px' : '8px 20px',
+                  fontSize: window.innerWidth < 640 ? '8px' : '10px',
+                  flex: 'none',
+                  minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                  letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+                }}
+              >
+                Back
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 1. Mobile-optimized Maze Display */}
