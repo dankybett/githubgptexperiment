@@ -39,7 +39,7 @@ const HorseStable = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
   
-  // Pan/drag state
+  // Pan/drag state - Start at top-left corner
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -48,6 +48,20 @@ const HorseStable = ({
   const [lastMoveTime, setLastMoveTime] = useState(0);
   const [dragStartTime, setDragStartTime] = useState(0);
   const [potentialDrag, setPotentialDrag] = useState(false);
+  
+  // Zoom/pinch state
+  const [zoom, setZoom] = useState(1);
+  const [initialDistance, setInitialDistance] = useState(0);
+  const [initialZoom, setInitialZoom] = useState(1);
+  const [isPinching, setIsPinching] = useState(false);
+  
+  // Stable dimensions - much larger world to explore
+  const STABLE_WIDTH = 1600;  // 2x larger than original 800
+  const STABLE_HEIGHT = 1800; // 3x larger than original 600
+  
+  // Zoom limits
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 2.0;
   
   // Stable care resources state
   const [stableResources, setStableResources] = useState({
@@ -294,16 +308,28 @@ const HorseStable = ({
     });
   };
 
-  // Calculate viewport bounds for panning
+  // Calculate distance between two touch points
+  const getTouchDistance = (touches) => {
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    const deltaX = touch2.clientX - touch1.clientX;
+    const deltaY = touch2.clientY - touch1.clientY;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  };
+
+  // Calculate viewport bounds for panning - constrain to stable edges only
   const getViewportBounds = () => {
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const stableWidth = 800;
-    const stableHeight = 600;
+    const viewportHeight = window.innerHeight - 80; // Account for header height
     
-    // Allow generous panning - stable can move up to half its size in any direction
-    const maxPanX = stableWidth / 2;
-    const maxPanY = stableHeight / 2;
+    // Calculate how much the stable extends beyond the viewport at current zoom
+    const scaledStableWidth = STABLE_WIDTH * zoom;
+    const scaledStableHeight = STABLE_HEIGHT * zoom;
+    
+    // Maximum pan distance = (scaled stable size - viewport size) / 2
+    // This ensures we never pan beyond the stable boundaries
+    const maxPanX = Math.max(0, (scaledStableWidth - viewportWidth) / 2);
+    const maxPanY = Math.max(0, (scaledStableHeight - viewportHeight) / 2);
     
     return { maxPanX, maxPanY };
   };
@@ -317,10 +343,24 @@ const HorseStable = ({
       // Don't interfere with horse clicks
       return;
     }
+
+    // Handle multi-touch for pinch zoom
+    if (event.touches && event.touches.length === 2) {
+      const distance = getTouchDistance(event.touches);
+      setInitialDistance(distance);
+      setInitialZoom(zoom);
+      setIsPinching(true);
+      setPotentialDrag(false);
+      setIsDragging(false);
+      return;
+    }
     
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
     const clientY = event.touches ? event.touches[0].clientY : event.clientY;
     const startTime = Date.now();
+    
+    // Reset pinch state for single touch
+    setIsPinching(false);
     
     // Start potential drag - but don't actually drag yet
     setPotentialDrag(true);
@@ -340,6 +380,16 @@ const HorseStable = ({
   };
 
   const handlePanMove = (event) => {
+    // Handle pinch zoom for multi-touch
+    if (isPinching && event.touches && event.touches.length === 2) {
+      event.preventDefault();
+      const currentDistance = getTouchDistance(event.touches);
+      const scale = currentDistance / initialDistance;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, initialZoom * scale));
+      setZoom(newZoom);
+      return;
+    }
+
     if (!isDragging && !potentialDrag) return;
     
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
@@ -390,11 +440,21 @@ const HorseStable = ({
   const handlePanEnd = () => {
     setIsDragging(false);
     setPotentialDrag(false);
+    setIsPinching(false);
     
     // Apply momentum when drag ends with much lower threshold
     if (Math.abs(velocity.x) > 0.05 || Math.abs(velocity.y) > 0.05) {
       applyMomentum();
     }
+  };
+
+  // Handle wheel zoom for desktop
+  const handleWheel = (event) => {
+    event.preventDefault();
+    const delta = event.deltaY;
+    const zoomFactor = delta > 0 ? 0.9 : 1.1; // Zoom out or in
+    const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * zoomFactor));
+    setZoom(newZoom);
   };
 
   const applyMomentum = () => {
@@ -444,10 +504,10 @@ const HorseStable = ({
       name: customName, // Use custom name if available
       skills, // Include horse skills
       skillPoints, // Include skill points
-      x: Math.random() * 70 + 10,
-      y: Math.random() * 60 + 20,
-      targetX: Math.random() * 70 + 10,
-      targetY: Math.random() * 60 + 20,
+      x: Math.random() * 80 + 10, // 10-90% of stable width
+      y: Math.random() * 70 + 15, // 15-85% of stable height  
+      targetX: Math.random() * 80 + 10,
+      targetY: Math.random() * 70 + 15,
       speed: 0.3 + Math.random() * 0.4,
       direction: Math.random() * 360,
       restTime: 0,
@@ -548,6 +608,7 @@ const HorseStable = ({
       }
     }
   };
+
 
   // Initialize available and roaming horses based on unlocked list - RUN ONLY ONCE
   useEffect(() => {
@@ -788,8 +849,8 @@ const HorseStable = ({
                 ...careAnimationUpdates,
                 isResting: false,
                 restTime: 0,
-                targetX: Math.random() * 70 + 10,
-                targetY: Math.random() * 60 + 20,
+                targetX: Math.random() * 80 + 10,
+                targetY: Math.random() * 70 + 15,
                 lastMoveTime: now,
               };
             }
@@ -813,12 +874,12 @@ const HorseStable = ({
               };
             } else {
               // Unhappy horses move less, happy horses explore more
-              const movementRange = happinessModifier * 60 + 10; // 10-70 based on happiness
+              const movementRange = happinessModifier * 70 + 10; // 10-80 based on happiness
               return {
                 ...horse,
                 ...careAnimationUpdates,
-                targetX: Math.random() * movementRange + (85 - movementRange) / 2,
-                targetY: Math.random() * (movementRange * 0.8) + 20,
+                targetX: Math.random() * movementRange + (90 - movementRange) / 2,
+                targetY: Math.random() * (movementRange * 0.8) + 15,
                 lastMoveTime: now,
               };
             }
@@ -832,8 +893,8 @@ const HorseStable = ({
           return {
             ...horse,
             ...careAnimationUpdates,
-            x: Math.max(5, Math.min(85, horse.x + moveX)),
-            y: Math.max(15, Math.min(75, horse.y + moveY)),
+            x: Math.max(5, Math.min(95, horse.x + moveX)),
+            y: Math.max(10, Math.min(90, horse.y + moveY)),
             direction: Math.atan2(dy, dx) * (180 / Math.PI),
             lastMoveTime: now,
           };
@@ -995,21 +1056,23 @@ const HorseStable = ({
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: `translate(calc(-50% + ${panOffset.x}px), calc(-50% + ${panOffset.y}px))`,
-          width: '800px',
-          height: '600px',
+          transform: `translate(calc(-50% + ${panOffset.x}px), calc(-50% + ${panOffset.y}px)) scale(${zoom})`,
+          width: `${STABLE_WIDTH}px`,
+          height: `${STABLE_HEIGHT}px`,
           maxWidth: 'none',
           maxHeight: 'none',
-          minWidth: '800px',
-          minHeight: '600px',
-          cursor: isDragging ? 'grabbing' : 'grab',
+          minWidth: `${STABLE_WIDTH}px`,
+          minHeight: `${STABLE_HEIGHT}px`,
+          cursor: isDragging ? 'grabbing' : isPinching ? 'zoom-in' : 'grab',
           userSelect: 'none',
-          touchAction: 'none'
+          touchAction: 'none',
+          transformOrigin: 'center center'
         }}
         onMouseDown={handlePanStart}
         onMouseMove={handlePanMove}
         onMouseUp={handlePanEnd}
         onMouseLeave={handlePanEnd}
+        onWheel={handleWheel}
         onTouchStart={handlePanStart}
         onTouchMove={handlePanMove}
         onTouchEnd={handlePanEnd}
@@ -1017,8 +1080,8 @@ const HorseStable = ({
         <div 
           style={{
             position: 'relative',
-            width: '800px',
-            height: '600px',
+            width: `${STABLE_WIDTH}px`,
+            height: `${STABLE_HEIGHT}px`,
             backgroundImage: 'url(/stable/backgroundpasture.png)',
             backgroundRepeat: 'repeat',
             backgroundSize: 'auto',
@@ -1063,13 +1126,13 @@ const HorseStable = ({
             zIndex: '15'
           }}></div>
 
-          {/* Decorative Assets */}
-          {/* Farm Building - Clickable to open manage horses */}
+          {/* Decorative Assets - Distributed across larger stable */}
+          {/* Farm Building - Top left area */}
           <motion.div 
             style={{
               position: 'absolute',
-              top: '-100px',
-              left: '-50px',
+              top: '50px',
+              left: '100px',
               width: '480px',
               height: '400px',
               zIndex: '10',
@@ -1093,12 +1156,12 @@ const HorseStable = ({
             />
           </motion.div>
           
-          {/* Truck */}
+          {/* Truck - Bottom right */}
           <div 
             style={{
               position: 'absolute',
-              bottom: '32px',
-              right: '32px',
+              bottom: '100px',
+              right: '200px',
               width: '320px',
               height: '192px',
               zIndex: '10'
@@ -1116,12 +1179,14 @@ const HorseStable = ({
             />
           </div>
           
-          {/* Turntable */}
+          
+          
+          {/* Turntable - Center left */}
           <div 
             style={{
               position: 'absolute',
-              top: '150px',
-              right: '348px',
+              top: '400px',
+              left: '200px',
               width: '64px',
               height: '64px',
               zIndex: '10',
@@ -1146,26 +1211,74 @@ const HorseStable = ({
             />
           </div>
           
-          {/* Pond */}
+          {/* Main Pond - Center */}
           <div 
             style={{
               position: 'absolute',
-              bottom: '100px',
-              left: '150px',
-              width: '320px',
-              height: '200px',
+              top: '600px',
+              left: '800px',
+              width: '400px',
+              height: '250px',
               zIndex: '10'
             }}
           >
             <img 
               src="/stable/pond.png" 
-              alt="Pond" 
+              alt="Main Pond" 
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
                 opacity: '0.9'
+              }}
+            />
+          </div>
+          
+          {/* Smaller Pond - Bottom left */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: '200px',
+              left: '300px',
+              width: '280px',
+              height: '175px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/pond.png" 
+              alt="Small Pond" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
+                opacity: '0.8'
+              }}
+            />
+          </div>
+          
+          {/* Additional Pond - Top center */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '100px',
+              left: '1000px',
+              width: '350px',
+              height: '220px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/pond.png" 
+              alt="North Pond" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
+                opacity: '0.85'
               }}
             />
           </div>
@@ -1602,6 +1715,17 @@ const HorseStable = ({
                 color: '#fed7aa'
               }}>
                 CLICK TO CARE FOR HORSES
+              </div>
+              
+              {/* Zoom Indicator */}
+              <div style={{ 
+                marginTop: '4px', 
+                paddingTop: '4px', 
+                borderTop: '1px solid #d97706',
+                fontSize: '6px',
+                color: '#fed7aa'
+              }}>
+                🔍 ZOOM: {Math.round(zoom * 100)}%
               </div>
             </div>
           </motion.div>
