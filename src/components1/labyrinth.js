@@ -21,6 +21,122 @@ const CELL_DARK_ZONE = 13;
 const CELL_VAULT = 14;
 const CELL_KEY = 15;
 
+// TileSprite component for tileset rendering
+const TileSprite = ({ tileX, tileY, className = "" }) => {
+  const tilesPerRow = 10; // 10x10 grid
+  
+  // Calculate percentage positions for the 10x10 grid
+  const positionX = (tileX / (tilesPerRow - 1)) * 100;
+  const positionY = (tileY / (tilesPerRow - 1)) * 100;
+  
+  const style = {
+    width: '100%',
+    height: '100%',
+    backgroundImage: 'url(/maze/tilesheetdan.png)',
+    backgroundPosition: `${positionX}% ${positionY}%`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${tilesPerRow * 100}% ${tilesPerRow * 100}%`, // Scale so each tile = 100% of cell
+    imageRendering: 'pixelated', // Keep sharp pixels for pixel art
+    display: 'block',
+    lineHeight: 0,
+    verticalAlign: 'top',
+    minWidth: 0,
+    minHeight: 0,
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'cover'
+  };
+  
+  return <div className={`tile ${className}`} style={style} />;
+};
+
+// Layered tile component for tiles with transparent backgrounds
+const LayeredTile = ({ backgroundTile, foregroundTile, className = "" }) => {
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* Background layer (CELL_EMPTY) */}
+      <TileSprite tileX={backgroundTile.x} tileY={backgroundTile.y} />
+      {/* Foreground layer (transparent tile on top) */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+        <TileSprite tileX={foregroundTile.x} tileY={foregroundTile.y} className={className} />
+      </div>
+    </div>
+  );
+};
+
+// Tile mapping for your 10x10 grid (adjust coordinates based on your tileset layout)
+const TILE_MAP = {
+  [CELL_WALL]: { x: 0, y: 2 },        // Top-left tile
+  [CELL_EMPTY]: { x: 0, y: 1 },       // Second tile, first row
+  [CELL_START]: { x: 0, y: 1 },       // Third tile, first row
+  [CELL_REWARD]: { x: 3, y: 0 },      // Fourth tile, first row
+  [CELL_TRAP]: { x: 2, y: 1 },        // Fifth tile, first row
+  [CELL_POWERUP]: { x: 4, y: 7 },     // First tile, second row
+  [CELL_ONEWAY_N]: { x: 7, y: 13 },    // Arrow up
+  [CELL_ONEWAY_S]: { x: 7, y: 15 },    // Arrow down
+  [CELL_ONEWAY_E]: { x: 8, y: 14 },    // Arrow right
+  [CELL_ONEWAY_W]: { x: 6, y: 14 },    // Arrow left
+  [CELL_PORTAL_A]: { x: 2, y: 0 },    // Portal A
+  [CELL_PORTAL_B]: { x: 2, y: 0 },    // Portal B (could be same or different)
+  [CELL_DARK_ZONE]: { x: 8, y: 2 },   // Dark zone
+  [CELL_VAULT]: { x: 1, y: 1 },       // Vault
+  [CELL_KEY]: { x: 11, y: 11},         // Key
+  [CELL_MOVING_WALL]: { x: 14, y: 17 }, // Moving wall
+  
+  // Special tiles for dynamic elements (add more as needed)
+  DOOR_CLOSED: { x: 2, y: 0 },
+  DOOR_OPEN: { x: 1, y: 0 },
+  GEAR: { x: 3, y: 3 },
+  TIME_SLOW: { x: 4, y: 3 },
+  TIME_FAST: { x: 0, y: 4 },
+  PHASE_SOLID: { x: 1, y: 4 },
+  PHASE_ETHEREAL: { x: 2, y: 4 },
+  WATER: { x: 3, y: 4 },
+  MINOTAUR: { x: 0, y: 0},
+  MINOTAUR_STUNNED: { x: 0, y: 0 },
+  MINOTAUR_LOST: { x: 0, y: 0 },
+};
+
+// Define which tiles have transparent backgrounds and need CELL_EMPTY behind them
+const TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
+  CELL_REWARD,
+  CELL_TRAP, 
+  CELL_POWERUP,
+  CELL_KEY,
+  CELL_PORTAL_A,
+  CELL_PORTAL_B,
+  CELL_VAULT,
+  // Add more cell types that have transparent backgrounds
+]);
+
+// Define which special/dynamic tiles have transparent backgrounds
+const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
+  'GEAR',
+  'TIME_SLOW', 
+  'TIME_FAST',
+  'PHASE_ETHEREAL',
+  'DOOR_OPEN',
+  'DOOR_CLOSED',
+  'MINOTAUR',
+  'MINOTAUR_STUNNED',
+  'MINOTAUR_LOST',
+  // Add more special tile keys as needed
+]);
+
+// Helper function to render special tiles with optional transparent background
+const renderSpecialTile = (tileKey) => {
+  const tileMapping = TILE_MAP[tileKey];
+  if (SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND.has(tileKey)) {
+    return (
+      <LayeredTile 
+        backgroundTile={TILE_MAP[CELL_EMPTY]} 
+        foregroundTile={tileMapping} 
+      />
+    );
+  }
+  return <TileSprite tileX={tileMapping.x} tileY={tileMapping.y} />;
+};
+
 const REWARDS = [
   { name: 'Golden Apple', emoji: '🍎', rarity: 0.3 },
   { name: 'Silver Coin', emoji: '🪙', rarity: 0.4 },
@@ -1511,7 +1627,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     if (horsePos.x === x && horsePos.y === y) {
       return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-          <img src="/maze/path.png" alt="Path" style={baseStyle} />
+          <TileSprite tileX={TILE_MAP[CELL_EMPTY].x} tileY={TILE_MAP[CELL_EMPTY].y} />
           <img 
             src={selectedHorse?.avatar || "/maze/horse_player.png"} 
             alt="Horse" 
@@ -1521,6 +1637,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               top: 0,
               left: 0,
               opacity: 1,
+              backgroundColor: 'transparent',
               filter: horseFlash ? `drop-shadow(0 0 8px ${horseFlash})` : 'none',
               transition: 'filter 0.1s ease-out'
             }} 
@@ -1529,57 +1646,66 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       );
     }
     if (minotaurPos.x === x && minotaurPos.y === y) {
-      if (minotaurStunned > 0) return <img src="/maze/minotaur_stunned.png" alt="Stunned Minotaur" style={baseStyle} />;
-      if (minotaurLostTrack > 0) return <img src="/maze/minotaur_lost.png" alt="Lost Minotaur" style={baseStyle} />;
-      return <img src="/maze/minotaur.png" alt="Minotaur" style={baseStyle} />;
+      if (minotaurStunned > 0) {
+        return renderSpecialTile('MINOTAUR_STUNNED');
+      }
+      if (minotaurLostTrack > 0) {
+        return renderSpecialTile('MINOTAUR_LOST');
+      }
+      return renderSpecialTile('MINOTAUR');
     }
     
     // Check water cells (flooded maze)
     const isWater = waterCells.some(w => w.x === x && w.y === y);
-    if (isWater) return <img src="/maze/water.png" alt="Water" style={baseStyle} />;
+    if (isWater) {
+      return renderSpecialTile('WATER');
+    }
     
     // Check time zones (temporal maze)
     const timeZone = timeZones.find(t => t.x === x && t.y === y);
-    if (timeZone) return timeZone.type === 'slow' ? 
-      <img src="/maze/time_slow.png" alt="Slow Time" style={baseStyle} /> : 
-      <img src="/maze/time_fast.png" alt="Fast Time" style={baseStyle} />;
+    if (timeZone) {
+      const tileKey = timeZone.type === 'slow' ? 'TIME_SLOW' : 'TIME_FAST';
+      return renderSpecialTile(tileKey);
+    }
     
     // Check phasing walls
     const phasingWall = phasingWalls.find(p => p.x === x && p.y === y);
-    if (phasingWall) return phasingWall.solid ? 
-      <img src="/maze/phase_solid.png" alt="Solid Phase" style={baseStyle} /> : 
-      <img src="/maze/phase_ethereal.png" alt="Ethereal Phase" style={baseStyle} />;
+    if (phasingWall) {
+      const tileKey = phasingWall.solid ? 'PHASE_SOLID' : 'PHASE_ETHEREAL';
+      return renderSpecialTile(tileKey);
+    }
     
     // Check rotating gears
     const gear = rotatingGears.find(g => g.x === x && g.y === y);
-    if (gear) return <img src="/maze/gear.png" alt="Gear" style={baseStyle} />;
+    if (gear) {
+      return renderSpecialTile('GEAR');
+    }
     
     // Check moving walls
     const movingWall = movingWalls.find(w => w.x === x && w.y === y);
     if (movingWall) {
-      return movingWall.closed ? 
-        <img src="/maze/door_closed.png" alt="Closed Door" style={baseStyle} /> : 
-        <img src="/maze/door_open.png" alt="Open Door" style={baseStyle} />;
+      const tileKey = movingWall.closed ? 'DOOR_CLOSED' : 'DOOR_OPEN';
+      return renderSpecialTile(tileKey);
     }
     
-    switch (cell) {
-      case CELL_WALL: return <img src="/maze/wall.png" alt="Wall" style={baseStyle} />;
-      case CELL_EMPTY: return <img src="/maze/path.png" alt="Path" style={baseStyle} />;
-      case CELL_START: return <img src="/maze/start.png" alt="Start" style={baseStyle} />;
-      case CELL_REWARD: return <img src="/maze/treasure.png" alt="Treasure" style={baseStyle} />;
-      case CELL_TRAP: return <img src="/maze/trap.png" alt="Trap" style={baseStyle} />;
-      case CELL_POWERUP: return <img src="/maze/powerup.png" alt="Power-up" style={baseStyle} />;
-      case CELL_ONEWAY_N: return <img src="/maze/arrow_up.png" alt="One-way Up" style={baseStyle} />;
-      case CELL_ONEWAY_S: return <img src="/maze/arrow_down.png" alt="One-way Down" style={baseStyle} />;
-      case CELL_ONEWAY_E: return <img src="/maze/arrow_right.png" alt="One-way Right" style={baseStyle} />;
-      case CELL_ONEWAY_W: return <img src="/maze/arrow_left.png" alt="One-way Left" style={baseStyle} />;
-      case CELL_PORTAL_A: return <img src="/maze/portal.png" alt="Portal A" style={baseStyle} />;
-      case CELL_PORTAL_B: return <img src="/maze/portal.png" alt="Portal B" style={baseStyle} />;
-      case CELL_DARK_ZONE: return <img src="/maze/darkzone.png" alt="Dark Zone" style={baseStyle} />;
-      case CELL_VAULT: return <img src="/maze/vault.png" alt="Vault" style={baseStyle} />;
-      case CELL_KEY: return <img src="/maze/key.png" alt="Key" style={baseStyle} />;
-      default: return <img src="/maze/path.png" alt="Path" style={baseStyle} />;
+    // Use tileset for all basic cell types
+    const tileMapping = TILE_MAP[cell];
+    if (tileMapping) {
+      // Check if this tile has transparent background
+      if (TILES_WITH_TRANSPARENT_BACKGROUND.has(cell)) {
+        return (
+          <LayeredTile 
+            backgroundTile={TILE_MAP[CELL_EMPTY]} 
+            foregroundTile={tileMapping} 
+          />
+        );
+      }
+      // Regular tile without transparent background
+      return <TileSprite tileX={tileMapping.x} tileY={tileMapping.y} />;
     }
+    
+    // Fallback for any unmapped cells (use empty path tile)
+    return <TileSprite tileX={TILE_MAP[CELL_EMPTY].x} tileY={TILE_MAP[CELL_EMPTY].y} />;
   };
 
   const getInventoryCount = (itemName) => {
