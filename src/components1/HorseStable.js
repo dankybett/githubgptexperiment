@@ -979,6 +979,7 @@ const HorseStable = ({
             Horse Stable
           </h1>
           
+          
           {/* Coins and Back Button */}
           <div 
             style={{
@@ -1131,8 +1132,8 @@ const HorseStable = ({
           <motion.div 
             style={{
               position: 'absolute',
-              top: '50px',
-              left: '100px',
+              top: '500px',
+              left: '525px',
               width: '480px',
               height: '400px',
               zIndex: '10',
@@ -1185,8 +1186,8 @@ const HorseStable = ({
           <div 
             style={{
               position: 'absolute',
-              top: '400px',
-              left: '200px',
+              top: '800px',
+              left: '900px',
               width: '64px',
               height: '64px',
               zIndex: '10',
@@ -1215,8 +1216,8 @@ const HorseStable = ({
           <div 
             style={{
               position: 'absolute',
-              top: '600px',
-              left: '800px',
+              top: '800px',
+              left: '1000px',
               width: '400px',
               height: '250px',
               zIndex: '10'
@@ -1259,30 +1260,7 @@ const HorseStable = ({
             />
           </div>
           
-          {/* Additional Pond - Top center */}
-          <div 
-            style={{
-              position: 'absolute',
-              top: '100px',
-              left: '1000px',
-              width: '350px',
-              height: '220px',
-              zIndex: '10'
-            }}
-          >
-            <img 
-              src="/stable/pond.png" 
-              alt="North Pond" 
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
-                opacity: '0.85'
-              }}
-            />
-          </div>
-
+         
           {/* Roaming Horses */}
           {stableHorses.map((horse) => (
             <motion.div
@@ -1784,58 +1762,6 @@ const HorseStable = ({
             </motion.div>
           )}
 
-          {/* Now Playing indicator */}
-          {isPlaying && currentSong && (
-            <div className="absolute bottom-4 left-4 border-2"
-              style={{
-                color: '#92400e',
-                backgroundColor: 'rgba(251, 191, 36, 0.8)',
-                padding: '8px 12px',
-                borderColor: '#a16207',
-                fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                fontSize: '8px',
-                letterSpacing: '1px',
-                zIndex: '25'
-              }}>
-              <div className="flex items-center gap-2">
-                <img 
-                  src={currentSong.image}
-                  alt={`${currentSong.name} Album Cover`}
-                  style={{
-                    width: '70px',
-                    height: '70px',
-                    objectFit: 'cover',
-                    border: '1px solid #92400e'
-                  }}
-                />
-                <motion.div
-                  className="w-2 h-2 bg-blue-500"
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                />
-                <span style={{ fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important' }}>NOW PLAYING: {currentSong.name}</span>
-                <button
-                  className="ml-2 px-2 py-1 bg-amber-700 border border-amber-600 text-amber-100 hover:bg-amber-600 transition-colors"
-                  style={{
-                    fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
-                    fontSize: '10px',
-                    letterSpacing: '1px'
-                  }}
-                  onClick={() => {
-                    if (currentAudio) {
-                      currentAudio.pause();
-                      currentAudio.currentTime = 0;
-                      setIsPlaying(false);
-                      setCurrentAudio(null);
-                      setCurrentSong(null);
-                    }
-                  }}
-                >
-                  STOP
-                </button>
-              </div>
-            </div>
-          )}
         </div>
         </div>
         {showSelector && (
@@ -2145,6 +2071,110 @@ const HorseStable = ({
           </div>
         </div>
       )}
+
+    {/* Now Playing indicator - Mobile-safe positioning */}
+    {isPlaying && currentSong && (
+      <div 
+        style={{
+          position: 'absolute',
+          bottom: '150px', // Bottom of screen
+          left: '20px',
+          color: '#92400e',
+          backgroundColor: 'rgba(251, 191, 36, 0.98)',
+          padding: window.innerWidth < 640 ? '8px 10px' : '10px 14px',
+          border: '3px solid #a16207',
+          borderRadius: '8px',
+          fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+          fontSize: window.innerWidth < 640 ? '8px' : '10px',
+          letterSpacing: '1px',
+          zIndex: '1001',
+          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.5)',
+          width: window.innerWidth < 640 ? '280px' : '320px',
+          minWidth: window.innerWidth < 640 ? '280px' : '320px',
+          maxWidth: window.innerWidth < 640 ? '280px' : '320px'
+        }}
+      >
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: window.innerWidth < 640 ? '6px' : '10px'
+        }}>
+          <img 
+            src={currentSong.image}
+            alt={`${currentSong.name} Album Cover`}
+            style={{
+              width: window.innerWidth < 640 ? '45px' : '60px',
+              height: window.innerWidth < 640 ? '45px' : '60px',
+              objectFit: 'cover',
+              border: '2px solid #92400e',
+              borderRadius: '4px',
+              flexShrink: 0
+            }}
+          />
+          <motion.div
+            style={{
+              width: '10px',
+              height: '10px',
+              backgroundColor: '#dc2626',
+              borderRadius: '50%',
+              flexShrink: 0
+            }}
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+          <div style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <motion.div
+              style={{ 
+                fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                whiteSpace: 'nowrap',
+                display: 'inline-block'
+              }}
+              animate={{
+                x: ['0%', '-50%']
+              }}
+              transition={{
+                duration: 15,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            >
+              {`Now Playing: ${currentSong.name}  •  Now Playing: ${currentSong.name}  •  `}
+            </motion.div>
+          </div>
+          <button
+            style={{
+              padding: window.innerWidth < 640 ? '4px 8px' : '6px 10px',
+              backgroundColor: '#b45309',
+              border: '2px solid #a16207',
+              borderRadius: '4px',
+              color: '#fef3c7',
+              fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+              fontSize: window.innerWidth < 640 ? '7px' : '8px',
+              letterSpacing: '1px',
+              cursor: 'pointer',
+              flexShrink: 0,
+              fontWeight: 'bold'
+            }}
+            onClick={() => {
+              if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                setIsPlaying(false);
+                setCurrentAudio(null);
+                setCurrentSong(null);
+              }
+            }}
+          >
+            STOP
+          </button>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

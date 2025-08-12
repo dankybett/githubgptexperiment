@@ -70,17 +70,17 @@ const TILE_MAP = {
   [CELL_EMPTY]: { x: 0, y: 1 },       // Second tile, first row
   [CELL_START]: { x: 0, y: 1 },       // Third tile, first row
   [CELL_REWARD]: { x: 3, y: 0 },      // Fourth tile, first row
-  [CELL_TRAP]: { x: 2, y: 1 },        // Fifth tile, first row
-  [CELL_POWERUP]: { x: 4, y: 7 },     // First tile, second row
-  [CELL_ONEWAY_N]: { x: 7, y: 13 },    // Arrow up
-  [CELL_ONEWAY_S]: { x: 7, y: 15 },    // Arrow down
-  [CELL_ONEWAY_E]: { x: 8, y: 14 },    // Arrow right
-  [CELL_ONEWAY_W]: { x: 6, y: 14 },    // Arrow left
-  [CELL_PORTAL_A]: { x: 2, y: 0 },    // Portal A
-  [CELL_PORTAL_B]: { x: 2, y: 0 },    // Portal B (could be same or different)
-  [CELL_DARK_ZONE]: { x: 8, y: 2 },   // Dark zone
-  [CELL_VAULT]: { x: 1, y: 1 },       // Vault
-  [CELL_KEY]: { x: 11, y: 11},         // Key
+  [CELL_TRAP]: { x: 5, y: 1 },        // Fifth tile, first row
+  [CELL_POWERUP]: { x: 4, y: 0 },     // First tile, second row
+  [CELL_ONEWAY_N]: { x: 5, y: 2  },    // Arrow up
+  [CELL_ONEWAY_S]: { x: 4, y: 2  },    // Arrow down
+  [CELL_ONEWAY_E]: { x: 2, y: 2  },    // Arrow right
+  [CELL_ONEWAY_W]: { x: 3, y: 2  },    // Arrow left
+  [CELL_PORTAL_A]: { x: 1, y: 2 },    // Portal A
+  [CELL_PORTAL_B]: { x: 1, y: 2 },    // Portal B (could be same or different)
+  [CELL_DARK_ZONE]: { x: 0, y: 1},   // Dark zone
+  [CELL_VAULT]: { x: 1, y: 3 },       // Vault
+  [CELL_KEY]: { x: 5, y: 0},         // Key
   [CELL_MOVING_WALL]: { x: 14, y: 17 }, // Moving wall
   
   // Special tiles for dynamic elements (add more as needed)
