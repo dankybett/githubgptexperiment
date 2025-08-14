@@ -51,10 +51,10 @@ const HorseStable = ({
   const [dragStartTime, setDragStartTime] = useState(0);
   const [potentialDrag, setPotentialDrag] = useState(false);
   
-  // Zoom/pinch state
-  const [zoom, setZoom] = useState(1);
+  // Zoom/pinch state - Start zoomed out for better overview
+  const [zoom, setZoom] = useState(0.7);
   const [initialDistance, setInitialDistance] = useState(0);
-  const [initialZoom, setInitialZoom] = useState(1);
+  const [initialZoom, setInitialZoom] = useState(0.7);
   const [isPinching, setIsPinching] = useState(false);
   
   // Stable dimensions - much larger world to explore
