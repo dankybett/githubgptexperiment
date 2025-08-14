@@ -66,21 +66,21 @@ const LayeredTile = ({ backgroundTile, foregroundTile, className = "" }) => {
 
 // Tile mapping for your 10x10 grid (adjust coordinates based on your tileset layout)
 const TILE_MAP = {
-  [CELL_WALL]: { x: 0, y: 2 },        // Top-left tile
-  [CELL_EMPTY]: { x: 0, y: 1 },       // Second tile, first row
-  [CELL_START]: { x: 0, y: 1 },       // Third tile, first row
-  [CELL_REWARD]: { x: 3, y: 0 },      // Fourth tile, first row
-  [CELL_TRAP]: { x: 5, y: 1 },        // Fifth tile, first row
-  [CELL_POWERUP]: { x: 4, y: 0 },     // First tile, second row
-  [CELL_ONEWAY_N]: { x: 5, y: 2  },    // Arrow up
-  [CELL_ONEWAY_S]: { x: 4, y: 2  },    // Arrow down
-  [CELL_ONEWAY_E]: { x: 2, y: 2  },    // Arrow right
-  [CELL_ONEWAY_W]: { x: 3, y: 2  },    // Arrow left
-  [CELL_PORTAL_A]: { x: 1, y: 2 },    // Portal A
-  [CELL_PORTAL_B]: { x: 1, y: 2 },    // Portal B (could be same or different)
+  [CELL_WALL]: { x: 1, y: 0 },        // Top-left tile
+  [CELL_EMPTY]: { x: 0, y: 0 },       // Second tile, first row
+  [CELL_START]: { x: 0, y: 0 },       // Third tile, first row
+  [CELL_REWARD]: { x: 0, y: 0 },      // Fourth tile, first row
+  [CELL_TRAP]: { x: 1, y: 1 },        // Fifth tile, first row
+  [CELL_POWERUP]: { x: 6, y: 0 },     // First tile, second row
+  [CELL_ONEWAY_N]: { x: 0, y: 0  },    // Arrow up
+  [CELL_ONEWAY_S]: { x: 0, y: 0  },    // Arrow down
+  [CELL_ONEWAY_E]: { x: 0, y: 0  },    // Arrow right
+  [CELL_ONEWAY_W]: { x: 0, y: 0  },    // Arrow left
+  [CELL_PORTAL_A]: { x: 2, y: 1 },    // Portal A
+  [CELL_PORTAL_B]: { x: 2, y: 1 },    // Portal B (could be same or different)
   [CELL_DARK_ZONE]: { x: 0, y: 1},   // Dark zone
-  [CELL_VAULT]: { x: 1, y: 3 },       // Vault
-  [CELL_KEY]: { x: 5, y: 0},         // Key
+  [CELL_VAULT]: { x: 3, y: 1},       // Vault
+  [CELL_KEY]: { x: 8, y: 0},         // Key
   [CELL_MOVING_WALL]: { x: 14, y: 17 }, // Moving wall
   
   // Special tiles for dynamic elements (add more as needed)
@@ -92,9 +92,73 @@ const TILE_MAP = {
   PHASE_SOLID: { x: 1, y: 4 },
   PHASE_ETHEREAL: { x: 2, y: 4 },
   WATER: { x: 3, y: 4 },
-  MINOTAUR: { x: 0, y: 0},
-  MINOTAUR_STUNNED: { x: 0, y: 0 },
-  MINOTAUR_LOST: { x: 0, y: 0 },
+  MINOTAUR: { x: 0, y: 6},
+  MINOTAUR_STUNNED: { x: 0, y: 6},
+  MINOTAUR_LOST: { x: 0, y: 6},
+};
+
+// Multiple empty tile variants for visual variety
+const EMPTY_TILE_VARIANTS = [
+  { x: 0, y: 2 }, // Empty tile variant 1
+  { x: 0, y: 3 }, // Empty tile variant 2  
+  { x: 0, y: 5 }, // Empty tile variant 3
+  { x: 3, y: 5 }  // Empty tile variant 4
+];
+
+// Create a seeded random number generator for consistent tile placement
+const createSeededRandom = (seed) => {
+  let state = seed;
+  return () => {
+    state = (state * 1103515245 + 12345) & 0x7fffffff;
+    return state / 0x7fffffff;
+  };
+};
+
+// Wall tile variants for different positions
+const WALL_TILE_VARIANTS = {
+  // Corner tiles
+  TOP_LEFT_CORNER: { x: 7, y: 5 },     // Top-left corner
+  TOP_RIGHT_CORNER: { x: 7, y: 6 },    // Top-right corner  
+  BOTTOM_LEFT_CORNER: { x: 1, y: 0 },  // Bottom-left corner
+  BOTTOM_RIGHT_CORNER: { x: 1, y: 0 }, // Bottom-right corner
+  
+  // Edge tiles
+  TOP_EDGE: { x: 1, y: 0 },            // Top edge (horizontal)
+  BOTTOM_EDGE: { x: 1, y: 0 },         // Bottom edge (horizontal)
+  LEFT_EDGE: { x: 5, y: 5 },           // Left edge (vertical)
+  RIGHT_EDGE: { x: 6, y: 5 },          // Right edge (vertical)
+  
+  // Interior wall (fallback)
+  INTERIOR: { x: 3, y: 0 }             // Interior wall tile
+};
+
+// Function to get appropriate wall tile based on position
+const getWallTile = (x, y, maze) => {
+  const mazeSize = maze.length;
+  
+  // Corner detection
+  if (x === 0 && y === 0) return WALL_TILE_VARIANTS.TOP_LEFT_CORNER;
+  if (x === mazeSize - 1 && y === 0) return WALL_TILE_VARIANTS.TOP_RIGHT_CORNER;
+  if (x === 0 && y === mazeSize - 1) return WALL_TILE_VARIANTS.BOTTOM_LEFT_CORNER;
+  if (x === mazeSize - 1 && y === mazeSize - 1) return WALL_TILE_VARIANTS.BOTTOM_RIGHT_CORNER;
+  
+  // Edge detection
+  if (y === 0) return WALL_TILE_VARIANTS.TOP_EDGE;           // Top edge
+  if (y === mazeSize - 1) return WALL_TILE_VARIANTS.BOTTOM_EDGE;  // Bottom edge
+  if (x === 0) return WALL_TILE_VARIANTS.LEFT_EDGE;          // Left edge
+  if (x === mazeSize - 1) return WALL_TILE_VARIANTS.RIGHT_EDGE;   // Right edge
+  
+  // Interior wall
+  return WALL_TILE_VARIANTS.INTERIOR;
+};
+
+// Function to get a random empty tile variant based on position
+const getRandomEmptyTile = (x, y) => {
+  // Use position as seed for consistent results
+  const seed = x * 1000 + y;
+  const random = createSeededRandom(seed);
+  const index = Math.floor(random() * EMPTY_TILE_VARIANTS.length);
+  return EMPTY_TILE_VARIANTS[index];
 };
 
 // Define which tiles have transparent backgrounds and need CELL_EMPTY behind them
@@ -124,12 +188,12 @@ const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
 ]);
 
 // Helper function to render special tiles with optional transparent background
-const renderSpecialTile = (tileKey) => {
+const renderSpecialTile = (tileKey, x, y) => {
   const tileMapping = TILE_MAP[tileKey];
   if (SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND.has(tileKey)) {
     return (
       <LayeredTile 
-        backgroundTile={TILE_MAP[CELL_EMPTY]} 
+        backgroundTile={getRandomEmptyTile(x, y)} 
         foregroundTile={tileMapping} 
       />
     );
@@ -1627,7 +1691,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     if (horsePos.x === x && horsePos.y === y) {
       return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-          <TileSprite tileX={TILE_MAP[CELL_EMPTY].x} tileY={TILE_MAP[CELL_EMPTY].y} />
+          <TileSprite tileX={getRandomEmptyTile(x, y).x} tileY={getRandomEmptyTile(x, y).y} />
           <img 
             src={selectedHorse?.avatar || "/maze/horse_player.png"} 
             alt="Horse" 
@@ -1647,45 +1711,57 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     }
     if (minotaurPos.x === x && minotaurPos.y === y) {
       if (minotaurStunned > 0) {
-        return renderSpecialTile('MINOTAUR_STUNNED');
+        return renderSpecialTile('MINOTAUR_STUNNED', x, y);
       }
       if (minotaurLostTrack > 0) {
-        return renderSpecialTile('MINOTAUR_LOST');
+        return renderSpecialTile('MINOTAUR_LOST', x, y);
       }
-      return renderSpecialTile('MINOTAUR');
+      return renderSpecialTile('MINOTAUR', x, y);
     }
     
     // Check water cells (flooded maze)
     const isWater = waterCells.some(w => w.x === x && w.y === y);
     if (isWater) {
-      return renderSpecialTile('WATER');
+      return renderSpecialTile('WATER', x, y);
     }
     
     // Check time zones (temporal maze)
     const timeZone = timeZones.find(t => t.x === x && t.y === y);
     if (timeZone) {
       const tileKey = timeZone.type === 'slow' ? 'TIME_SLOW' : 'TIME_FAST';
-      return renderSpecialTile(tileKey);
+      return renderSpecialTile(tileKey, x, y);
     }
     
     // Check phasing walls
     const phasingWall = phasingWalls.find(p => p.x === x && p.y === y);
     if (phasingWall) {
       const tileKey = phasingWall.solid ? 'PHASE_SOLID' : 'PHASE_ETHEREAL';
-      return renderSpecialTile(tileKey);
+      return renderSpecialTile(tileKey, x, y);
     }
     
     // Check rotating gears
     const gear = rotatingGears.find(g => g.x === x && g.y === y);
     if (gear) {
-      return renderSpecialTile('GEAR');
+      return renderSpecialTile('GEAR', x, y);
     }
     
     // Check moving walls
     const movingWall = movingWalls.find(w => w.x === x && w.y === y);
     if (movingWall) {
       const tileKey = movingWall.closed ? 'DOOR_CLOSED' : 'DOOR_OPEN';
-      return renderSpecialTile(tileKey);
+      return renderSpecialTile(tileKey, x, y);
+    }
+    
+    // Special handling for CELL_EMPTY to use random variants
+    if (cell === CELL_EMPTY) {
+      const emptyTile = getRandomEmptyTile(x, y);
+      return <TileSprite tileX={emptyTile.x} tileY={emptyTile.y} />;
+    }
+    
+    // Special handling for CELL_WALL to use position-specific variants
+    if (cell === CELL_WALL) {
+      const wallTile = getWallTile(x, y, maze);
+      return <TileSprite tileX={wallTile.x} tileY={wallTile.y} />;
     }
     
     // Use tileset for all basic cell types
@@ -1695,7 +1771,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       if (TILES_WITH_TRANSPARENT_BACKGROUND.has(cell)) {
         return (
           <LayeredTile 
-            backgroundTile={TILE_MAP[CELL_EMPTY]} 
+            backgroundTile={getRandomEmptyTile(x, y)} 
             foregroundTile={tileMapping} 
           />
         );
@@ -1704,8 +1780,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       return <TileSprite tileX={tileMapping.x} tileY={tileMapping.y} />;
     }
     
-    // Fallback for any unmapped cells (use empty path tile)
-    return <TileSprite tileX={TILE_MAP[CELL_EMPTY].x} tileY={TILE_MAP[CELL_EMPTY].y} />;
+    // Fallback for any unmapped cells (use random empty path tile)
+    const emptyTile = getRandomEmptyTile(x, y);
+    return <TileSprite tileX={emptyTile.x} tileY={emptyTile.y} />;
   };
 
   const getInventoryCount = (itemName) => {
