@@ -38,6 +38,8 @@ const HorseStable = ({
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
+  const [showLabyrinthEntrance, setShowLabyrinthEntrance] = useState(false);
+  const [horseBeingSent, setHorseBeingSent] = useState(null);
   
   // Pan/drag state - Start at top-left corner
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -1821,7 +1823,8 @@ const HorseStable = ({
           onSendToLabyrinth={() => {
             console.log('🏠 Stable - onSendToLabyrinth called with selectedHorse:', selectedHorse);
             console.log('🎒 Stable - selectedHorse inventory:', selectedHorse?.inventory);
-            onSendToLabyrinth(selectedHorse);
+            setHorseBeingSent(selectedHorse);
+            setShowLabyrinthEntrance(true);
             setSelectedHorse(null);
           }}
           onCareAction={(horseId, actionType) => {
@@ -2172,6 +2175,62 @@ const HorseStable = ({
           >
             STOP
           </button>
+        </div>
+      </div>
+    )}
+
+    {/* Labyrinth Entrance Interstitial */}
+    {showLabyrinthEntrance && (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+          {/* Main image container */}
+          <div className="flex-1 flex items-center justify-center w-full">
+            <img 
+              src="/maze/Labyrinthentrance.png" 
+              alt="Labyrinth Entrance" 
+              className="max-w-full max-h-full object-contain"
+              style={{
+                maxHeight: '80vh',
+                maxWidth: '90vw'
+              }}
+              onLoad={() => {
+                console.log('Labyrinth entrance image loaded successfully');
+              }}
+              onError={(e) => {
+                console.warn('Failed to load /maze/Labyrinthentrance.png');
+                e.target.style.display = 'none';
+              }}
+            />
+          </div>
+          
+          {/* Continue button - always visible */}
+          <div className="w-full flex justify-center pb-8">
+            <button
+              onClick={() => {
+                onSendToLabyrinth(horseBeingSent);
+                setShowLabyrinthEntrance(false);
+                setHorseBeingSent(null);
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-amber-400 transition-colors text-lg"
+              style={{
+                fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace',
+                fontSize: '12px',
+                letterSpacing: '1px'
+              }}
+            >
+              ENTER LABYRINTH
+            </button>
+          </div>
+          
+          {/* Backup click area for mobile */}
+          <div 
+            className="absolute inset-0 cursor-pointer md:hidden"
+            onClick={() => {
+              onSendToLabyrinth(horseBeingSent);
+              setShowLabyrinthEntrance(false);
+              setHorseBeingSent(null);
+            }}
+          />
         </div>
       </div>
     )}

@@ -188,17 +188,21 @@ const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
 ]);
 
 // Helper function to render special tiles with optional transparent background
-const renderSpecialTile = (tileKey, x, y) => {
+const renderSpecialTile = (tileKey, x, y, direction = null) => {
   const tileMapping = TILE_MAP[tileKey];
+  const isMinotaurTile = tileKey.includes('MINOTAUR');
+  const shouldFlip = isMinotaurTile && direction === 'left';
+  
   if (SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND.has(tileKey)) {
     return (
       <LayeredTile 
         backgroundTile={getRandomEmptyTile(x, y)} 
         foregroundTile={tileMapping} 
+        className={shouldFlip ? 'minotaur-flipped' : ''}
       />
     );
   }
-  return <TileSprite tileX={tileMapping.x} tileY={tileMapping.y} />;
+  return <TileSprite tileX={tileMapping.x} tileY={tileMapping.y} className={shouldFlip ? 'minotaur-flipped' : ''} />;
 };
 
 const REWARDS = [
@@ -425,7 +429,11 @@ const SKILL_TREE = {
 function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, currentTheme = 'retro' }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
+  const [horseDirection, setHorseDirection] = useState('right'); // 'left' or 'right'
+  const [prevHorsePos, setPrevHorsePos] = useState({ x: 1, y: 1 });
   const [minotaurPos, setMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
+  const [minotaurDirection, setMinotaurDirection] = useState('right'); // 'left' or 'right'
+  const [prevMinotaurPos, setPrevMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
   const [inventory, setInventory] = useState([]);
   const [horseInventory, setHorseInventory] = useState(selectedHorse?.inventory || []);
   const [collectedItemsThisRun, setCollectedItemsThisRun] = useState([]);
@@ -447,6 +455,30 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       setAvailableKeys(keyCount);
     }
   }, [selectedHorse]);
+
+  // Track minotaur direction based on position changes
+  useEffect(() => {
+    if (minotaurPos.x !== prevMinotaurPos.x) {
+      if (minotaurPos.x < prevMinotaurPos.x) {
+        setMinotaurDirection('left');
+      } else if (minotaurPos.x > prevMinotaurPos.x) {
+        setMinotaurDirection('right');
+      }
+    }
+    setPrevMinotaurPos(minotaurPos);
+  }, [minotaurPos, prevMinotaurPos]);
+
+  // Track horse direction based on position changes
+  useEffect(() => {
+    if (horsePos.x !== prevHorsePos.x) {
+      if (horsePos.x < prevHorsePos.x) {
+        setHorseDirection('left');
+      } else if (horsePos.x > prevHorsePos.x) {
+        setHorseDirection('right');
+      }
+    }
+    setPrevHorsePos(horsePos);
+  }, [horsePos, prevHorsePos]);
 
   const [gameState, setGameState] = useState('waiting');
   const [currentRewards, setCurrentRewards] = useState([]);
@@ -1695,6 +1727,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           <img 
             src={selectedHorse?.avatar || "/maze/horse_player.png"} 
             alt="Horse" 
+            className={horseDirection === 'left' ? 'horse-flipped' : ''}
             style={{
               ...baseStyle,
               position: 'absolute',
@@ -1711,12 +1744,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     }
     if (minotaurPos.x === x && minotaurPos.y === y) {
       if (minotaurStunned > 0) {
-        return renderSpecialTile('MINOTAUR_STUNNED', x, y);
+        return renderSpecialTile('MINOTAUR_STUNNED', x, y, minotaurDirection);
       }
       if (minotaurLostTrack > 0) {
-        return renderSpecialTile('MINOTAUR_LOST', x, y);
+        return renderSpecialTile('MINOTAUR_LOST', x, y, minotaurDirection);
       }
-      return renderSpecialTile('MINOTAUR', x, y);
+      return renderSpecialTile('MINOTAUR', x, y, minotaurDirection);
     }
     
     // Check water cells (flooded maze)
@@ -1877,6 +1910,15 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               aspectRatio: '1/1'
             }}
           >
+            {/* CSS for character flipping */}
+            <style jsx>{`
+              .minotaur-flipped {
+                transform: scaleX(-1);
+              }
+              .horse-flipped {
+                transform: scaleX(-1);
+              }
+            `}</style>
               {maze.map((row, y) => (
                 <div 
                   key={y}
