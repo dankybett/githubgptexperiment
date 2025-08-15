@@ -23,9 +23,9 @@ const TileSprite = ({ tileX, tileY, className = "" }) => {
 
 // Tile mappings (copied from labyrinth)
 const TILE_MAP = {
-  REWARD_GOLDEN_APPLE: { x: 4, y: 1 },   
-  REWARD_MAGIC_CARROT: { x: 5, y: 1 },   
-  REWARD_HAY_BUNDLE: { x: 6, y: 1 },     
+  REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   
+  REWARD_MAGIC_CARROT: { x: 6, y: 0 },   
+  REWARD_HAY_BUNDLE: { x: 9, y: 1 },     
   KEY: { x: 8, y: 0 },                  
   POWERUP: { x: 6, y: 0 },              
   VAULT: { x: 3, y: 1 }

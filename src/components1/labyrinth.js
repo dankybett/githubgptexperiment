@@ -72,7 +72,7 @@ const TILE_MAP = {
   [CELL_START]: { x: 0, y: 0 },       // Third tile, first row
   [CELL_REWARD]: { x: 0, y: 0 },      // Fourth tile, first row
   [CELL_TRAP]: { x: 1, y: 1 },        // Fifth tile, first row
-  [CELL_POWERUP]: { x: 6, y: 0 },     // First tile, second row
+  [CELL_POWERUP]: { x: 8, y: 1 },     // First tile, second row
   [CELL_ONEWAY_N]: { x: 0, y: 0  },    // Arrow up
   [CELL_ONEWAY_S]: { x: 0, y: 0  },    // Arrow down
   [CELL_ONEWAY_E]: { x: 0, y: 0  },    // Arrow right
@@ -82,17 +82,17 @@ const TILE_MAP = {
   [CELL_DARK_ZONE]: { x: 0, y: 1},   // Dark zone
   [CELL_VAULT]: { x: 3, y: 1},       // Vault
   [CELL_KEY]: { x: 8, y: 0},         // Key
-  [CELL_MOVING_WALL]: { x: 14, y: 17 }, // Moving wall
+  [CELL_MOVING_WALL]: { x: 0, y: 0}, // Moving wall
   
   // Special tiles for dynamic elements (add more as needed)
-  DOOR_CLOSED: { x: 2, y: 0 },
-  DOOR_OPEN: { x: 1, y: 0 },
-  GEAR: { x: 3, y: 3 },
-  TIME_SLOW: { x: 4, y: 3 },
-  TIME_FAST: { x: 0, y: 4 },
-  PHASE_SOLID: { x: 1, y: 4 },
-  PHASE_ETHEREAL: { x: 2, y: 4 },
-  WATER: { x: 3, y: 4 },
+  DOOR_CLOSED: { x: 0, y: 0 },
+  DOOR_OPEN: { x: 0, y: 0 },
+  GEAR: { x: 0, y: 0 },
+  TIME_SLOW: { x: 0, y: 0 },
+  TIME_FAST: { x: 0, y: 0 },
+  PHASE_SOLID: { x: 0, y: 0 },
+  PHASE_ETHEREAL: { x: 0, y: 0 },
+  WATER: { x: 0, y: 0 },
   MINOTAUR: { x: 0, y: 6},
   MINOTAUR_STUNNED: { x: 0, y: 6},
   MINOTAUR_LOST: { x: 0, y: 6},
@@ -232,7 +232,6 @@ const POWERUPS = [
   { name: 'Speed Boost Potion', emoji: '⚡', rarity: 0.3, effect: 'speed', duration: 5 },
   { name: 'Invisibility Cloak', emoji: '👻', rarity: 0.2, effect: 'invisibility', duration: 8 },
   { name: 'Teleport Scroll', emoji: '🌀', rarity: 0.15, effect: 'teleport', duration: 1 },
-  { name: 'Wall Breaker Hammer', emoji: '🔨', rarity: 0.1, effect: 'wallbreaker', duration: 3 },
   { name: 'Minotaur Stun Bomb', emoji: '💣', rarity: 0.15, effect: 'stun', duration: 6 },
   { name: 'Treasure Magnet', emoji: '🧲', rarity: 0.25, effect: 'magnet', duration: 4 }
 ];
@@ -243,7 +242,7 @@ const MAZE_TYPES = {
     description: 'Classic maze with all basic features',
     difficulty: 1,
     unlocked: true,
-    mechanics: ['Moving walls', 'One-way doors', 'Portals', 'Dark zones', 'Vaults & keys']
+    mechanics: ['Static walls', 'Portals', 'Dark zones', 'Vaults & keys']
   },
   pyramid: {
     name: 'Pyramid Maze',
@@ -252,7 +251,7 @@ const MAZE_TYPES = {
     unlocked: false,
     researchCost: 25,
     researchCategory: 'architectural',
-    mechanics: ['3D movement', 'Ramps up/down', 'Level-based treasures']
+    mechanics: ['Moving walls', 'One-way doors', '3D movement', 'Ramps up/down']
   },
   cave: {
     name: 'Cave Maze',
@@ -397,8 +396,7 @@ const SKILL_TREE = {
     color: 'blue',
     skills: {
       swiftness: { name: 'Swiftness', emoji: '💨', maxLevel: 5, cost: (level) => level * 2, description: 'Increased movement speed' },
-      pathfinding: { name: 'Pathfinding', emoji: '🧭', maxLevel: 3, cost: (level) => level * 4, description: 'Smarter movement choices' },
-      wallWalking: { name: 'Wall Walking', emoji: '🕷️', maxLevel: 1, cost: () => 10, description: 'Permanent wall breaking' },
+      pathfinding: { name: 'Pathfinding', emoji: '🧭', maxLevel: 3, cost: (level) => level * 4, description: 'Smarter movement: avoids danger, seeks nearby treasures (starts at level 1)' },
       swimming: { name: 'Swimming', emoji: '🏊', maxLevel: 3, cost: (level) => level * 3, description: 'Move faster through water' },
       climbing: { name: 'Climbing', emoji: '🧗', maxLevel: 3, cost: (level) => level * 3, description: 'Navigate ramps and levels easier' }
     }
@@ -448,7 +446,7 @@ const getViewportBounds = (horseX, horseY) => {
   return { startX, startY };
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, currentTheme = 'retro' }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro' }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [horseDirection, setHorseDirection] = useState('right'); // 'left' or 'right'
@@ -466,6 +464,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     console.log('🔍 Initializing labyrinth with horse keys:', initialKeys, 'from inventory:', selectedHorse?.inventory);
     return initialKeys;
   });
+
+  // Lost horse feature states
+  const [lostHorse, setLostHorse] = useState(null); // { id, avatar, name, pos: {x, y}, direction }
+  const [showLostHorseAnnouncement, setShowLostHorseAnnouncement] = useState(false);
+  const [showLostHorseFound, setShowLostHorseFound] = useState(false);
+  const [foundHorse, setFoundHorse] = useState(null);
+
 
   // Debug when selectedHorse changes
   useEffect(() => {
@@ -531,6 +536,128 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   
   // Get theme styles
   const labyrinthStyles = themeUtils.getScreenStyles(currentTheme, 'labyrinth');
+
+  // Lost horse spawn logic
+  const checkForLostHorseSpawn = useCallback(() => {
+    // Very rare chance (2% per adventure)
+    const spawnChance = 0.02; // 2% chance per adventure
+    
+    if (Math.random() < spawnChance) {
+      // Find locked horses
+      const lockedHorseIndices = unlockedHorses
+        .map((unlocked, index) => !unlocked ? index : -1)
+        .filter(index => index !== -1);
+      
+      console.log('🐴 Checking for locked horses:', { 
+        unlockedHorses, 
+        lockedHorseIndices, 
+        availableCount: lockedHorseIndices.length 
+      });
+      
+      if (lockedHorseIndices.length > 0) {
+        // Select a random locked horse
+        const randomIndex = lockedHorseIndices[Math.floor(Math.random() * lockedHorseIndices.length)];
+        const avatar = horseAvatars[randomIndex];
+        const name = horseNames[randomIndex];
+        
+        // Find random empty position in maze outside initial viewport
+        const findRandomEmptyPosition = () => {
+          
+          let attempts = 0;
+          // Try to place outside the initial viewport (which is 0-5, 0-5) to encourage exploration
+          const explorationPositions = [
+            {x: 7, y: 3}, {x: 8, y: 4}, {x: 9, y: 2}, {x: 6, y: 7}, {x: 8, y: 8}, // Far right/bottom areas
+            {x: 3, y: 8}, {x: 4, y: 9}, {x: 2, y: 7}, {x: 7, y: 6}, {x: 9, y: 5}, // Bottom areas
+            {x: 6, y: 2}, {x: 7, y: 1}, {x: 8, y: 3}, {x: 9, y: 4}, {x: 7, y: 5}  // Right areas
+          ];
+          
+          for (const pos of explorationPositions) {
+            if (maze[pos.y] && maze[pos.y][pos.x] === CELL_EMPTY) {
+              console.log('🐴 Lost horse placed in exploration area at:', pos);
+              return pos;
+            }
+          }
+          
+          // If exploration positions don't work, try anywhere in the maze
+          while (attempts < 50) {
+            const x = Math.floor(Math.random() * (MAZE_SIZE - 4)) + 2; // x: 2-9 
+            const y = Math.floor(Math.random() * (MAZE_SIZE - 4)) + 2; // y: 2-9
+            console.log(`🔍 Fallback attempt ${attempts}: trying position (${x}, ${y}), cell value:`, maze[y]?.[x]);
+            if (maze[y] && maze[y][x] === CELL_EMPTY && !(x === 1 && y === 1)) {
+              console.log('🐴 Lost horse placed at fallback position:', { x, y });
+              return { x, y };
+            }
+            attempts++;
+          }
+          // Fallback: try anywhere in maze  
+          while (attempts < 100) {
+            const x = Math.floor(Math.random() * (MAZE_SIZE - 2)) + 1;
+            const y = Math.floor(Math.random() * (MAZE_SIZE - 2)) + 1;
+            console.log(`🔍 Fallback attempt ${attempts}: trying position (${x}, ${y}), cell value:`, maze[y]?.[x]);
+            if (maze[y] && maze[y][x] === CELL_EMPTY && !(x === 1 && y === 1)) {
+              console.log('🐴 Lost horse placed at fallback position:', { x, y });
+              return { x, y };
+            }
+            attempts++;
+          }
+          console.log('🐴 Lost horse placed at emergency fallback position (2,2)');
+          return { x: 2, y: 2 }; // Emergency fallback - close to player start
+        };
+        
+        const position = findRandomEmptyPosition();
+        
+        const lostHorseData = {
+          id: randomIndex,
+          avatar,
+          name,
+          pos: position,
+          direction: 'right'
+        };
+        
+        setLostHorse(lostHorseData);
+        setShowLostHorseAnnouncement(true);
+        console.log('🐴 Lost horse created:', lostHorseData);
+        return true;
+      }
+    }
+    return false;
+  }, [unlockedHorses, horseAvatars, horseNames, maze]);
+
+  // Lost horse movement logic
+  const moveLostHorse = useCallback(() => {
+    if (!lostHorse || gameState !== 'exploring') return;
+
+    setLostHorse(prev => {
+      if (!prev) return prev;
+      
+      console.log('🐴 Lost horse moving from:', prev.pos);
+
+      const { x, y } = prev.pos;
+      const possibleMoves = [
+        { x: x - 1, y, dir: 'left' },
+        { x: x + 1, y, dir: 'right' },
+        { x, y: y - 1, dir: prev.direction },
+        { x, y: y + 1, dir: prev.direction }
+      ].filter(move => {
+        return move.x > 0 && move.x < MAZE_SIZE - 1 && 
+               move.y > 0 && move.y < MAZE_SIZE - 1 && 
+               maze[move.y] && maze[move.y][move.x] === CELL_EMPTY;
+      });
+
+      if (possibleMoves.length > 0) {
+        const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        console.log('🐴 Lost horse moving to:', { x: randomMove.x, y: randomMove.y });
+        return {
+          ...prev,
+          pos: { x: randomMove.x, y: randomMove.y },
+          direction: randomMove.dir
+        };
+      }
+
+      console.log('🐴 Lost horse has no valid moves, staying at:', prev.pos);
+      return prev; // No valid moves, stay in place
+    });
+  }, [lostHorse, gameState, maze]);
   
   // Stable upgrades system
   const [stableUpgrades, setStableUpgrades] = useState({});
@@ -547,7 +674,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [skillPoints, setSkillPoints] = useState(0);
   const [horseSkills, setHorseSkills] = useState({
     trapSense: 0, thickSkin: 0, lucky: 0,
-    swiftness: 0, pathfinding: 0, wallWalking: 0, swimming: 0, climbing: 0,
+    swiftness: 0, pathfinding: 1, swimming: 0, climbing: 0,
     powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
     sneaking: 0, distraction: 0, ghostForm: 0,
     saddlebags: 0, organization: 0, treasureHunter: 0
@@ -557,6 +684,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   
   // Track if horse got injured during current labyrinth session
   const [horseInjuredThisSession, setHorseInjuredThisSession] = useState(false);
+  
+  // Teleportation effect state
+  const [isTeleporting, setIsTeleporting] = useState(false);
+  const [teleportStage, setTeleportStage] = useState('none'); // 'dematerializing', 'materializing', 'none'
   
   // Visual feedback states
   const [floatingTexts, setFloatingTexts] = useState([]);
@@ -663,7 +794,22 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           } else {
             // Only add maze-specific features if no base feature was placed
             // Maze-type specific features
-            if (selectedMazeType === 'standard' || selectedMazeType === 'pyramid' || selectedMazeType === 'cave') {
+            if (selectedMazeType === 'standard') {
+              // Standard maze: static internal walls only, no moving mechanics
+              if (rand < 0.35) {
+                newMaze[y][x] = CELL_WALL;
+              } else if (rand < 0.37 && !portalA) {
+                newMaze[y][x] = CELL_PORTAL_A;
+                portalA = { x, y };
+              } else if (rand < 0.39 && portalA && !portalB) {
+                newMaze[y][x] = CELL_PORTAL_B;
+                portalB = { x, y };
+              } else if (rand < 0.41) {
+                newMaze[y][x] = CELL_DARK_ZONE;
+                newDarkZones.push({ x, y });
+              }
+            } else if (selectedMazeType === 'pyramid' || selectedMazeType === 'cave') {
+              // Pyramid and cave mazes: keep original distribution with one-way tiles
               if (rand < 0.48) {
                 newMaze[y][x] = CELL_MOVING_WALL;
                 newMovingWalls.push({ x, y, closed: true, timer: Math.floor(Math.random() * 6) + 2 });
@@ -743,7 +889,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       // Load horse's existing skills or initialize to defaults
       const horseExistingSkills = selectedHorse.skills || {
         trapSense: 0, thickSkin: 0, lucky: 0,
-        swiftness: 0, pathfinding: 0, wallWalking: 0, swimming: 0, climbing: 0,
+        swiftness: 0, pathfinding: 1, swimming: 0, climbing: 0,
         powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
         sneaking: 0, distraction: 0, ghostForm: 0,
         saddlebags: 0, organization: 0, treasureHunter: 0
@@ -831,6 +977,24 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   // Skill system functions (now per-horse)
   const getSkillLevel = useCallback((skillName) => horseSkills[skillName] || 0, [horseSkills]);
+
+  // Teleportation effect handler
+  const triggerTeleportation = useCallback((newX, newY) => {
+    setIsTeleporting(true);
+    setTeleportStage('dematerializing');
+    
+    // Dematerialization phase (300ms)
+    setTimeout(() => {
+      setHorsePos({ x: newX, y: newY });
+      setTeleportStage('materializing');
+      
+      // Materialization phase (400ms)
+      setTimeout(() => {
+        setTeleportStage('none');
+        setIsTeleporting(false);
+      }, 400);
+    }, 300);
+  }, []);
   
   const canUpgradeSkill = useCallback((categoryKey, skillKey) => {
     const skill = SKILL_TREE[categoryKey].skills[skillKey];
@@ -879,7 +1043,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       'invisibility': { text: 'INVISIBLE!', color: '#6b7280' },
       'stun': { text: 'STUN BOMB!', color: '#f59e0b' },
       'speed': { text: 'SPEED BOOST!', color: '#3b82f6' },
-      'wallbreaker': { text: 'WALL BREAKER!', color: '#ef4444' },
       'magnet': { text: 'MAGNET!', color: '#10b981' }
     };
     
@@ -913,7 +1076,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           } else {
             newPos = emptyCells[Math.floor(Math.random() * emptyCells.length)];
           }
-          setHorsePos(newPos);
+          triggerTeleportation(newPos.x, newPos.y);
         }
         break;
       
@@ -926,7 +1089,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         break;
       
       case 'speed':
-      case 'wallbreaker':
       case 'magnet':
         setActivePowerups(prev => [...prev, { ...powerup }]);
         break;
@@ -949,24 +1111,19 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         const ny = hy + dy;
         
         if (nx > 0 && nx < MAZE_SIZE - 1 && ny > 0 && ny < MAZE_SIZE - 1 && 
-            maze[ny] && (maze[ny][nx] === CELL_REWARD || 
-            (maze[ny][nx] === CELL_POWERUP && powerupMagnetLevel > 0))) {
+            maze[ny] && maze[ny][nx] === CELL_REWARD) {
           
-          if (maze[ny][nx] === CELL_REWARD) {
-            // Get the specific reward at this position for magnet collection
-            const rewardAtPosition = rewardPositions.find(r => r.x === nx && r.y === ny);
-            const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0]; // Fallback to first reward
-            setCurrentRewards(prev => [...prev, reward]);
-            
-            // Remove this reward from the positions array
-            setRewardPositions(prev => prev.filter(r => !(r.x === nx && r.y === ny)));
-            // No floating text for magnet treasure collection
-          } else if (maze[ny][nx] === CELL_POWERUP) {
-            const powerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
-            // Add visual feedback for magnet power-up collection
-            addFloatingText(`🧲 ${powerup.emoji} ${powerup.name}`, '#10b981');
-            usePowerup(powerup);
-          }
+          // Get the specific reward at this position for magnet collection
+          const rewardAtPosition = rewardPositions.find(r => r.x === nx && r.y === ny);
+          const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0]; // Fallback to first reward
+          setCurrentRewards(prev => [...prev, reward]);
+          
+          // Add specific reward to collected items for magnet collection
+          setCollectedItemsThisRun(prev => [...prev, reward]);
+          
+          // Remove this reward from the positions array
+          setRewardPositions(prev => prev.filter(r => !(r.x === nx && r.y === ny)));
+          // No floating text for magnet treasure collection
           
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
@@ -1178,6 +1335,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     updatePowerups();
     updateMovingWalls();
     collectWithMagnet();
+    
+    // Skip movement if currently teleporting
+    if (isTeleporting) return;
 
     const performanceModifiers = getHorsePerformanceModifiers();
 
@@ -1190,28 +1350,43 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         { x, y: y + 1, dir: 'down' }
       ];
 
-      const wallWalking = getSkillLevel('wallWalking');
-      if (hasPowerup('wallbreaker') || wallWalking > 0) {
-        possibleMoves = possibleMoves.filter(move => 
-          move.x > 0 && move.x < MAZE_SIZE - 1 && 
-          move.y > 0 && move.y < MAZE_SIZE - 1
-        );
-      } else {
-        possibleMoves = possibleMoves.filter(move => 
-          isCellPassable(move.x, move.y, x, y, maze)
-        );
-      }
+      possibleMoves = possibleMoves.filter(move => 
+        isCellPassable(move.x, move.y, x, y, maze)
+      );
 
       const pathfinding = getSkillLevel('pathfinding');
       if (pathfinding > 0 && possibleMoves.length > 1) {
+        // Find nearest treasure for treasure-seeking behavior
+        let nearestTreasure = null;
+        let minTreasureDist = Infinity;
+        
+        for (const reward of rewardPositions) {
+          const treasureDist = Math.abs(x - reward.x) + Math.abs(y - reward.y);
+          if (treasureDist < minTreasureDist) {
+            minTreasureDist = treasureDist;
+            nearestTreasure = reward;
+          }
+        }
+        
         possibleMoves.sort((a, b) => {
-          const distA = Math.abs(a.x - minotaurPos.x) + Math.abs(a.y - minotaurPos.y);
-          const distB = Math.abs(b.x - minotaurPos.x) + Math.abs(b.y - minotaurPos.y);
-          return distB - distA;
+          // Primary factor: Minotaur avoidance (stronger)
+          const minotaurDistA = Math.abs(a.x - minotaurPos.x) + Math.abs(a.y - minotaurPos.y);
+          const minotaurDistB = Math.abs(b.x - minotaurPos.x) + Math.abs(b.y - minotaurPos.y);
+          const minotaurScore = (minotaurDistB - minotaurDistA) * 2; // Weight: 2x
+          
+          // Secondary factor: Treasure attraction (weaker, only if treasure exists)
+          let treasureScore = 0;
+          if (nearestTreasure && minTreasureDist <= 6) { // Only consider nearby treasures
+            const treasureDistA = Math.abs(a.x - nearestTreasure.x) + Math.abs(a.y - nearestTreasure.y);
+            const treasureDistB = Math.abs(b.x - nearestTreasure.x) + Math.abs(b.y - nearestTreasure.y);
+            treasureScore = (treasureDistA - treasureDistB) * 0.8; // Weight: 0.8x
+          }
+          
+          return minotaurScore + treasureScore;
         });
         
-        if (Math.random() < pathfinding * 0.3) {
-          possibleMoves = possibleMoves.slice(0, 1);
+        if (Math.random() < pathfinding * 0.2) {
+          possibleMoves = possibleMoves.slice(0, Math.min(2, possibleMoves.length));
         }
       }
 
@@ -1222,10 +1397,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
       // Handle portal teleportation
       if (cell === CELL_PORTAL_A && portals.B) {
-        setHorsePos({ x: portals.B.x, y: portals.B.y });
+        triggerTeleportation(portals.B.x, portals.B.y);
         return prevPos;
       } else if (cell === CELL_PORTAL_B && portals.A) {
-        setHorsePos({ x: portals.A.x, y: portals.A.y });
+        triggerTeleportation(portals.A.x, portals.A.y);
         return prevPos;
       }
 
@@ -1246,8 +1421,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         // Flash effect for treasure collection (no text)
         flashHorse('#fbbf24');
         
-        // Add treasure to collected items
-        setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.treasure]);
+        // Add specific reward to collected items (not generic treasure)
+        setCollectedItemsThisRun(prev => [...prev, reward]);
         
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
@@ -1262,8 +1437,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         
         usePowerup(powerup);
         
-        // Add power-up to collected items
-        setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.powerup]);
+        // Powerups are consumed immediately, not collected into inventory
         
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
@@ -1370,9 +1544,18 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         return prevPos;
       }
 
+      // Check for collision with lost horse
+      if (lostHorse && nextMove.x === lostHorse.pos.x && nextMove.y === lostHorse.pos.y) {
+        // Found the lost horse! Unlock it and pause game
+        setFoundHorse(lostHorse);
+        setShowLostHorseFound(true);
+        setGameState('paused');
+        return prevPos; // Don't move, stay in current position
+      }
+
       return { x: nextMove.x, y: nextMove.y };
     });
-  }, [gameState, maze, currentRewards, hasPowerup, updatePowerups, updateMovingWalls, collectWithMagnet, usePowerup, getSkillLevel, minotaurPos, trapHits, isCellPassable, portals, vaultKeys, collectedKeys]);
+  }, [gameState, maze, currentRewards, hasPowerup, updatePowerups, updateMovingWalls, collectWithMagnet, usePowerup, getSkillLevel, minotaurPos, trapHits, isCellPassable, portals, vaultKeys, collectedKeys, isTeleporting, triggerTeleportation, rewardPositions, lostHorse]);
 
   // Vault interaction functions
   const handleVaultUnlock = useCallback(() => {
@@ -1457,10 +1640,15 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         if (Math.random() < 0.7) {
           moveMinotaur();
         }
+        
+        // Lost horse moves occasionally (slower than minotaur)
+        if (lostHorse && Math.random() < 0.3) {
+          moveLostHorse();
+        }
       }, adjustedGameSpeed);
       return () => clearTimeout(timer);
     }
-  }, [gameState, moveHorse, moveMinotaur, gameSpeed, horsePos, minotaurPos, hasPowerup, horseMoveCount, getSkillLevel, getHorsePerformanceModifiers]);
+  }, [gameState, moveHorse, moveMinotaur, gameSpeed, horsePos, minotaurPos, hasPowerup, horseMoveCount, getSkillLevel, getHorsePerformanceModifiers, lostHorse, moveLostHorse]);
 
   const startGame = () => {
     console.log('🚀 StartGame - Debug info:');
@@ -1543,6 +1731,19 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       setLastGeneratedMazeType(selectedMazeType);
     }
     
+    // Always check for lost horse spawn on every game start
+    setTimeout(() => {
+      const hasLostHorse = checkForLostHorseSpawn();
+      if (hasLostHorse) {
+        console.log('🐴 Lost horse spawned in maze!');
+        return; // Don't start game yet, wait for announcement modal
+      }
+      // Continue with normal game start if no lost horse
+      startGameAfterAnnouncement();
+    }, 100);
+  };
+  
+  const startGameAfterAnnouncement = (keepLostHorse = false) => {
     // Reset positions
     setHorsePos({ x: 1, y: 1 });
     setMinotaurPos({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
@@ -1563,6 +1764,17 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     setHorseInjuredThisSession(false);
     // Reset available keys to horse's starting inventory keys
     setAvailableKeys(inventoryUtils.getItemCount(selectedHorse?.inventory || [], 'key'));
+    
+    // Only reset lost horse state if not keeping it
+    if (!keepLostHorse) {
+      setLostHorse(null);
+      setShowLostHorseAnnouncement(false);
+      setShowLostHorseFound(false);
+      setFoundHorse(null);
+    } else {
+      // Just close the announcement modal but keep the lost horse
+      setShowLostHorseAnnouncement(false);
+    }
   };
 
   const exitLabyrinth = () => {
@@ -1782,12 +1994,55 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               position: 'absolute',
               top: 0,
               left: 0,
-              opacity: 1,
+              opacity: teleportStage === 'dematerializing' ? 0.2 : 
+                       teleportStage === 'materializing' ? 0.8 : 1,
               backgroundColor: 'transparent',
-              filter: horseFlash ? `drop-shadow(0 0 8px ${horseFlash})` : 'none',
-              transition: 'filter 0.1s ease-out'
+              filter: teleportStage === 'dematerializing' ? 'blur(2px) brightness(1.5)' :
+                      teleportStage === 'materializing' ? 'drop-shadow(0 0 12px #8b5cf6) brightness(1.3)' :
+                      horseFlash ? `drop-shadow(0 0 8px ${horseFlash})` : 'none',
+              transition: teleportStage !== 'none' ? 'opacity 0.3s ease-out, filter 0.3s ease-out' : 'filter 0.1s ease-out',
+              transform: teleportStage === 'dematerializing' ? 'scale(0.9)' : 
+                        teleportStage === 'materializing' ? 'scale(1.1)' : 'scale(1)',
+              transitionProperty: teleportStage !== 'none' ? 'opacity, filter, transform' : 'filter'
             }} 
           />
+          {/* Sparkle effects during materialization */}
+          {teleportStage === 'materializing' && (
+            <div className="teleport-sparkles" />
+          )}
+        </div>
+      );
+    }
+    if (lostHorse && lostHorse.pos.x === x && lostHorse.pos.y === y) {
+      return (
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <TileSprite tileX={getRandomEmptyTile(x, y).x} tileY={getRandomEmptyTile(x, y).y} />
+          <img 
+            src={lostHorse.avatar} 
+            alt="Lost Horse" 
+            className={lostHorse.direction === 'left' ? 'horse-flipped' : ''}
+            style={{
+              ...baseStyle,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              opacity: 1,
+              backgroundColor: 'transparent'
+            }}
+          />
+          {/* Small indicator to show it's a lost horse */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '8px', 
+            right: '4px', 
+            color: 'gold', 
+            fontSize: '12px', 
+            fontWeight: 'bold',
+            textShadow: '1px 1px 2px black',
+            lineHeight: '1'
+          }}>
+            ?
+          </div>
         </div>
       );
     }
@@ -1890,8 +2145,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     
     // Handle other labyrinth items
     if (item.id === 'key' || item.name === 'Key') return TILE_MAP[CELL_KEY];
-    if (item.id === 'powerup' || item.name === 'Power-up') return TILE_MAP[CELL_POWERUP];
     if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP[CELL_VAULT];
+    // Note: powerups are not included since they're consumed immediately, never stored in inventory
     
     // Fallback to null if no tile mapping exists
     return null;
@@ -1985,7 +2240,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               aspectRatio: '1/1'
             }}
           >
-            {/* CSS for character flipping */}
+            {/* CSS for character flipping and teleportation */}
             <style jsx>{`
               .minotaur-flipped {
                 transform: scaleX(-1);
@@ -1993,10 +2248,48 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
               .horse-flipped {
                 transform: scaleX(-1);
               }
+              @keyframes sparkle {
+                0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+                50% { opacity: 1; transform: scale(1) rotate(180deg); }
+              }
+              .teleport-sparkles {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+              }
+              .teleport-sparkles::before {
+                content: '✨';
+                position: absolute;
+                top: 10%;
+                left: 20%;
+                animation: sparkle 0.6s ease-in-out;
+              }
+              .teleport-sparkles::after {
+                content: '⭐';
+                position: absolute;
+                bottom: 20%;
+                right: 15%;
+                animation: sparkle 0.8s ease-in-out 0.2s;
+              }
             `}</style>
               {(() => {
                 // Calculate viewport bounds based on horse position
                 const viewport = getViewportBounds(horsePos.x, horsePos.y);
+                
+                // Debug viewport and lost horse position (only log once per position change)
+                if (lostHorse) {
+                  const isInViewport = lostHorse.pos.x >= viewport.startX && lostHorse.pos.x < viewport.startX + VIEWPORT_SIZE &&
+                                      lostHorse.pos.y >= viewport.startY && lostHorse.pos.y < viewport.startY + VIEWPORT_SIZE;
+                  if (isInViewport) {
+                    console.log('🔍 LOST HORSE IS IN VIEWPORT:', {
+                      viewport: `(${viewport.startX}-${viewport.startX + VIEWPORT_SIZE - 1}, ${viewport.startY}-${viewport.startY + VIEWPORT_SIZE - 1})`,
+                      playerPos: `(${horsePos.x}, ${horsePos.y})`,
+                      lostHorsePos: `(${lostHorse.pos.x}, ${lostHorse.pos.y})`,
+                      isInViewport: isInViewport
+                    });
+                  }
+                }
                 
                 // Always create exactly 6x6 grid, padding with walls where needed
                 const visibleRows = [];
@@ -2372,7 +2665,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             <div className="text-sm space-y-1">
               {trapHits > 0 && <div>❤️ Trap Hits: {trapHits}/{getSkillLevel('thickSkin')}</div>}
               {collectedKeys.length > 0 && <div>🗝️ Keys Collected: {collectedKeys.length}</div>}
-              {getSkillLevel('wallWalking') > 0 && <div>🕷️ Wall Walking Active</div>}
               {getSkillLevel('pathfinding') > 0 && <div>🧭 Smart Movement Active</div>}
             </div>
           </div>
@@ -2679,6 +2971,91 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                   You need a key to unlock this vault. Find keys scattered throughout the maze!
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lost Horse Announcement Modal */}
+      {showLostHorseAnnouncement && lostHorse && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                🐴 A Lost Horse is Roaming the Maze!
+              </h2>
+              
+              {/* Horse silhouette */}
+              <div className="mb-4">
+                <img 
+                  src={lostHorse.avatar} 
+                  alt={lostHorse.name}
+                  className="w-32 h-32 mx-auto object-contain rounded-lg"
+                  style={{ 
+                    filter: 'brightness(0) saturate(100%)',
+                    opacity: 0.6
+                  }}
+                />
+              </div>
+              
+              <p className="text-gray-600 mb-6">
+                A mysterious horse has wandered into the labyrinth. If you can find them, they might join your stable!
+              </p>
+              
+              <button
+                onClick={() => {
+                  startGameAfterAnnouncement(true); // Keep the lost horse
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Continue to Adventure
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lost Horse Found Modal */}
+      {showLostHorseFound && foundHorse && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-green-600 mb-4">
+                🎉 You Found {foundHorse.name}!
+              </h2>
+              
+              {/* Horse image (not silhouette this time) */}
+              <div className="mb-4">
+                <img 
+                  src={foundHorse.avatar} 
+                  alt={foundHorse.name}
+                  className="w-32 h-32 mx-auto object-contain rounded-lg border-4 border-green-200"
+                />
+              </div>
+              
+              <p className="text-gray-600 mb-6">
+                {foundHorse.name} is grateful to be rescued and will now be available in your stable!
+              </p>
+              
+              <button
+                onClick={() => {
+                  // Unlock the horse
+                  if (onUnlockHorse) {
+                    onUnlockHorse(foundHorse.id);
+                  }
+                  
+                  // Clear lost horse state
+                  setLostHorse(null);
+                  setFoundHorse(null);
+                  setShowLostHorseFound(false);
+                  
+                  // Resume game
+                  setGameState('exploring');
+                }}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Welcome to the Stable!
+              </button>
             </div>
           </div>
         </div>

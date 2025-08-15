@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { raceEngineAdapter } from "../racing/RaceEngineAdapter";
 import { themeUtils } from "../utils/themes";
 
-const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInfo, gameStorage, currentTheme, onThemeChange }) => {
+const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInfo, gameStorage, currentTheme, onThemeChange, onAddTestCoins }) => {
   if (!isOpen) return null;
 
   const handleViewSaveInfo = () => {
@@ -169,6 +169,20 @@ const SettingsModal = ({ isOpen, onClose, onViewSaveInfo, onResetAll, getSaveInf
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Testing Section */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                🧪 Testing Tools
+              </h3>
+              <button
+                onClick={() => onAddTestCoins && onAddTestCoins(1000)}
+                className="w-full text-left px-4 py-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200 transition-colors"
+              >
+                <div className="font-medium text-yellow-800">Add 1000 Coins</div>
+                <div className="text-sm text-yellow-600">For testing purchases and features</div>
+              </button>
             </div>
 
             {/* Reset Section */}

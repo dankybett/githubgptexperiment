@@ -1778,6 +1778,10 @@ const horsePersonalities = [
         onUpdateCoins={setCoins}
         unlockedMazes={unlockedMazes}
         onUpdateUnlockedMazes={setUnlockedMazes}
+        horseAvatars={horseAvatars}
+        horseNames={horseNames}
+        unlockedHorses={unlockedHorses}
+        onUnlockHorse={handleUnlockHorse}
         currentTheme={currentTheme}
         onBack={() => {
           console.log('🏠 App - Horse returning from labyrinth:', selectedHorseForLabyrinth);
@@ -2218,6 +2222,7 @@ const horsePersonalities = [
             onClose={() => setShowSettingsModal(false)}
             onResetAll={clearAllSaveData}
             getSaveInfo={getSaveInfo}
+            onAddTestCoins={(amount) => setCoins(prev => (Number(prev) || 0) + (Number(amount) || 0))}
             gameStorage={gameStorage}
             currentTheme={currentTheme}
             onThemeChange={handleThemeChange}
