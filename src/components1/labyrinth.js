@@ -4,6 +4,7 @@ import ItemSelectionModal from "./ItemSelectionModal";
 import { themeUtils } from "../utils/themes";
 
 const MAZE_SIZE = 12;
+const VIEWPORT_SIZE = 6; // 6x6 visible area
 const CELL_EMPTY = 0;
 const CELL_WALL = 1;
 const CELL_REWARD = 2;
@@ -95,6 +96,11 @@ const TILE_MAP = {
   MINOTAUR: { x: 0, y: 6},
   MINOTAUR_STUNNED: { x: 0, y: 6},
   MINOTAUR_LOST: { x: 0, y: 6},
+  
+  // Reward tiles
+  REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   // Golden Apple tile
+  REWARD_MAGIC_CARROT: { x: 6, y: 0 },   // Magic Carrot tile
+  REWARD_HAY_BUNDLE: { x: 9, y: 1 },     // Hay Bundle tile
 };
 
 // Multiple empty tile variants for visual variety
@@ -184,6 +190,10 @@ const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
   'MINOTAUR',
   'MINOTAUR_STUNNED',
   'MINOTAUR_LOST',
+  // Reward tiles
+  'REWARD_GOLDEN_APPLE',
+  'REWARD_MAGIC_CARROT', 
+  'REWARD_HAY_BUNDLE',
   // Add more special tile keys as needed
 ]);
 
@@ -206,12 +216,9 @@ const renderSpecialTile = (tileKey, x, y, direction = null) => {
 };
 
 const REWARDS = [
-  { name: 'Golden Apple', emoji: '🍎', rarity: 0.3 },
-  { name: 'Silver Coin', emoji: '🪙', rarity: 0.4 },
-  { name: 'Magic Carrot', emoji: '🥕', rarity: 0.2 },
-  { name: 'Crystal Gem', emoji: '💎', rarity: 0.1 },
-  { name: 'Hay Bundle', emoji: '🌾', rarity: 0.5 },
-  { name: 'Lucky Horseshoe', emoji: '🍀', rarity: 0.15 }
+  { name: 'Golden Apple', emoji: '🍎', rarity: 0.3, tileKey: 'REWARD_GOLDEN_APPLE' },
+  { name: 'Magic Carrot', emoji: '🥕', rarity: 0.4, tileKey: 'REWARD_MAGIC_CARROT' },
+  { name: 'Hay Bundle', emoji: '🌾', rarity: 0.3, tileKey: 'REWARD_HAY_BUNDLE' }
 ];
 
 const TRAPS = [
@@ -426,6 +433,21 @@ const SKILL_TREE = {
   }
 };
 
+// Helper function to calculate viewport bounds based on horse position
+const getViewportBounds = (horseX, horseY) => {
+  const halfViewport = Math.floor(VIEWPORT_SIZE / 2);
+  
+  // Calculate ideal start position centered on horse
+  let startX = horseX - halfViewport;
+  let startY = horseY - halfViewport;
+  
+  // Clamp to valid ranges that allow full viewport
+  startX = Math.max(0, Math.min(startX, MAZE_SIZE - VIEWPORT_SIZE));
+  startY = Math.max(0, Math.min(startY, MAZE_SIZE - VIEWPORT_SIZE));
+  
+  return { startX, startY };
+};
+
 function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, currentTheme = 'retro' }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
@@ -482,6 +504,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   const [gameState, setGameState] = useState('waiting');
   const [currentRewards, setCurrentRewards] = useState([]);
+  const [rewardPositions, setRewardPositions] = useState([]); // Array of {x, y, rewardType}
   const [gameSpeed, setGameSpeed] = useState(800);
   const [totalRuns, setTotalRuns] = useState(0);
   const [lastTrap, setLastTrap] = useState(null);
@@ -503,6 +526,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   
   // Research system
   const [selectedMazeType, setSelectedMazeType] = useState('standard');
+  const [lastGeneratedMazeType, setLastGeneratedMazeType] = useState('standard');
   const [showResearchTree, setShowResearchTree] = useState(false);
   
   // Get theme styles
@@ -563,6 +587,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   // Generate maze based on selected type
   const generateMaze = useCallback(() => {
     const newMaze = Array(MAZE_SIZE).fill().map(() => Array(MAZE_SIZE).fill(CELL_WALL));
+    const rewardPositionsTemp = []; // Track reward positions and types during generation
     
     function carvePassage(x, y) {
       newMaze[y][x] = CELL_EMPTY;
@@ -619,7 +644,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           
           // Base features (all maze types) - these take priority
           if (rand < 0.15) {
+            // Select a random reward type
+            const selectedReward = REWARDS[Math.floor(Math.random() * REWARDS.length)];
             newMaze[y][x] = CELL_REWARD;
+            // Store the reward position and type for rendering
+            rewardPositionsTemp.push({ x, y, rewardType: selectedReward });
           } else if (rand < 0.25) {
             newMaze[y][x] = CELL_TRAP;
           } else if (rand < 0.32) {
@@ -696,13 +725,17 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       setCurrentLevel(1);
     }
     
+    // Set the reward positions state
+    setRewardPositions(rewardPositionsTemp);
+    
     return newMaze;
   }, [selectedMazeType]);
 
   // Initialize maze
   useEffect(() => {
     setMaze(generateMaze());
-  }, [generateMaze]);
+    setLastGeneratedMazeType(selectedMazeType);
+  }, [generateMaze, selectedMazeType]);
 
   // Initialize horse skills when selectedHorse changes
   useEffect(() => {
@@ -920,10 +953,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             (maze[ny][nx] === CELL_POWERUP && powerupMagnetLevel > 0))) {
           
           if (maze[ny][nx] === CELL_REWARD) {
-            const lucky = getSkillLevel('lucky');
-            const betterRewards = REWARDS.filter(r => r.rarity <= 0.3 + lucky * 0.1);
-            const reward = betterRewards[Math.floor(Math.random() * betterRewards.length)] || REWARDS[0];
+            // Get the specific reward at this position for magnet collection
+            const rewardAtPosition = rewardPositions.find(r => r.x === nx && r.y === ny);
+            const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0]; // Fallback to first reward
             setCurrentRewards(prev => [...prev, reward]);
+            
+            // Remove this reward from the positions array
+            setRewardPositions(prev => prev.filter(r => !(r.x === nx && r.y === ny)));
             // No floating text for magnet treasure collection
           } else if (maze[ny][nx] === CELL_POWERUP) {
             const powerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
@@ -1199,12 +1235,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         const treasureHunter = getSkillLevel('treasureHunter');
         const treasureMultiplier = performanceModifiers.treasureBonus;
         
-        // Well-cared horses find better treasures
-        const baseRewardChance = 0.3 + lucky * 0.1 + treasureHunter * 0.05;
-        const enhancedRewardChance = Math.min(0.6, baseRewardChance * treasureMultiplier);
-        const betterRewards = REWARDS.filter(r => r.rarity <= enhancedRewardChance);
-        const reward = betterRewards[Math.floor(Math.random() * betterRewards.length)] || REWARDS[0];
+        // Get the specific reward at this position
+        const rewardAtPosition = rewardPositions.find(r => r.x === nextMove.x && r.y === nextMove.y);
+        const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0]; // Fallback to first reward
         setCurrentRewards(prev => [...prev, reward]);
+        
+        // Remove this reward from the positions array
+        setRewardPositions(prev => prev.filter(r => !(r.x === nextMove.x && r.y === nextMove.y)));
         
         // Flash effect for treasure collection (no text)
         flashHorse('#fbbf24');
@@ -1493,8 +1530,20 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     
     console.log('🚀 StartGame - Starting new game directly');
     
-    const newMaze = generateMaze();
-    setMaze(newMaze);
+    // Regenerate maze if: type changed OR starting a new adventure after a completed/active run
+    const shouldRegenerateMaze = 
+      selectedMazeType !== lastGeneratedMazeType || 
+      gameState === 'ended' || 
+      gameState === 'exploring';
+      
+    if (shouldRegenerateMaze) {
+      console.log('🚀 StartGame - Regenerating maze (type change or new adventure)');
+      const newMaze = generateMaze();
+      setMaze(newMaze);
+      setLastGeneratedMazeType(selectedMazeType);
+    }
+    
+    // Reset positions
     setHorsePos({ x: 1, y: 1 });
     setMinotaurPos({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
     setCurrentRewards([]);
@@ -1797,6 +1846,16 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       return <TileSprite tileX={wallTile.x} tileY={wallTile.y} />;
     }
     
+    // Special handling for CELL_REWARD to use specific reward tile
+    if (cell === CELL_REWARD) {
+      const rewardAtPosition = rewardPositions.find(r => r.x === x && r.y === y);
+      if (rewardAtPosition) {
+        return renderSpecialTile(rewardAtPosition.rewardType.tileKey, x, y);
+      }
+      // Fallback to generic reward tile if position not found
+      return renderSpecialTile('REWARD_GOLDEN_APPLE', x, y);
+    }
+    
     // Use tileset for all basic cell types
     const tileMapping = TILE_MAP[cell];
     if (tileMapping) {
@@ -1820,6 +1879,22 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   const getInventoryCount = (itemName) => {
     return inventory.filter(item => item.name === itemName).length;
+  };
+
+  // Helper function to get tile coordinates for inventory items
+  const getItemTileCoords = (item) => {
+    // Handle reward items
+    if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
+    if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
+    if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+    
+    // Handle other labyrinth items
+    if (item.id === 'key' || item.name === 'Key') return TILE_MAP[CELL_KEY];
+    if (item.id === 'powerup' || item.name === 'Power-up') return TILE_MAP[CELL_POWERUP];
+    if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP[CELL_VAULT];
+    
+    // Fallback to null if no tile mapping exists
+    return null;
   };
 
   const uniqueInventoryItems = [...new Set(inventory.map(item => item.name))]
@@ -1919,47 +1994,77 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 transform: scaleX(-1);
               }
             `}</style>
-              {maze.map((row, y) => (
-                <div 
-                  key={y}
-                  style={{ 
-                    display: 'flex',
-                    lineHeight: 0,
-                    flex: '1',
-                    width: '100%'
-                  }}
-                >
-                  {row.map((cell, x) => (
-                    <div
-                      key={`${x}-${y}`}
-                      style={{ 
-                        flex: '1 1 0',
-                        aspectRatio: '1/1',
-                        background: 'transparent',
-                        border: 'none',
-                        display: 'block',
-                        lineHeight: 0,
-                        padding: 0,
-                        margin: 0,
-                        minWidth: 0,
-                        minHeight: 0,
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {getCellDisplay(cell, x, y)}
-                    </div>
-                  ))}
+              {(() => {
+                // Calculate viewport bounds based on horse position
+                const viewport = getViewportBounds(horsePos.x, horsePos.y);
+                
+                // Always create exactly 6x6 grid, padding with walls where needed
+                const visibleRows = [];
+                for (let viewY = 0; viewY < VIEWPORT_SIZE; viewY++) {
+                  const mazeY = viewport.startY + viewY;
+                  const visibleRow = [];
+                  
+                  for (let viewX = 0; viewX < VIEWPORT_SIZE; viewX++) {
+                    const mazeX = viewport.startX + viewX;
+                    
+                    // Use maze cell if within bounds, otherwise use wall
+                    if (mazeY >= 0 && mazeY < maze.length && mazeX >= 0 && mazeX < maze[mazeY].length) {
+                      visibleRow.push({ cell: maze[mazeY][mazeX], x: mazeX, y: mazeY });
+                    } else {
+                      visibleRow.push({ cell: CELL_WALL, x: mazeX, y: mazeY });
+                    }
+                  }
+                  
+                  visibleRows.push({ row: visibleRow, y: mazeY });
+                }
+                
+                return visibleRows.map((rowData, rowIndex) => (
+                  <div 
+                    key={rowData.y}
+                    style={{ 
+                      display: 'flex',
+                      lineHeight: 0,
+                      flex: '1',
+                      width: '100%'
+                    }}
+                  >
+                    {rowData.row.map((cellData, cellIndex) => (
+                      <div
+                        key={`${cellData.x}-${cellData.y}`}
+                        style={{ 
+                          flex: '1 1 0',
+                          aspectRatio: '1/1',
+                          background: 'transparent',
+                          border: 'none',
+                          display: 'block',
+                          lineHeight: 0,
+                          padding: 0,
+                          margin: 0,
+                          minWidth: 0,
+                          minHeight: 0,
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {getCellDisplay(cellData.cell, cellData.x, cellData.y)}
+                      </div>
+                    ))}
                 </div>
-              ))}
+                ));
+              })()}
               
               {/* Floating Text Overlay */}
               {floatingTexts
                 .slice()
                 .sort((a, b) => a.timestamp - b.timestamp) // Sort by oldest first for stable stacking
                 .map((ft, stackIndex) => {
-                  const cellSize = 100 / MAZE_SIZE;
-                  const horseX = (horsePos.x * cellSize) + (cellSize / 2);
-                  const horseY = (horsePos.y * cellSize) + (cellSize / 2);
+                  // Calculate horse position within the 6x6 viewport
+                  const viewport = getViewportBounds(horsePos.x, horsePos.y);
+                  const viewportHorseX = horsePos.x - viewport.startX;
+                  const viewportHorseY = horsePos.y - viewport.startY;
+                  
+                  const cellSize = 100 / VIEWPORT_SIZE;
+                  const horseX = (viewportHorseX * cellSize) + (cellSize / 2);
+                  const horseY = (viewportHorseY * cellSize) + (cellSize / 2);
                   const age = Date.now() - ft.timestamp;
                   const opacity = Math.max(0, 1 - (age / 2000));
                   
@@ -2213,12 +2318,25 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                     }`}
                   >
                     {item ? (
-                      <img 
-                        src={item.image} 
-                        alt={item.name}
-                        className="w-8 h-8 object-contain"
-                        title={item.name}
-                      />
+                      (() => {
+                        const tileCoords = getItemTileCoords(item);
+                        if (tileCoords) {
+                          return (
+                            <div className="w-12 h-12 flex items-center justify-center" title={item.name}>
+                              <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <img 
+                              src={item.image} 
+                              alt={item.name}
+                              className="w-12 h-12 object-contain"
+                              title={item.name}
+                            />
+                          );
+                        }
+                      })()
                     ) : (
                       <div className="text-gray-400 text-xs">Empty</div>
                     )}

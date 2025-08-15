@@ -1,6 +1,52 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
+// TileSprite component for tileset rendering
+const TileSprite = ({ tileX, tileY, className = "" }) => {
+  const tilesPerRow = 10; // 10x10 grid
+  const tileSize = 64; // Each tile is 64x64 pixels
+  
+  const style = {
+    width: '48px',
+    height: '48px',
+    backgroundImage: 'url(/maze/tilesheetdan.png)',
+    backgroundPosition: `-${tileX * tileSize}px -${tileY * tileSize}px`,
+    backgroundSize: `${tilesPerRow * tileSize}px ${tilesPerRow * tileSize}px`,
+    backgroundRepeat: 'no-repeat',
+    imageRendering: 'pixelated',
+    display: 'block',
+    margin: '0 auto'
+  };
+  
+  return <div className={`tile ${className}`} style={style} />;
+};
+
+// Tile mappings
+const TILE_MAP = {
+  REWARD_GOLDEN_APPLE: { x: 4, y: 1 },   
+  REWARD_MAGIC_CARROT: { x: 5, y: 1 },   
+  REWARD_HAY_BUNDLE: { x: 6, y: 1 },     
+  KEY: { x: 8, y: 0 },                  
+  POWERUP: { x: 6, y: 0 },              
+  VAULT: { x: 3, y: 1 }
+};
+
+// Helper function to get tile coordinates for inventory items
+const getItemTileCoords = (item) => {
+  // Handle reward items
+  if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
+  if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
+  if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+  
+  // Handle other labyrinth items
+  if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;
+  if (item.id === 'powerup' || item.name === 'Power-up') return TILE_MAP.POWERUP;
+  if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP.VAULT;
+  
+  // Fallback to null if no tile mapping exists
+  return null;
+};
+
 // Skill tree data (matching labyrinth.js)
 const SKILL_TREE = {
   survival: {
@@ -488,11 +534,20 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                         >
                           {item ? (
                             <div className="text-center space-y-2">
-                              <img 
-                                src={item.image} 
-                                alt={item.name}
-                                className="w-8 h-8 object-contain mx-auto"
-                              />
+                              {(() => {
+                                const tileCoords = getItemTileCoords(item);
+                                if (tileCoords) {
+                                  return <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />;
+                                } else {
+                                  return (
+                                    <img 
+                                      src={item.image} 
+                                      alt={item.name}
+                                      className="w-12 h-12 object-contain mx-auto"
+                                    />
+                                  );
+                                }
+                              })()}
                               <div className="text-xs font-medium text-gray-800 leading-tight">
                                 {item.name}
                               </div>

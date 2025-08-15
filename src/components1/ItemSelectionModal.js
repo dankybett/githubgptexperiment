@@ -1,6 +1,52 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// TileSprite component for tileset rendering (copied from labyrinth)
+const TileSprite = ({ tileX, tileY, className = "" }) => {
+  const tilesPerRow = 10; // 10x10 grid
+  const tileSize = 64; // Each tile is 64x64 pixels
+  
+  const style = {
+    width: '48px',
+    height: '48px',
+    backgroundImage: 'url(/maze/tilesheetdan.png)',
+    backgroundPosition: `-${tileX * tileSize}px -${tileY * tileSize}px`,
+    backgroundSize: `${tilesPerRow * tileSize}px ${tilesPerRow * tileSize}px`,
+    backgroundRepeat: 'no-repeat',
+    imageRendering: 'pixelated',
+    display: 'block',
+    margin: '0 auto'
+  };
+  
+  return <div className={`tile ${className}`} style={style} />;
+};
+
+// Tile mappings (copied from labyrinth)
+const TILE_MAP = {
+  REWARD_GOLDEN_APPLE: { x: 4, y: 1 },   
+  REWARD_MAGIC_CARROT: { x: 5, y: 1 },   
+  REWARD_HAY_BUNDLE: { x: 6, y: 1 },     
+  KEY: { x: 8, y: 0 },                  
+  POWERUP: { x: 6, y: 0 },              
+  VAULT: { x: 3, y: 1 }
+};
+
+// Helper function to get tile coordinates for inventory items
+const getItemTileCoords = (item) => {
+  // Handle reward items
+  if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
+  if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
+  if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+  
+  // Handle other labyrinth items
+  if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;
+  if (item.id === 'powerup' || item.name === 'Power-up') return TILE_MAP.POWERUP;
+  if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP.VAULT;
+  
+  // Fallback to null if no tile mapping exists
+  return null;
+};
+
 const ItemSelectionModal = ({ 
   isOpen, 
   horse, 
@@ -150,11 +196,20 @@ const ItemSelectionModal = ({
                     >
                       {item ? (
                         <>
-                          <img 
-                            src={item.image} 
-                            alt={item.name}
-                            className="w-12 h-12 mx-auto object-contain"
-                          />
+                          {(() => {
+                            const tileCoords = getItemTileCoords(item);
+                            if (tileCoords) {
+                              return <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />;
+                            } else {
+                              return (
+                                <img 
+                                  src={item.image} 
+                                  alt={item.name}
+                                  className="w-12 h-12 mx-auto object-contain"
+                                />
+                              );
+                            }
+                          })()}
                           <div className="text-xs text-center mt-1 font-medium">
                             {item.name}
                           </div>
@@ -203,11 +258,20 @@ const ItemSelectionModal = ({
                     whileHover={canSelect ? { scale: 1.05 } : {}}
                     whileTap={canSelect ? { scale: 0.95 } : {}}
                   >
-                    <img 
-                      src={item.image} 
-                      alt={item.name}
-                      className="w-12 h-12 mx-auto object-contain"
-                    />
+                    {(() => {
+                      const tileCoords = getItemTileCoords(item);
+                      if (tileCoords) {
+                        return <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />;
+                      } else {
+                        return (
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="w-12 h-12 mx-auto object-contain"
+                          />
+                        );
+                      }
+                    })()}
                     <div className="text-xs text-center mt-1 font-medium">
                       {item.name}
                     </div>
