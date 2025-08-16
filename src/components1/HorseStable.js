@@ -1494,8 +1494,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <motion.div 
             style={{
               position: 'absolute',
-              top: '20px',
-              left: '20px',
+              top: '700px',
+              left: '600px',
               width: '120px',
               height: '120px',
               backgroundImage: 'url(/stable/dragoneggnest.png)',
@@ -1514,12 +1514,17 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <motion.div
             style={{
               position: 'absolute',
-              top: '300px',
-              left: '50px',
-              width: '200px',
-              height: '150px',
-              zIndex: '10'
+              top: '100px',
+              left: '600px',
+              width: '450px',
+              height: '400px',
+              zIndex: '10',
+              cursor: 'pointer'
             }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowSelector(true)}
+            title="Click to manage horses"
           >
             <img 
               src="/stable/stables.png" 
@@ -1536,17 +1541,12 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <motion.div 
             style={{
               position: 'absolute',
-              top: '500px',
-              left: '225px',
+              top: '200px',
+              left: '125px',
               width: '380px',
               height: '300px',
-              zIndex: '10',
-              cursor: 'pointer'
+              zIndex: '10'
             }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowSelector(true)}
-            title="Click to manage horses"
           >
             <img 
               src="/stable/house.png" 
