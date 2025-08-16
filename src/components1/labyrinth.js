@@ -101,6 +101,11 @@ const TILE_MAP = {
   REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   // Golden Apple tile
   REWARD_MAGIC_CARROT: { x: 6, y: 0 },   // Magic Carrot tile
   REWARD_HAY_BUNDLE: { x: 9, y: 1 },     // Hay Bundle tile
+  
+  // Legendary reward tiles
+  LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },   // Ancient Treasure tile
+  LEGENDARY_DRAGON_EGG: { x: 8, y: 4 },         // Dragon Egg tile  
+  LEGENDARY_SACRED_RELIC: { x: 9, y: 2 },       // Sacred Relic tile
 };
 
 // Multiple empty tile variants for visual variety
@@ -194,6 +199,10 @@ const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
   'REWARD_GOLDEN_APPLE',
   'REWARD_MAGIC_CARROT', 
   'REWARD_HAY_BUNDLE',
+  // Legendary reward tiles
+  'LEGENDARY_ANCIENT_TREASURE',
+  'LEGENDARY_DRAGON_EGG',
+  'LEGENDARY_SACRED_RELIC',
   // Add more special tile keys as needed
 ]);
 
@@ -695,6 +704,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   
   // Vault interaction states
   const [showVaultModal, setShowVaultModal] = useState(false);
+  const [showTreasureReveal, setShowTreasureReveal] = useState(false);
   const [currentVault, setCurrentVault] = useState(null);
   
   // Visual feedback functions
@@ -1465,9 +1475,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       } else if (cell === CELL_VAULT) {
         // Pause game and show vault interaction modal
         const legendaryRewards = [
-          { name: 'Ancient Treasure', emoji: '👑', rarity: 0.05 },
-          { name: 'Dragon Egg', emoji: '🥚', rarity: 0.03 },
-          { name: 'Sacred Relic', emoji: '🏺', rarity: 0.04 }
+          { name: 'Ancient Treasure', emoji: '👑', tileKey: 'LEGENDARY_ANCIENT_TREASURE' },
+          { name: 'Dragon Egg', emoji: '🥚', tileKey: 'LEGENDARY_DRAGON_EGG' },
+          { name: 'Sacred Relic', emoji: '🏺', tileKey: 'LEGENDARY_SACRED_RELIC' }
         ];
         const potentialReward = legendaryRewards[Math.floor(Math.random() * legendaryRewards.length)];
         
@@ -1580,8 +1590,16 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
     }
     
-    // Add vault treasure to collected items
-    setCollectedItemsThisRun(prev => [...prev, INVENTORY_ITEMS.vault_treasure]);
+    // Add the actual legendary reward to collected items
+    setCollectedItemsThisRun(prev => [...prev, currentVault.reward]);
+    
+    // Close vault modal and show treasure reveal
+    setShowVaultModal(false);
+    setShowTreasureReveal(true);
+  }, [currentVault, availableKeys, collectedItemsThisRun]);
+
+  const handleTreasureRevealContinue = useCallback(() => {
+    if (!currentVault) return;
     
     // Remove vault from maze
     setMaze(prevMaze => {
@@ -1593,14 +1611,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     // Move horse to vault position
     setHorsePos({ x: currentVault.position.x, y: currentVault.position.y });
     
-    // Close modal and resume game
-    setShowVaultModal(false);
+    // Close reveal modal and resume game
+    setShowTreasureReveal(false);
     setCurrentVault(null);
     
     // Visual feedback
     addFloatingText(`${selectedHorse?.name} found ${currentVault.reward.name}!`, '#dc2626');
     flashHorse('#dc2626');
-  }, [currentVault, availableKeys, collectedItemsThisRun, addFloatingText, flashHorse]);
+  }, [currentVault, addFloatingText, flashHorse]);
   
   const handleVaultLeave = useCallback(() => {
     // Close modal and remove vault from maze so horse can continue
@@ -1620,7 +1638,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
 
   // Game loop
   useEffect(() => {
-    if (gameState === 'exploring' && !showVaultModal) {
+    if (gameState === 'exploring' && !showVaultModal && !showTreasureReveal) {
       const performanceModifiers = getHorsePerformanceModifiers();
       const adjustedGameSpeed = gameSpeed / performanceModifiers.speed;
       
@@ -2937,11 +2955,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
             <div className="text-center space-y-4">
-              <img 
-                src="/maze/vault.png" 
-                alt="Treasure Vault" 
-                className="w-20 h-20 mx-auto object-contain"
-              />
+              <div className="flex justify-center">
+                <div style={{ width: '80px', height: '80px' }}>
+                  <TileSprite 
+                    tileX={TILE_MAP[CELL_VAULT].x} 
+                    tileY={TILE_MAP[CELL_VAULT].y}
+                  />
+                </div>
+              </div>
               <h2 className="text-lg font-bold text-gray-800">
                 {selectedHorse?.name} has found a treasure chest!
               </h2>
@@ -2971,6 +2992,49 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                   You need a key to unlock this vault. Find keys scattered throughout the maze!
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Treasure Reveal Modal */}
+      {showTreasureReveal && currentVault && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div className="text-center space-y-4">
+              <div className="text-6xl mb-4">🎉</div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Treasure Found!
+              </h2>
+              
+              {/* Show the actual legendary treasure */}
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                <div className="mb-2 flex justify-center">
+                  <div style={{ width: '64px', height: '64px' }}>
+                    <TileSprite 
+                      tileX={TILE_MAP[currentVault.reward.tileKey].x} 
+                      tileY={TILE_MAP[currentVault.reward.tileKey].y}
+                    />
+                  </div>
+                </div>
+                <div className="text-lg font-bold text-yellow-800">
+                  {currentVault.reward.name}
+                </div>
+                <div className="text-sm text-yellow-700 mt-1">
+                  A legendary treasure!
+                </div>
+              </div>
+              
+              <p className="text-gray-600">
+                {selectedHorse?.name} has unlocked the vault and discovered this rare treasure!
+              </p>
+              
+              <button
+                onClick={handleTreasureRevealContinue}
+                className="w-full py-3 px-4 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition-colors"
+              >
+                Continue Adventure
+              </button>
             </div>
           </div>
         </div>

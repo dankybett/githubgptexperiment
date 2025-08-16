@@ -28,7 +28,12 @@ const TILE_MAP = {
   REWARD_HAY_BUNDLE: { x: 9, y: 1 },     
   KEY: { x: 8, y: 0 },                  
   POWERUP: { x: 6, y: 0 },              
-  VAULT: { x: 3, y: 1 }
+  VAULT: { x: 3, y: 1 },
+  
+  // Legendary reward tiles
+  LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },
+  LEGENDARY_DRAGON_EGG: { x: 8, y: 4 },
+  LEGENDARY_SACRED_RELIC: { x: 9, y: 2 }
 };
 
 // Helper function to get tile coordinates for inventory items
@@ -37,6 +42,11 @@ const getItemTileCoords = (item) => {
   if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
   if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
   if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+  
+  // Handle legendary reward items
+  if (item.name === 'Ancient Treasure') return TILE_MAP.LEGENDARY_ANCIENT_TREASURE;
+  if (item.name === 'Dragon Egg') return TILE_MAP.LEGENDARY_DRAGON_EGG;
+  if (item.name === 'Sacred Relic') return TILE_MAP.LEGENDARY_SACRED_RELIC;
   
   // Handle other labyrinth items
   if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;
