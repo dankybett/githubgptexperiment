@@ -291,6 +291,27 @@ const horsePersonalities = [
     });
   };
 
+  const handleAddItemToHorseInventory = (horseId, item) => {
+    setHorseInventories((prev) => {
+      const currentInventory = prev[horseId] || [];
+      const maxSlots = 4 + (horseSkills[horseId]?.saddlebags || 0);
+      
+      // Check if there's space
+      if (currentInventory.length >= maxSlots) {
+        console.log(`🎒 App - No space in horse ${horseId} inventory (${currentInventory.length}/${maxSlots})`);
+        return prev;
+      }
+      
+      const updatedInventory = [...currentInventory, item];
+      console.log(`🎒 App - Added ${item.name} to horse ${horseId} inventory`);
+      
+      return {
+        ...prev,
+        [horseId]: updatedInventory
+      };
+    });
+  };
+
   useEffect(() => {
     const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
     setShuffledAvatars(available);
@@ -1840,6 +1861,7 @@ const horsePersonalities = [
         onRemoveItemFromHorseInventory={handleRemoveItemFromHorseInventory}
         onRemoveItemFromHorseInventoryByIndex={handleRemoveItemFromHorseInventoryByIndex}
         onRemoveItemFromHorseInventoryById={handleRemoveItemFromHorseInventoryById}
+        onAddItemToHorseInventory={handleAddItemToHorseInventory}
         nestEgg={nestEgg}
         onUpdateNestEgg={setNestEgg}
         selectedGrazingHorses={selectedGrazingHorses}

@@ -76,6 +76,7 @@ const HorseStable = ({
   onUnlockSong,
   onRemoveItemFromHorseInventory,
   onRemoveItemFromHorseInventoryByIndex,
+  onAddItemToHorseInventory,
   nestEgg,
   onUpdateNestEgg,
   selectedGrazingHorses,
@@ -141,6 +142,111 @@ const HorseStable = ({
   const [gameTime, setGameTime] = useState(stableGameTime || 0); // 0-24 hours
   const [lastDailyIncome, setLastDailyIncome] = useState(0);
   const [newDayNotification, setNewDayNotification] = useState(null);
+
+  // Happiness reward system state
+  const [happinessRewardModal, setHappinessRewardModal] = useState(null);
+  const [lastHappinessCheck, setLastHappinessCheck] = useState({});
+
+  // Library system state
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [unlockedBooks, setUnlockedBooks] = useState({
+    stable: true,
+    labyrinth: true
+  });
+
+  // Book content data
+  const bookLibrary = {
+    stable: {
+      title: "Stable",
+      description: "Guide to Horse Care & Stable Management",
+      content: `Welcome to the Stable Guide!
+
+🏠 STABLE OVERVIEW
+Your stable is home to up to 5 horses. Each horse has individual care needs that affect their performance and happiness.
+
+🐎 HORSE CARE STATS
+• Health: Affects performance and injury resistance
+• Happiness: Unlocks rare rewards when high (80+)
+• Cleanliness: Dirty horses perform poorly
+• Energy: Low energy horses rest more frequently
+
+🌾 CARE RESOURCES
+• Feed: Keeps horses healthy and energetic
+• Water: Maintains health and happiness
+• Pasture: Increases happiness and energy
+• Cleanliness: Keeps the stable environment clean
+
+💰 CARE ACTIONS
+• Global Care: Affects all horses (Feed, Water, Pasture, Clean)
+• Individual Care: Target specific horses (Groom, Apple, Carrot, Heal)
+
+⏰ DAY/NIGHT CYCLE
+• Time passes automatically in the stable
+• Daily income: 10 coins per day
+• Care stats decay slowly over time
+
+🎵 MUSIC SYSTEM
+• Play records to boost horse happiness
+• Happy horses perform better in races and adventures
+
+💎 HAPPINESS REWARDS
+• Very happy horses (80+ happiness) may find:
+  - Coins (3-7 coins, 70% chance)
+  - Keys for the labyrinth (30% chance)
+• Rewards are rare (1% chance per hour per horse)`
+    },
+    labyrinth: {
+      title: "Labyrinth",
+      description: "Maze Navigation & Treasure Hunting Guide",
+      content: `Welcome to the Labyrinth Guide!
+
+🌟 LABYRINTH OVERVIEW
+The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsome Minotaur. Send your best horses on adventures to collect valuable rewards!
+
+🗝️ KEYS & VAULTS
+• Keys: Found scattered throughout the maze
+• Vaults: Locked containers requiring keys to open
+• Vault rewards: Rare treasures worth significant coins
+• Keys are consumed when opening vaults
+
+👹 THE MINOTAUR
+• Dangerous creature roaming the maze
+• Getting caught results in injury and lost items
+• Injured horses cannot adventure until healed
+• Strategy: Stay away from the Minotaur's path
+
+🏃‍♂️ MOVEMENT & EXPLORATION
+• Use WASD or arrow keys to navigate
+• Horses have limited energy for movement
+• Rest to recover energy (space bar)
+• Explore systematically to find all treasures
+
+💰 TREASURES & REWARDS
+• Regular treasures: Scattered throughout the maze
+• Vault treasures: Higher value, require keys
+• Lost horses: Rare finds that unlock new horses
+• Dragon eggs: Legendary items with massive value
+
+🎒 INVENTORY MANAGEMENT
+• Limited inventory slots (4 + saddlebags skill)
+• Choose items wisely when inventory is full
+• Items can be discarded or kept when returning
+• Keys in horse inventory can be used in labyrinth
+
+⚡ SKILLS & UPGRADES
+• Saddlebags: Increases inventory slots
+• Speed: Faster movement in the maze
+• Stamina: More energy for exploration
+• Luck: Better chance of finding rare items
+
+🏥 INJURY SYSTEM
+• Minotaur encounters cause injury
+• Injured horses cannot enter labyrinth
+• Heal injured horses in stable before next adventure
+• Health affects injury resistance`
+    }
+  };
 
   // Care action costs
   const careCosts = {
@@ -856,6 +962,70 @@ const HorseStable = ({
     }
   };
 
+  // Happiness reward check function
+  const checkHappinessRewards = (horses) => {
+    const now = Date.now();
+    
+    horses.forEach(horse => {
+      // Only check happy horses (happiness >= 80)
+      if (horse.happiness < 80) return;
+      
+      // Only check once per hour per horse to prevent spam
+      const lastCheck = lastHappinessCheck[horse.id] || 0;
+      if (now - lastCheck < 3600000) return; // 1 hour cooldown
+      
+      // Very rare chance - only 1% per check
+      if (Math.random() < 0.01) {
+        const rewardType = Math.random() < 0.3 ? 'key' : 'coins'; // 30% chance for key, 70% for coins
+        const reward = {
+          type: rewardType,
+          horseName: horse.name,
+          horseId: horse.id
+        };
+        
+        if (rewardType === 'coins') {
+          const coinAmount = 3 + Math.floor(Math.random() * 5); // 3-7 coins
+          reward.amount = coinAmount;
+          
+          // Give coins immediately
+          if (onUpdateCoins) {
+            onUpdateCoins(coins + coinAmount);
+          }
+        } else {
+          // Try to add key to horse inventory
+          const currentInventory = horseInventories[horse.id] || [];
+          const maxSlots = 4 + (horseSkills[horse.id]?.saddlebags || 0);
+          
+          if (currentInventory.length < maxSlots) {
+            // Add key to inventory
+            const keyItem = { id: 'key', name: 'Key', description: 'Opens locked doors and vaults', image: '/maze/key.png', category: 'tool', stackable: false, quantity: 1 };
+            
+            if (onAddItemToHorseInventory) {
+              onAddItemToHorseInventory(horse.id, keyItem);
+            }
+          } else {
+            // No space - convert to coins instead
+            reward.type = 'coins';
+            reward.amount = 5;
+            if (onUpdateCoins) {
+              onUpdateCoins(coins + 5);
+            }
+            reward.noSpace = true;
+          }
+        }
+        
+        // Show reward modal
+        setHappinessRewardModal(reward);
+        
+        // Update last check time
+        setLastHappinessCheck(prev => ({
+          ...prev,
+          [horse.id]: now
+        }));
+      }
+    });
+  };
+
   // Care stats decay system
   useEffect(() => {
     if (!stableLoaded || stableHorses.length === 0) return;
@@ -881,6 +1051,9 @@ const HorseStable = ({
             lastCareUpdate: Date.now()
           };
         });
+
+        // Check for happiness rewards
+        checkHappinessRewards(updatedHorses);
         
         // Save the updated care stats
         saveHorseCareStats(updatedHorses);
@@ -1337,15 +1510,36 @@ const HorseStable = ({
             onClick={() => setShowDragonNestModal(true)}
           />
 
+          {/* Stables Decorative Asset - Left side */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '300px',
+              left: '50px',
+              width: '200px',
+              height: '150px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/stables.png" 
+              alt="Stables" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
           
           {/* Farm Building - Top left area */}
           <motion.div 
             style={{
               position: 'absolute',
               top: '500px',
-              left: '525px',
-              width: '480px',
-              height: '400px',
+              left: '225px',
+              width: '380px',
+              height: '300px',
               zIndex: '10',
               cursor: 'pointer'
             }}
@@ -1427,7 +1621,7 @@ const HorseStable = ({
             style={{
               position: 'absolute',
               top: '800px',
-              left: '1000px',
+              left: '400px',
               width: '400px',
               height: '250px',
               zIndex: '10'
@@ -1916,6 +2110,33 @@ const HorseStable = ({
                 🔍 ZOOM: {Math.round(zoom * 100)}%
               </div>
             </div>
+          </motion.div>
+
+          {/* Library Decorative Asset */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '1020px',
+              right: '220px',
+              width: '260px',
+              height: '260px',
+              zIndex: '10',
+              cursor: 'pointer'
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowLibraryModal(true)}
+            title="Horse Box Library"
+          >
+            <img 
+              src="/stable/library.png" 
+              alt="Library" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
           </motion.div>
 
           {/* Care Action Feedback */}
@@ -2675,6 +2896,187 @@ const HorseStable = ({
           >
             Amazing!
           </button>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Happiness Reward Modal */}
+    {happinessRewardModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-br from-yellow-100 to-orange-100 border-3 border-yellow-400 rounded-xl p-6 max-w-md mx-4 shadow-2xl"
+        >
+          <div className="text-center space-y-4">
+            <div className="text-4xl mb-2">
+              {happinessRewardModal.type === 'coins' ? '💰' : '🗝️'}
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '14px' }}>
+              Happy Horse Reward!
+            </h3>
+            
+            <div className="text-gray-700" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '11px', lineHeight: '1.6' }}>
+              <p className="mb-2">
+                <span className="font-bold text-purple-600">{happinessRewardModal.horseName}</span> has been happy lately and found you:
+              </p>
+              
+              {happinessRewardModal.type === 'coins' ? (
+                <p className="text-yellow-600 font-bold">
+                  💰 {happinessRewardModal.amount} coins!
+                  {happinessRewardModal.noSpace && (
+                    <span className="block text-orange-600 text-xs mt-1">
+                      (Inventory was full - converted key to coins)
+                    </span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-blue-600 font-bold">
+                  🗝️ A magical key!
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setHappinessRewardModal(null)}
+            className="w-full mt-6 px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-bold transition-colors"
+            style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '11px' }}
+          >
+            Wonderful!
+          </button>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Horse Box Library Modal */}
+    {showLibraryModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-br from-amber-100 to-orange-100 border-3 border-amber-600 rounded-xl p-6 max-w-4xl mx-4 shadow-2xl"
+          style={{ height: '70vh' }}
+        >
+          {!selectedBook ? (
+            // Library main view
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '18px' }}>
+                  📚 Horse Box Library
+                </h2>
+                <button
+                  onClick={() => setShowLibraryModal(false)}
+                  className="text-amber-600 hover:text-amber-800 text-2xl font-bold"
+                  style={{ fontFamily: 'Press Start 2P, monospace' }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <p className="text-amber-700 mb-6" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px', lineHeight: '1.6' }}>
+                Expand your knowledge with these helpful guides. Click on any book to read its contents.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(bookLibrary).map(([bookId, book]) => (
+                  unlockedBooks[bookId] && (
+                    <motion.div
+                      key={bookId}
+                      className="bg-white border-2 border-amber-400 rounded-lg p-4 cursor-pointer shadow-lg"
+                      whileHover={{ scale: 1.02, backgroundColor: '#fef3c7' }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedBook(bookId)}
+                    >
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="text-2xl">
+                          {bookId === 'stable' ? '🏠' : bookId === 'labyrinth' ? '🌟' : '📖'}
+                        </div>
+                        <h3 className="text-lg font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '14px' }}>
+                          {book.title}
+                        </h3>
+                      </div>
+                      <p className="text-amber-600 text-sm" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px', lineHeight: '1.4' }}>
+                        {book.description}
+                      </p>
+                    </motion.div>
+                  )
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Book reading view
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center mb-4">
+                <button
+                  onClick={() => setSelectedBook(null)}
+                  className="text-amber-600 hover:text-amber-800 font-bold flex items-center space-x-2"
+                  style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}
+                >
+                  <span>←</span>
+                  <span>Back to Library</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedBook(null);
+                    setShowLibraryModal(false);
+                  }}
+                  className="text-amber-600 hover:text-amber-800 text-xl font-bold"
+                  style={{ fontFamily: 'Press Start 2P, monospace' }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="text-3xl">
+                  {selectedBook === 'stable' ? '🏠' : selectedBook === 'labyrinth' ? '🌟' : '📖'}
+                </div>
+                <h2 className="text-xl font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}>
+                  {bookLibrary[selectedBook]?.title}
+                </h2>
+              </div>
+              
+              <div 
+                className="overflow-y-auto bg-white border-2 border-amber-400 rounded-lg p-4"
+                style={{
+                  height: '450px',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#d97706 #f3f4f6'
+                }}
+              >
+                <style jsx>{`
+                  div::-webkit-scrollbar {
+                    width: 12px;
+                  }
+                  div::-webkit-scrollbar-track {
+                    background: #f3f4f6;
+                    border-radius: 6px;
+                  }
+                  div::-webkit-scrollbar-thumb {
+                    background: #d97706;
+                    border-radius: 6px;
+                    border: 2px solid #f3f4f6;
+                  }
+                  div::-webkit-scrollbar-thumb:hover {
+                    background: #b45309;
+                  }
+                `}</style>
+                <div 
+                  className="text-amber-800" 
+                  style={{ 
+                    fontFamily: 'Press Start 2P, monospace', 
+                    fontSize: '10px', 
+                    lineHeight: '1.8',
+                    whiteSpace: 'pre-line'
+                  }}
+                >
+                  {bookLibrary[selectedBook]?.content}
+                </div>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     )}
