@@ -1441,9 +1441,10 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
             position: 'relative',
             width: `${STABLE_WIDTH}px`,
             height: `${STABLE_HEIGHT}px`,
-            backgroundImage: 'url(/stable/backgroundpasture.png)',
-            backgroundRepeat: 'repeat',
-            backgroundSize: 'auto',
+            backgroundImage: 'url(/stable/newbackgroundpasture.png)',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
             overflow: 'hidden',
             transformOrigin: 'center center',
             transform: 'scale(1)',
@@ -1490,8 +1491,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <motion.div 
             style={{
               position: 'absolute',
-              top: '700px',
-              left: '600px',
+              top: '1325px',
+              left: '1025px',
               width: '120px',
               height: '120px',
               backgroundImage: 'url(/stable/dragoneggnest.png)',
@@ -1506,12 +1507,12 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
             onClick={() => setShowDragonNestModal(true)}
           />
 
-          {/* Stables Decorative Asset - Left side */}
+          {/* Stables Decorative Asset - Horse Stable with roaming modal */}
           <motion.div
             style={{
               position: 'absolute',
-              top: '100px',
-              left: '600px',
+              top: '625px',
+              left: '-25px',
               width: '450px',
               height: '400px',
               zIndex: '10',
@@ -1537,10 +1538,10 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <motion.div 
             style={{
               position: 'absolute',
-              top: '200px',
-              left: '125px',
-              width: '380px',
-              height: '350  px',
+              top: '175px',
+              left: '1200px',
+              width: '350px',
+              height: '320  px',
               zIndex: '10'
             }}
           >
@@ -1552,7 +1553,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
                 height: '100%',
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
-                transition: 'filter 0.2s ease'
+                transition: 'filter 0.2s ease',
+                transform: 'scaleX(-1)'
               }}
             />
           </motion.div>
@@ -1561,8 +1563,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <div 
             style={{
               position: 'absolute',
-              bottom: '100px',
-              right: '200px',
+              bottom: '1400px',
+              right: '300px',
               width: '320px',
               height: '192px',
               zIndex: '10'
@@ -1586,8 +1588,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <div 
             style={{
               position: 'absolute',
-              top: '800px',
-              left: '900px',
+              top: '750px',
+              left: '1450px',
               width: '64px',
               height: '64px',
               zIndex: '10',
@@ -1616,8 +1618,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <div 
             style={{
               position: 'absolute',
-              top: '800px',
-              left: '400px',
+              top: '900px',
+              left: '300px',
               width: '400px',
               height: '250px',
               zIndex: '10'
@@ -1635,30 +1637,232 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
               }}
             />
           </div>
-          
-          {/* Smaller Pond - Bottom left */}
-          <div 
+
+                            
+          {/* Haybale - bottom right area */}
+          <motion.div
             style={{
               position: 'absolute',
-              bottom: '200px',
-              left: '300px',
-              width: '280px',
-              height: '175px',
+              top: '1600px',
+              right: '50px',
+              width: '120px',
+              height: '120px',
               zIndex: '10'
             }}
           >
             <img 
-              src="/stable/pond.png" 
-              alt="Small Pond" 
+              src="/stable/haybale.png" 
+              alt="Hay Bale" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+                    {/* Haybale - bottom left area */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '1300px',
+              right: '1300px',
+              width: '120px',
+              height: '120px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/haybale.png" 
+              alt="Hay Bale" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+         
+
+          {/* Scarecrow - Center field area */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '1400px',
+              left: '500px',
+              width: '100px',
+              height: '140px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/scarecrow.png" 
+              alt="Scarecrow" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+          {/* Shrub - Bottom left corner */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              bottom: '570px',
+              left: '1400px',
+              width: '80px',
+              height: '80px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/shrub.png" 
+              alt="Shrub" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+          {/* Tractor - Right side */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '1400px',
+              right: '150px',
+              width: '280px',
+              height: '220px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/tractor.png" 
+              alt="Tractor" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+          {/* Tree1 - right side background */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '450px',
+              left: '1300px',
+              width: '300px',
+              height: '350px',
+              zIndex: '5'
+            }}
+          >
+            <img 
+              src="/stable/tree1.png" 
+              alt="Tree" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+          {/* Apple Tree - Right side */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '400px',
+              right: '1350px',
+              width: '300px',
+              height: '220px',
+              zIndex: '5'
+            }}
+          >
+            <img 
+              src="/stable/appletree.png" 
+              alt="Apple Tree" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+           {/* Apple Tree 2 - Right side */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '225px',
+              right: '1150px',
+              width: '300x',
+              height: '220px',
+              zIndex: '5'
+            }}
+          >
+            <img 
+              src="/stable/appletree.png" 
+              alt="Apple Tree" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
+          {/* Central Field Fence 1- Full width horizontal */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '1042px',
+              right: '-570px',
+              width: '1600px',
+              height: '300px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/single fence.png" 
+              alt="Central Field Fence" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+                                
+              }}
+            />
+          </motion.div>
+
+           {/* Central Field Fence 2- Full width horizontal */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '1042px',
+              right: '590px',
+              width: '1600px',
+              height: '300px',
+              zIndex: '10'
+            }}
+          >
+            <img 
+              src="/stable/single fence.png" 
+              alt="Central Field Fence" 
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))',
-                opacity: '0.8'
+                transform: 'scaleX(-1)'
               }}
             />
-          </div>
+          </motion.div>
+
           
          
           {/* Roaming Horses */}
@@ -2112,8 +2316,8 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
           <motion.div
             style={{
               position: 'absolute',
-              top: '1020px',
-              right: '220px',
+              top: '400px',
+              right: '1100px',
               width: '260px',
               height: '260px',
               zIndex: '10',
