@@ -1862,8 +1862,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     console.log('  - endReason:', endReason);
     
     if (selectedHorse && onHorseReturn) {
-      // Start with current inventory, removing discarded items
-      let updatedInventory = [...(selectedHorse.inventory || [])];
+      // Start with current horseInventory state (which reflects keys used in vaults), removing discarded items
+      let updatedInventory = [...(horseInventory || [])];
       
       // Remove discarded items (sort indices in descending order to avoid index shifting)
       const sortedDiscardedIndices = [...discardedIndices].sort((a, b) => b - a);
