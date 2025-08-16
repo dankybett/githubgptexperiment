@@ -214,13 +214,9 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
 • Dangerous creature roaming the maze
 • Getting caught results in injury and lost items
 • Injured horses cannot adventure until healed
-• Strategy: Stay away from the Minotaur's path
 
 🏃‍♂️ MOVEMENT & EXPLORATION
-• Use WASD or arrow keys to navigate
-• Horses have limited energy for movement
-• Rest to recover energy (space bar)
-• Explore systematically to find all treasures
+• Horses move themselves in the maze
 
 💰 TREASURES & REWARDS
 • Regular treasures: Scattered throughout the maze
@@ -1544,7 +1540,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
               top: '200px',
               left: '125px',
               width: '380px',
-              height: '300px',
+              height: '350  px',
               zIndex: '10'
             }}
           >
