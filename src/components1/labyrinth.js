@@ -106,6 +106,11 @@ const TILE_MAP = {
   LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },   // Ancient Treasure tile
   LEGENDARY_DRAGON_EGG: { x: 8, y: 4 },         // Dragon Egg tile  
   LEGENDARY_SACRED_RELIC: { x: 9, y: 2 },       // Sacred Relic tile
+  
+  // Record tiles for music unlocks
+  RECORD_WILD_MANE: { x: 8, y: 9 },            // Wild Mane record
+  RECORD_WILD_UNBRIDLED: { x: 9, y: 9 },       // Wild and Unbridled record
+  RECORD_CLOVER: { x: 7, y: 9 }                // Clover record
 };
 
 // Multiple empty tile variants for visual variety
@@ -455,7 +460,7 @@ const getViewportBounds = (horseX, horseY) => {
   return { startX, startY };
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro' }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro', unlockedSongs = {} }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [horseDirection, setHorseDirection] = useState('right'); // 'left' or 'right'
@@ -1479,7 +1484,23 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           { name: 'Dragon Egg', emoji: '🥚', tileKey: 'LEGENDARY_DRAGON_EGG' },
           { name: 'Sacred Relic', emoji: '🏺', tileKey: 'LEGENDARY_SACRED_RELIC' }
         ];
-        const potentialReward = legendaryRewards[Math.floor(Math.random() * legendaryRewards.length)];
+        
+        // Add locked record items if their songs aren't unlocked yet
+        const lockedRecords = [
+          { songName: 'WILD MANE', recordName: 'Wild Mane Record', emoji: '💿', tileKey: 'RECORD_WILD_MANE', type: 'record' },
+          { songName: 'WILD AND UNBRIDLED', recordName: 'Wild and Unbridled Record', emoji: '💿', tileKey: 'RECORD_WILD_UNBRIDLED', type: 'record' },
+          { songName: 'CLOVER', recordName: 'Clover Record', emoji: '💿', tileKey: 'RECORD_CLOVER', type: 'record' }
+        ].filter(record => !unlockedSongs[record.songName]);
+        
+        // Combine treasures and locked records
+        const allPossibleRewards = [...legendaryRewards, ...lockedRecords.map(record => ({
+          name: record.recordName,
+          emoji: record.emoji,
+          tileKey: record.tileKey,
+          type: record.type,
+          songName: record.songName
+        }))];
+        const potentialReward = allPossibleRewards[Math.floor(Math.random() * allPossibleRewards.length)];
         
         setCurrentVault({
           position: { x: nextMove.x, y: nextMove.y },
@@ -2160,6 +2181,16 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
     if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
     if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+    
+    // Handle legendary reward items
+    if (item.name === 'Ancient Treasure') return TILE_MAP.LEGENDARY_ANCIENT_TREASURE;
+    if (item.name === 'Dragon Egg') return TILE_MAP.LEGENDARY_DRAGON_EGG;
+    if (item.name === 'Sacred Relic') return TILE_MAP.LEGENDARY_SACRED_RELIC;
+    
+    // Handle record items
+    if (item.name === 'Wild Mane Record') return TILE_MAP.RECORD_WILD_MANE;
+    if (item.name === 'Wild and Unbridled Record') return TILE_MAP.RECORD_WILD_UNBRIDLED;
+    if (item.name === 'Clover Record') return TILE_MAP.RECORD_CLOVER;
     
     // Handle other labyrinth items
     if (item.id === 'key' || item.name === 'Key') return TILE_MAP[CELL_KEY];

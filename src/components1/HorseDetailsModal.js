@@ -4,15 +4,18 @@ import { motion } from "framer-motion";
 // TileSprite component for tileset rendering
 const TileSprite = ({ tileX, tileY, className = "" }) => {
   const tilesPerRow = 10; // 10x10 grid
-  const tileSize = 64; // Each tile is 64x64 pixels
+  
+  // Calculate percentage positions for the 10x10 grid
+  const positionX = (tileX / (tilesPerRow - 1)) * 100;
+  const positionY = (tileY / (tilesPerRow - 1)) * 100;
   
   const style = {
     width: '48px',
     height: '48px',
     backgroundImage: 'url(/maze/tilesheetdan.png)',
-    backgroundPosition: `-${tileX * tileSize}px -${tileY * tileSize}px`,
-    backgroundSize: `${tilesPerRow * tileSize}px ${tilesPerRow * tileSize}px`,
+    backgroundPosition: `${positionX}% ${positionY}%`,
     backgroundRepeat: 'no-repeat',
+    backgroundSize: `${tilesPerRow * 100}% ${tilesPerRow * 100}%`,
     imageRendering: 'pixelated',
     display: 'block',
     margin: '0 auto'
@@ -33,7 +36,12 @@ const TILE_MAP = {
   // Legendary reward tiles
   LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },
   LEGENDARY_DRAGON_EGG: { x: 8, y: 4 },
-  LEGENDARY_SACRED_RELIC: { x: 9, y: 2 }
+  LEGENDARY_SACRED_RELIC: { x: 9, y: 2 },
+  
+  // Record tiles for music unlocks
+  RECORD_WILD_MANE: { x: 4, y: 2 },
+  RECORD_WILD_UNBRIDLED: { x: 5, y: 2 },
+  RECORD_CLOVER: { x: 6, y: 2 }
 };
 
 // Helper function to get tile coordinates for inventory items
@@ -47,6 +55,11 @@ const getItemTileCoords = (item) => {
   if (item.name === 'Ancient Treasure') return TILE_MAP.LEGENDARY_ANCIENT_TREASURE;
   if (item.name === 'Dragon Egg') return TILE_MAP.LEGENDARY_DRAGON_EGG;
   if (item.name === 'Sacred Relic') return TILE_MAP.LEGENDARY_SACRED_RELIC;
+  
+  // Handle record items
+  if (item.name === 'Wild Mane Record') return TILE_MAP.RECORD_WILD_MANE;
+  if (item.name === 'Wild and Unbridled Record') return TILE_MAP.RECORD_WILD_UNBRIDLED;
+  if (item.name === 'Clover Record') return TILE_MAP.RECORD_CLOVER;
   
   // Handle other labyrinth items
   if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;

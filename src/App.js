@@ -94,6 +94,7 @@ export default function RandomPicker() {
   const [unlockedMazes, setUnlockedMazes] = useState({ standard: true });
   const [dayCount, setDayCount] = useState(1);
   const [stableGameTime, setStableGameTime] = useState(0);
+  const [unlockedSongs, setUnlockedSongs] = useState({ 'THEME SONG': true }); // Theme song is unlocked by default
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -240,6 +241,35 @@ const horsePersonalities = [
     });
   };
 
+  const handleUnlockSong = (songName) => {
+    setUnlockedSongs((prev) => ({
+      ...prev,
+      [songName]: true
+    }));
+  };
+
+  const handleRemoveItemFromHorseInventory = (horseId, itemName) => {
+    setHorseInventories((prev) => ({
+      ...prev,
+      [horseId]: (prev[horseId] || []).filter(item => item.name !== itemName)
+    }));
+  };
+
+  const handleRemoveItemFromHorseInventoryByIndex = (horseId, itemIndex) => {
+    setHorseInventories((prev) => {
+      const currentInventory = prev[horseId] || [];
+      if (itemIndex < 0 || itemIndex >= currentInventory.length) return prev;
+      
+      const updatedInventory = [...currentInventory];
+      updatedInventory.splice(itemIndex, 1);
+      
+      return {
+        ...prev,
+        [horseId]: updatedInventory
+      };
+    });
+  };
+
   useEffect(() => {
     const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
     setShuffledAvatars(available);
@@ -313,6 +343,22 @@ const horsePersonalities = [
         setCurrentTheme(savedData.currentTheme);
       }
       
+      if (savedData.unlockedSongs && typeof savedData.unlockedSongs === 'object') {
+        // Ensure Theme Song is always unlocked and only keep legitimately unlocked songs
+        const cleanedSongs = {
+          'THEME SONG': true,
+          ...Object.fromEntries(
+            Object.entries(savedData.unlockedSongs).filter(([song]) => 
+              song === 'THEME SONG' || ['WILD MANE', 'WILD AND UNBRIDLED', 'CLOVER'].includes(song)
+            )
+          )
+        };
+        console.log('🎵 Loading saved songs:', cleanedSongs);
+        setUnlockedSongs(cleanedSongs);
+      } else {
+        console.log('🎵 No saved songs found, starting with Theme Song only');
+      }
+      
       console.log('Game data loaded successfully');
     } else {
       console.warn('localStorage not available, game progress will not be saved');
@@ -338,7 +384,8 @@ const horsePersonalities = [
         unlockedMazes,
         dayCount,
         stableGameTime,
-        currentTheme
+        currentTheme,
+        unlockedSongs
       };
       
       console.log('🏠 App - Saving game state:', gameState);
@@ -347,7 +394,7 @@ const horsePersonalities = [
       
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1747,6 +1794,10 @@ const horsePersonalities = [
         stableGameTime={stableGameTime}
         onUpdateStableGameTime={setStableGameTime}
         currentTheme={currentTheme}
+        unlockedSongs={unlockedSongs}
+        onUnlockSong={handleUnlockSong}
+        onRemoveItemFromHorseInventory={handleRemoveItemFromHorseInventory}
+        onRemoveItemFromHorseInventoryByIndex={handleRemoveItemFromHorseInventoryByIndex}
       />
     );
   }
@@ -1783,6 +1834,7 @@ const horsePersonalities = [
         unlockedHorses={unlockedHorses}
         onUnlockHorse={handleUnlockHorse}
         currentTheme={currentTheme}
+        unlockedSongs={unlockedSongs}
         onBack={() => {
           console.log('🏠 App - Horse returning from labyrinth:', selectedHorseForLabyrinth);
           setShowLabyrinth(false);

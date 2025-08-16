@@ -4,6 +4,52 @@ import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
 import { themeUtils } from "../utils/themes";
 
+// TileSprite component for tileset rendering
+const TileSprite = ({ tileX, tileY, className = "" }) => {
+  const tilesPerRow = 10; // 10x10 grid
+  
+  // Calculate percentage positions for the 10x10 grid
+  const positionX = (tileX / (tilesPerRow - 1)) * 100;
+  const positionY = (tileY / (tilesPerRow - 1)) * 100;
+  
+  const style = {
+    width: '100%',
+    height: '100%',
+    backgroundImage: 'url(/maze/tilesheetdan.png)',
+    backgroundPosition: `${positionX}% ${positionY}%`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${tilesPerRow * 100}% ${tilesPerRow * 100}%`, // Scale so each tile = 100% of cell
+    imageRendering: 'pixelated', // Keep sharp pixels for pixel art
+    display: 'block',
+    lineHeight: 0,
+    verticalAlign: 'top',
+    minWidth: 0,
+    minHeight: 0,
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'cover'
+  };
+  
+  return <div className={`tile ${className}`} style={style} />;
+};
+
+// Tile mappings for record items
+const TILE_MAP = {
+  RECORD_WILD_MANE: { x: 8, y: 9 },
+  RECORD_WILD_UNBRIDLED: { x: 9, y: 9 },
+  RECORD_CLOVER: { x: 7, y: 9 }
+};
+
+// Helper function to get tile key from record name
+const getRecordTileKey = (recordName) => {
+  switch(recordName) {
+    case 'Wild Mane Record': return 'RECORD_WILD_MANE';
+    case 'Wild and Unbridled Record': return 'RECORD_WILD_UNBRIDLED';
+    case 'Clover Record': return 'RECORD_CLOVER';
+    default: return null;
+  }
+};
+
 const HorseStable = ({
   horseAvatars,
   horseNames,
@@ -26,6 +72,10 @@ const HorseStable = ({
   stableGameTime,
   onUpdateStableGameTime,
   currentTheme = 'retro', // Add currentTheme prop
+  unlockedSongs = {},
+  onUnlockSong,
+  onRemoveItemFromHorseInventory,
+  onRemoveItemFromHorseInventoryByIndex,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -40,6 +90,8 @@ const HorseStable = ({
   const [currentSong, setCurrentSong] = useState(null);
   const [showLabyrinthEntrance, setShowLabyrinthEntrance] = useState(false);
   const [horseBeingSent, setHorseBeingSent] = useState(null);
+  const [showSongUnlockModal, setShowSongUnlockModal] = useState(false);
+  const [unlockedSongData, setUnlockedSongData] = useState(null);
   
   // Pan/drag state - Start at top-left corner
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -310,6 +362,25 @@ const HorseStable = ({
     });
   };
 
+  // Handle song unlock process
+  const handleSongUnlock = () => {
+    if (!unlockedSongData || !onUnlockSong) return;
+    
+    // Unlock the song
+    onUnlockSong(unlockedSongData.songName);
+    
+    // Remove record from horse inventory
+    if (onRemoveItemFromHorseInventory) {
+      onRemoveItemFromHorseInventory(unlockedSongData.horseId, unlockedSongData.recordName);
+      console.log('🎵 Song unlocked:', unlockedSongData.songName);
+      console.log('🗑️ Record removed from inventory:', unlockedSongData.recordName);
+    }
+    
+    // Close the modal
+    setShowSongUnlockModal(false);
+    setUnlockedSongData(null);
+  };
+
   // Calculate distance between two touch points
   const getTouchDistance = (touches) => {
     const touch1 = touches[0];
@@ -553,11 +624,11 @@ const HorseStable = ({
   };
 
   const handleSellItem = (horseId, itemIndex) => {
-    // Find the horse
-    const horse = stableHorses.find(h => h.id === horseId) || availableHorses.find(h => h.id === horseId);
-    if (!horse || !horse.inventory || !horse.inventory[itemIndex]) return;
+    // Find the horse from the main horse inventories prop (source of truth)
+    const horseInventory = horseInventories[horseId];
+    if (!horseInventory || !horseInventory[itemIndex]) return;
 
-    const item = horse.inventory[itemIndex];
+    const item = horseInventory[itemIndex];
     
     // Calculate item value based on type
     let itemValue = 5; // Base value
@@ -572,25 +643,10 @@ const HorseStable = ({
       onUpdateCoins(coins + itemValue);
     }
 
-    // Remove item from horse inventory
-    const updatedInventory = [...horse.inventory];
-    updatedInventory.splice(itemIndex, 1);
-
-    // Update the horse in both stable and available horses
-    setStableHorses((prev) =>
-      prev.map((h) =>
-        h.id === horseId ? { ...h, inventory: updatedInventory } : h
-      )
-    );
-    setAvailableHorses((prev) =>
-      prev.map((h) =>
-        h.id === horseId ? { ...h, inventory: updatedInventory } : h
-      )
-    );
-
-    // Update selected horse if it's the one being modified
-    if (selectedHorse && selectedHorse.id === horseId) {
-      setSelectedHorse({ ...selectedHorse, inventory: updatedInventory });
+    // Remove item from parent's horse inventory using the proper callback
+    if (onRemoveItemFromHorseInventoryByIndex) {
+      onRemoveItemFromHorseInventoryByIndex(horseId, itemIndex);
+      console.log('🛒 Selling item:', item.name, 'from horse:', horseId, 'for', itemValue, 'coins');
     }
   };
 
@@ -664,13 +720,41 @@ const HorseStable = ({
     console.log('🏠 Stable - horseInventories updated, refreshing stable horses');
     console.log('  - New horseInventories:', horseInventories);
     
+    // Check for records in any horse inventory and trigger unlock modal
+    const recordMapping = {
+      'Wild Mane Record': 'WILD MANE',
+      'Wild and Unbridled Record': 'WILD AND UNBRIDLED', 
+      'Clover Record': 'CLOVER'
+    };
+    
+    // Check all horses for records
+    Object.entries(horseInventories).forEach(([horseId, inventory]) => {
+      if (inventory && Array.isArray(inventory)) {
+        inventory.forEach(item => {
+          const songName = recordMapping[item.name];
+          if (songName && !unlockedSongs[songName] && onUnlockSong) {
+            console.log('🎵 Stable - Found record to unlock:', item.name, 'for song:', songName);
+            
+            // Set up unlock modal data
+            setUnlockedSongData({
+              recordName: item.name,
+              songName: songName,
+              horseId: parseInt(horseId),
+              horseName: customHorseNames?.[horseId] || horseNames[horseId]
+            });
+            setShowSongUnlockModal(true);
+          }
+        });
+      }
+    });
+    
     setStableHorses(prevHorses => 
       prevHorses.map(horse => ({
         ...horse,
         inventory: horseInventories[horse.id] || horse.inventory || []
       }))
     );
-  }, [horseInventories, stableLoaded]);
+  }, [horseInventories, stableLoaded, unlockedSongs, onUnlockSong, customHorseNames, horseNames]);
 
   // Save horse care stats to parent whenever they change
   const saveHorseCareStats = (horses) => {
@@ -1817,7 +1901,10 @@ const HorseStable = ({
       )}
       {selectedHorse && (
         <HorseDetailsModal
-          horse={selectedHorse}
+          horse={{
+            ...selectedHorse,
+            inventory: horseInventories[selectedHorse.id] || []
+          }}
           onClose={() => setSelectedHorse(null)}
           onRename={handleRename}
           onSendToLabyrinth={() => {
@@ -1904,13 +1991,19 @@ const HorseStable = ({
               </div>
               
               <div 
-                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                className={`border px-3 py-2 transition-colors ${
+                  unlockedSongs['WILD MANE'] 
+                    ? 'bg-amber-700 border-amber-500 cursor-pointer hover:bg-amber-600' 
+                    : 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                }`}
                 style={{
                   fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
                   fontSize: '11px',
                   letterSpacing: '1px'
                 }}
                 onClick={() => {
+                  if (!unlockedSongs['WILD MANE']) return; // Don't play if locked
+                  
                   if (isPlaying) {
                     return; // Don't start playing if already playing
                   }
@@ -1951,17 +2044,25 @@ const HorseStable = ({
                   });
                 }}
               >
-                <span className="text-amber-100">♪ WILD MANE</span>
+                <span className={unlockedSongs['WILD MANE'] ? "text-amber-100" : "text-gray-300"}>
+                  {unlockedSongs['WILD MANE'] ? '♪ WILD MANE' : '🔒 WILD MANE'}
+                </span>
               </div>
               
               <div 
-                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                className={`border px-3 py-2 transition-colors ${
+                  unlockedSongs['WILD AND UNBRIDLED'] 
+                    ? 'bg-amber-700 border-amber-500 cursor-pointer hover:bg-amber-600' 
+                    : 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                }`}
                 style={{
                   fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
                   fontSize: '11px',
                   letterSpacing: '1px'
                 }}
                 onClick={() => {
+                  if (!unlockedSongs['WILD AND UNBRIDLED']) return; // Don't play if locked
+                  
                   if (isPlaying) {
                     return; // Don't start playing if already playing
                   }
@@ -2002,17 +2103,25 @@ const HorseStable = ({
                   });
                 }}
               >
-                <span className="text-amber-100">♪ WILD AND UNBRIDLED</span>
+                <span className={unlockedSongs['WILD AND UNBRIDLED'] ? "text-amber-100" : "text-gray-300"}>
+                  {unlockedSongs['WILD AND UNBRIDLED'] ? '♪ WILD AND UNBRIDLED' : '🔒 WILD AND UNBRIDLED'}
+                </span>
               </div>
               
               <div 
-                className="bg-amber-700 border border-amber-500 px-3 py-2 cursor-pointer hover:bg-amber-600 transition-colors"
+                className={`border px-3 py-2 transition-colors ${
+                  unlockedSongs['CLOVER'] 
+                    ? 'bg-amber-700 border-amber-500 cursor-pointer hover:bg-amber-600' 
+                    : 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                }`}
                 style={{
                   fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
                   fontSize: '11px',
                   letterSpacing: '1px'
                 }}
                 onClick={() => {
+                  if (!unlockedSongs['CLOVER']) return; // Don't play if locked
+                  
                   if (isPlaying) {
                     return; // Don't start playing if already playing
                   }
@@ -2053,7 +2162,9 @@ const HorseStable = ({
                   });
                 }}
               >
-                <span className="text-amber-100">♪ CLOVER</span>
+                <span className={unlockedSongs['CLOVER'] ? "text-amber-100" : "text-gray-300"}>
+                  {unlockedSongs['CLOVER'] ? '♪ CLOVER' : '🔒 CLOVER'}
+                </span>
               </div>
             </div>
             <div className="text-right mt-4">
@@ -2231,6 +2342,56 @@ const HorseStable = ({
               setHorseBeingSent(null);
             }}
           />
+        </div>
+      </div>
+    )}
+
+    {/* Song Unlock Modal */}
+    {showSongUnlockModal && unlockedSongData && (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+          <div className="text-center space-y-4">
+            <div className="mb-4 flex justify-center">
+              {(() => {
+                const tileKey = getRecordTileKey(unlockedSongData.recordName);
+                if (tileKey && TILE_MAP[tileKey]) {
+                  return (
+                    <div style={{ width: '64px', height: '64px' }}>
+                      <TileSprite 
+                        tileX={TILE_MAP[tileKey].x} 
+                        tileY={TILE_MAP[tileKey].y}
+                      />
+                    </div>
+                  );
+                } else {
+                  return <div className="text-6xl">🎵</div>;
+                }
+              })()}
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              New Song Unlocked!
+            </h2>
+            
+            <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+              <div className="text-lg font-bold text-purple-800 mb-2">
+                {unlockedSongData.songName}
+              </div>
+              <div className="text-sm text-purple-700">
+                Found by {unlockedSongData.horseName}
+              </div>
+            </div>
+            
+            <p className="text-gray-600">
+              {unlockedSongData.horseName} discovered a rare record! This song is now available in your music library.
+            </p>
+            
+            <button
+              onClick={handleSongUnlock}
+              className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+            >
+              Add to Music Library
+            </button>
+          </div>
         </div>
       </div>
     )}
