@@ -76,12 +76,16 @@ const HorseStable = ({
   onUnlockSong,
   onRemoveItemFromHorseInventory,
   onRemoveItemFromHorseInventoryByIndex,
+  nestEgg,
+  onUpdateNestEgg,
+  selectedGrazingHorses,
+  onUpdateSelectedGrazingHorses,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState(null);
   const [availableHorses, setAvailableHorses] = useState([]);
-  const [selectedHorseIds, setSelectedHorseIds] = useState([]);
+  // selectedHorseIds now comes from props as selectedGrazingHorses
   const [showSelector, setShowSelector] = useState(false);
   const [showNameTags, setShowNameTags] = useState(false);
   const [showMusicLibrary, setShowMusicLibrary] = useState(false);
@@ -92,6 +96,10 @@ const HorseStable = ({
   const [horseBeingSent, setHorseBeingSent] = useState(null);
   const [showSongUnlockModal, setShowSongUnlockModal] = useState(false);
   const [unlockedSongData, setUnlockedSongData] = useState(null);
+  const [showDragonNestModal, setShowDragonNestModal] = useState(false);
+  
+  // Dragon egg hatching system (nestEgg comes from props)
+  const [showHatchingModal, setShowHatchingModal] = useState(false);
   
   // Pan/drag state - Start at top-left corner
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -99,6 +107,8 @@ const HorseStable = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPanOffset, setLastPanOffset] = useState({ x: 0, y: 0 });
   const [velocity, setVelocity] = useState({ x: 0, y: 0 });
+
+  // Day tracking for dragon egg hatching (dayCount comes from props)
   const [lastMoveTime, setLastMoveTime] = useState(0);
   const [dragStartTime, setDragStartTime] = useState(0);
   const [potentialDrag, setPotentialDrag] = useState(false);
@@ -650,16 +660,71 @@ const HorseStable = ({
     }
   };
 
+  // Function to find horses with dragon eggs
+  const findHorsesWithDragonEggs = () => {
+    const horsesWithEggs = [];
+    
+    // Check all horses and their inventories for dragon eggs
+    Object.entries(horseInventories).forEach(([horseId, inventory]) => {
+      if (inventory && inventory.length > 0) {
+        inventory.forEach((item, itemIndex) => {
+          if (item && item.name === 'Dragon Egg') {
+            const horse = [...stableHorses, ...availableHorses].find(h => h.id == horseId);
+            if (horse) {
+              horsesWithEggs.push({
+                horse,
+                itemIndex,
+                item
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    return horsesWithEggs;
+  };
+
+
+  // Function to add egg to nest (remove from horse inventory)
+  const handleAddEggToNest = () => {
+    const horsesWithEggs = findHorsesWithDragonEggs();
+    if (horsesWithEggs.length > 0 && !nestEgg) { // Only allow if no egg is already in nest
+      const firstEgg = horsesWithEggs[0];
+      
+      // Remove the dragon egg from the horse's inventory
+      if (onRemoveItemFromHorseInventoryByIndex) {
+        onRemoveItemFromHorseInventoryByIndex(firstEgg.horse.id, firstEgg.itemIndex);
+        console.log('🥚 Dragon egg added to nest from horse:', firstEgg.horse.name);
+        
+        // Place egg in nest with 5 day countdown
+        if (onUpdateNestEgg) {
+          onUpdateNestEgg({
+            placedOn: Date.now(),
+            daysRemaining: 5
+          });
+        }
+        
+        // Close the modal
+        setShowDragonNestModal(false);
+      }
+    }
+  };
+
   const toggleHorseRoaming = (id) => {
-    if (selectedHorseIds.includes(id)) {
-      setSelectedHorseIds((prev) => prev.filter((hid) => hid !== id));
+    if (selectedGrazingHorses.includes(id)) {
+      if (onUpdateSelectedGrazingHorses) {
+        onUpdateSelectedGrazingHorses((prev) => prev.filter((hid) => hid !== id));
+      }
       setStableHorses((prev) => prev.filter((horse) => horse.id !== id));
     } else {
       // Check if we're at the limit of 5 horses
-      if (selectedHorseIds.length >= 5) {
+      if (selectedGrazingHorses.length >= 5) {
         return; // Don't allow more than 5 horses to graze
       }
-      setSelectedHorseIds((prev) => [...prev, id]);
+      if (onUpdateSelectedGrazingHorses) {
+        onUpdateSelectedGrazingHorses((prev) => [...prev, id]);
+      }
       const horseData = availableHorses.find((h) => h.id === id);
       if (horseData) {
         setStableHorses((prev) => [...prev, createHorseData(horseData)]);
@@ -684,13 +749,30 @@ const HorseStable = ({
       }));
 
     setAvailableHorses(available);
-    // Only auto-select up to 5 horses for grazing
-    const horsesToGraze = available.slice(0, 5);
-    setSelectedHorseIds(horsesToGraze.map((h) => h.id));
+    
+    // Use saved grazing horses or auto-select first 5 if none saved
+    let horsesToGraze;
+    if (selectedGrazingHorses && selectedGrazingHorses.length > 0) {
+      // Use saved selection, but filter out any horses that are no longer available
+      const validSavedHorses = selectedGrazingHorses.filter(id => 
+        available.some(horse => horse.id === id)
+      );
+      horsesToGraze = available.filter(h => validSavedHorses.includes(h.id));
+      console.log('🐴 Using saved grazing horses:', validSavedHorses);
+    } else {
+      // Auto-select first 5 horses if no saved selection
+      horsesToGraze = available.slice(0, 5);
+      const autoSelectedIds = horsesToGraze.map(h => h.id);
+      if (onUpdateSelectedGrazingHorses) {
+        onUpdateSelectedGrazingHorses(autoSelectedIds);
+      }
+      console.log('🐴 Auto-selecting first 5 horses for grazing:', autoSelectedIds);
+    }
+    
     setStableHorses(horsesToGraze.map((h) => createHorseData(h)));
 
     setTimeout(() => setStableLoaded(true), 1000);
-  }, []); // EMPTY DEPENDENCY ARRAY - RUN ONLY ONCE ON MOUNT
+  }, [selectedGrazingHorses, onUpdateSelectedGrazingHorses]); // Include props for saved grazing horses
 
   // Update horse names when customHorseNames changes
   useEffect(() => {
@@ -843,9 +925,29 @@ const HorseStable = ({
             onUpdateCoins(coins + 10);
           }
           
-          // Show new day notification
-          setNewDayNotification(`Day ${newDay} - Earned 10 coins!`);
-          setTimeout(() => setNewDayNotification(null), 3000);
+          // Handle dragon egg countdown
+          if (nestEgg && nestEgg.daysRemaining > 0) {
+            const newDaysRemaining = nestEgg.daysRemaining - 1;
+            if (newDaysRemaining <= 0) {
+              // Egg has hatched!
+              if (onUpdateNestEgg) {
+                onUpdateNestEgg(null);
+              }
+              setShowHatchingModal(true);
+              setNewDayNotification(`Day ${newDay} - Dragon egg has hatched! 🐉`);
+            } else {
+              // Update countdown
+              if (onUpdateNestEgg) {
+                onUpdateNestEgg({ ...nestEgg, daysRemaining: newDaysRemaining });
+              }
+              setNewDayNotification(`Day ${newDay} - Earned 10 coins! | Egg hatches in ${newDaysRemaining} days`);
+            }
+          } else {
+            // Show normal new day notification
+            setNewDayNotification(`Day ${newDay} - Earned 10 coins!`);
+          }
+          
+          // Remove auto-dismiss - now requires user to click continue
         }
         
         return newTime;
@@ -853,7 +955,7 @@ const HorseStable = ({
     }, 1000); // Update every second
     
     return () => clearInterval(timeInterval);
-  }, [stableLoaded, dayCount, coins, onUpdateCoins, onUpdateDayCount, onUpdateStableGameTime]);
+  }, [stableLoaded, dayCount, coins, onUpdateCoins, onUpdateDayCount, onUpdateStableGameTime, nestEgg]);
 
   // Helper functions for day/night cycle
   const getTimeOfDayPhase = () => {
@@ -1045,6 +1147,7 @@ const HorseStable = ({
         zIndex: '1000'
       }}
     >
+
       {/* Stable Header */}
       <div 
         style={{
@@ -1214,6 +1317,27 @@ const HorseStable = ({
           }}></div>
 
           {/* Decorative Assets - Distributed across larger stable */}
+          {/* Dragon Horse Egg Nest - Top left corner */}
+          <motion.div 
+            style={{
+              position: 'absolute',
+              top: '20px',
+              left: '20px',
+              width: '120px',
+              height: '120px',
+              backgroundImage: 'url(/stable/dragoneggnest.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              zIndex: '12',
+              cursor: 'pointer'
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowDragonNestModal(true)}
+          />
+
+          
           {/* Farm Building - Top left area */}
           <motion.div 
             style={{
@@ -1818,34 +1942,38 @@ const HorseStable = ({
             </motion.div>
           )}
 
-          {/* New Day Notification */}
+          {/* New Day Notification Modal */}
           {newDayNotification && (
-            <motion.div
-              className="absolute top-1/2 left-1/2"
-              style={{
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: 'rgba(251, 191, 36, 0.95)',
-                border: '3px solid #f59e0b',
-                color: '#92400e',
-                padding: '16px 24px',
-                borderRadius: '12px',
-                fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                fontSize: '12px',
-                letterSpacing: '1px',
-                zIndex: '30',
-                textAlign: 'center',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-              }}
-              initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.5, rotate: 10 }}
-            >
-              <div style={{ fontSize: '16px', marginBottom: '8px' }}>🌅 ✨</div>
-              {newDayNotification}
-              <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.8 }}>
-                💰 Daily Income Received!
-              </div>
-            </motion.div>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <motion.div
+                className="bg-amber-100 border-4 border-amber-600 rounded-lg p-8 w-96 shadow-2xl text-center"
+                initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                style={{
+                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+                  fontSize: '12px',
+                  letterSpacing: '1px'
+                }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '16px' }}>🌅 ✨</div>
+                
+                <div className="text-amber-900 mb-4 leading-relaxed">
+                  {newDayNotification}
+                </div>
+                
+                <div className="text-amber-700 text-xs mb-6 opacity-80">
+                  💰 Daily Income Received!
+                </div>
+                
+                <button
+                  onClick={() => setNewDayNotification(null)}
+                  className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-bold"
+                  style={{ fontSize: '12px' }}
+                >
+                  Continue
+                </button>
+              </motion.div>
+            </div>
           )}
 
         </div>
@@ -1854,11 +1982,11 @@ const HorseStable = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
           <div className="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Grazing Horses</h2>
-            <p className="text-sm text-gray-600 mb-3">Maximum 5 horses can graze at once ({selectedHorseIds.length}/5)</p>
+            <p className="text-sm text-gray-600 mb-3">Maximum 5 horses can graze at once ({selectedGrazingHorses.length}/5)</p>
             <div className="space-y-2">
               {availableHorses.map((horse) => {
-                const isChecked = selectedHorseIds.includes(horse.id);
-                const isDisabled = !isChecked && selectedHorseIds.length >= 5;
+                const isChecked = selectedGrazingHorses.includes(horse.id);
+                const isDisabled = !isChecked && selectedGrazingHorses.length >= 5;
                 return (
                   <label key={horse.id} className={`flex items-center gap-2 ${isDisabled ? 'opacity-50' : ''}`}>
                     <input
@@ -1908,9 +2036,14 @@ const HorseStable = ({
           onClose={() => setSelectedHorse(null)}
           onRename={handleRename}
           onSendToLabyrinth={() => {
-            console.log('🏠 Stable - onSendToLabyrinth called with selectedHorse:', selectedHorse);
-            console.log('🎒 Stable - selectedHorse inventory:', selectedHorse?.inventory);
-            setHorseBeingSent(selectedHorse);
+            // Get the fresh horse data with updated inventory from parent state
+            const freshHorse = {
+              ...selectedHorse,
+              inventory: horseInventories[selectedHorse.id] || []
+            };
+            console.log('🏠 Stable - onSendToLabyrinth called with fresh horse:', freshHorse);
+            console.log('🎒 Stable - fresh horse inventory:', freshHorse?.inventory);
+            setHorseBeingSent(freshHorse);
             setShowLabyrinthEntrance(true);
             setSelectedHorse(null);
           }}
@@ -2393,6 +2526,156 @@ const HorseStable = ({
             </button>
           </div>
         </div>
+      </div>
+    )}
+
+    {/* Dragon Nest Modal */}
+    {showDragonNestModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <motion.div
+          className="bg-amber-900 border-4 border-amber-600 rounded-lg p-6 w-96 shadow-2xl"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+            fontSize: '12px',
+            letterSpacing: '1px'
+          }}
+        >
+          <div className="text-center">
+            <h2 className="text-amber-100 text-lg mb-4">🥚 Dragon Nest</h2>
+            
+            {/* Nest/Egg Image */}
+            <div 
+              className="w-32 h-32 mx-auto mb-4 relative"
+              style={{
+                backgroundImage: 'url(/stable/dragoneggnest.png)',
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center'
+              }}
+            >
+              {/* Show egg in nest if there is one */}
+              {nestEgg && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{
+                    backgroundImage: 'url(/maze/tilesheetdan.png)',
+                    backgroundPosition: '88.89% 44.44%', // Dragon egg tile coordinates
+                    backgroundSize: '1000% 1000%',
+                    backgroundRepeat: 'no-repeat',
+                    width: '48px',
+                    height: '48px',
+                    margin: 'auto',
+                    imageRendering: 'pixelated'
+                  }}
+                />
+              )}
+            </div>
+            
+            {nestEgg ? (
+              <>
+                <p className="text-amber-200 mb-4 leading-relaxed">
+                  A dragon egg is in the nest
+                </p>
+                <div className="mb-6 p-3 bg-purple-900 border border-purple-600 rounded">
+                  <p className="text-purple-200 text-sm font-bold">
+                    Days till egg hatches: {nestEgg.daysRemaining}
+                  </p>
+                </div>
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setShowDragonNestModal(false)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                    style={{ fontSize: '10px' }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-amber-200 mb-6 leading-relaxed">
+                  It looks like a nest for an egg?
+                </p>
+                
+                {(() => {
+                  const horsesWithEggs = findHorsesWithDragonEggs();
+                  const hasEgg = horsesWithEggs.length > 0;
+                  
+                  return (
+                    <>
+                      {hasEgg && (
+                        <div className="mb-4 p-3 bg-amber-800 border border-amber-600 rounded">
+                          <p className="text-amber-100 text-sm mb-2">
+                            Dragon Egg found in {horsesWithEggs[0].horse.name}'s inventory!
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => setShowDragonNestModal(false)}
+                          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                          style={{ fontSize: '10px' }}
+                        >
+                          Close
+                        </button>
+                        
+                        <button
+                          onClick={handleAddEggToNest}
+                          disabled={!hasEgg}
+                          className={`px-4 py-2 rounded transition-colors ${
+                            hasEgg
+                              ? 'bg-purple-600 text-white hover:bg-purple-700'
+                              : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                          }`}
+                          style={{ fontSize: '10px' }}
+                        >
+                          Add Egg
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Dragon Hatching Modal */}
+    {showHatchingModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <motion.div
+          className="bg-purple-900 border-4 border-purple-600 rounded-lg p-8 w-96 shadow-2xl text-center"
+          initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          style={{
+            fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+            fontSize: '12px',
+            letterSpacing: '1px'
+          }}
+        >
+          <h2 className="text-purple-100 text-xl mb-6">🐉 DRAGON EGG HAS HATCHED! 🐉</h2>
+          
+          {/* Hatched dragon visualization */}
+          <div className="mb-6">
+            <div className="text-6xl mb-4">🐲</div>
+            <p className="text-purple-200 leading-relaxed">
+              A magnificent dragon has emerged from the egg!
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setShowHatchingModal(false)}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-bold"
+            style={{ fontSize: '12px' }}
+          >
+            Amazing!
+          </button>
+        </motion.div>
       </div>
     )}
     </div>

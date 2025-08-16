@@ -1597,18 +1597,24 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     setCollectedKeys(prev => prev.slice(1));
     setAvailableKeys(prev => prev - 1);
     
-    // Remove key from appropriate source
+    // Remove key from appropriate source (prioritize inventory first)
+    const hasKeyInInventory = horseInventory.some(item => item.id === 'key');
     const keysCollectedThisRun = collectedItemsThisRun.filter(item => item.id === 'key').length;
-    if (keysCollectedThisRun > 0) {
+    
+    if (hasKeyInInventory) {
+      // Remove key from horse inventory first
+      setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
+      console.log('🗝️ Vault - Key removed from horse inventory');
+    } else if (keysCollectedThisRun > 0) {
+      // Fall back to removing key collected this run
       setCollectedItemsThisRun(prev => {
         const keyIndex = prev.findIndex(item => item.id === 'key');
         if (keyIndex !== -1) {
+          console.log('🗝️ Vault - Key removed from items collected this run');
           return prev.filter((_, index) => index !== keyIndex);
         }
         return prev;
       });
-    } else {
-      setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
     }
     
     // Add the actual legendary reward to collected items

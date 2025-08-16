@@ -95,6 +95,8 @@ export default function RandomPicker() {
   const [dayCount, setDayCount] = useState(1);
   const [stableGameTime, setStableGameTime] = useState(0);
   const [unlockedSongs, setUnlockedSongs] = useState({ 'THEME SONG': true }); // Theme song is unlocked by default
+  const [nestEgg, setNestEgg] = useState(null); // Dragon egg in nest: { placedOn: timestamp, daysRemaining: number }
+  const [selectedGrazingHorses, setSelectedGrazingHorses] = useState([]); // Array of horse IDs selected for grazing
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -270,6 +272,25 @@ const horsePersonalities = [
     });
   };
 
+  const handleRemoveItemFromHorseInventoryById = (horseId, itemId) => {
+    setHorseInventories((prev) => {
+      const currentInventory = prev[horseId] || [];
+      const itemIndex = currentInventory.findIndex(item => item.id === itemId);
+      
+      if (itemIndex === -1) return prev;
+      
+      const updatedInventory = [...currentInventory];
+      updatedInventory.splice(itemIndex, 1);
+      
+      console.log(`🔑 App - Removed ${itemId} from horse ${horseId} inventory`);
+      
+      return {
+        ...prev,
+        [horseId]: updatedInventory
+      };
+    });
+  };
+
   useEffect(() => {
     const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
     setShuffledAvatars(available);
@@ -358,6 +379,22 @@ const horsePersonalities = [
       } else {
         console.log('🎵 No saved songs found, starting with Theme Song only');
       }
+
+      // Load nest egg data
+      if (savedData.nestEgg && typeof savedData.nestEgg === 'object') {
+        console.log('🥚 Loading saved nest egg:', savedData.nestEgg);
+        setNestEgg(savedData.nestEgg);
+      } else {
+        console.log('🥚 No saved nest egg found');
+      }
+
+      // Load selected grazing horses
+      if (savedData.selectedGrazingHorses && Array.isArray(savedData.selectedGrazingHorses)) {
+        console.log('🐴 Loading saved grazing horses:', savedData.selectedGrazingHorses);
+        setSelectedGrazingHorses(savedData.selectedGrazingHorses);
+      } else {
+        console.log('🐴 No saved grazing horses found');
+      }
       
       console.log('Game data loaded successfully');
     } else {
@@ -385,7 +422,9 @@ const horsePersonalities = [
         dayCount,
         stableGameTime,
         currentTheme,
-        unlockedSongs
+        unlockedSongs,
+        nestEgg,
+        selectedGrazingHorses
       };
       
       console.log('🏠 App - Saving game state:', gameState);
@@ -394,7 +433,7 @@ const horsePersonalities = [
       
       gameStorage.save(gameState);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, nestEgg, selectedGrazingHorses, gameLoaded]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1321,6 +1360,8 @@ const horsePersonalities = [
       setHorseCareStats({});
       setDayCount(1);
       setCurrentTheme(DEFAULT_THEME);
+      setNestEgg(null);
+      setSelectedGrazingHorses([]);
       console.log('All save data cleared');
     }
   };
@@ -1798,6 +1839,11 @@ const horsePersonalities = [
         onUnlockSong={handleUnlockSong}
         onRemoveItemFromHorseInventory={handleRemoveItemFromHorseInventory}
         onRemoveItemFromHorseInventoryByIndex={handleRemoveItemFromHorseInventoryByIndex}
+        onRemoveItemFromHorseInventoryById={handleRemoveItemFromHorseInventoryById}
+        nestEgg={nestEgg}
+        onUpdateNestEgg={setNestEgg}
+        selectedGrazingHorses={selectedGrazingHorses}
+        onUpdateSelectedGrazingHorses={setSelectedGrazingHorses}
       />
     );
   }
