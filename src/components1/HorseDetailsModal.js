@@ -245,7 +245,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                       >
                         <div className="text-lg mb-1">🧼</div>
                         <div>Groom</div>
-                        <div className="text-xs opacity-75">{careCosts.groom} 💰</div>
+                        <div className="text-xs opacity-75">{careCosts.groom} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" /></div>
                       </button>
                       
                       <button
@@ -259,7 +259,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                       >
                         <div className="text-lg mb-1">🍎</div>
                         <div>Apple</div>
-                        <div className="text-xs opacity-75">{careCosts.apple} 💰</div>
+                        <div className="text-xs opacity-75">{careCosts.apple} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" /></div>
                       </button>
                       
                       <button
@@ -273,7 +273,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                       >
                         <div className="text-lg mb-1">🥕</div>
                         <div>Carrot</div>
-                        <div className="text-xs opacity-75">{careCosts.carrot} 💰</div>
+                        <div className="text-xs opacity-75">{careCosts.carrot} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" /></div>
                       </button>
                       
                       {/* Heal button - always show, but only enabled if horse is injured */}
@@ -289,7 +289,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                         >
                           <div className="text-lg mb-1">🏥</div>
                           <div>Heal</div>
-                          <div className="text-xs opacity-75">{careCosts.heal} 💰</div>
+                          <div className="text-xs opacity-75">{careCosts.heal} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" /></div>
                         </button>
                       )}
                     </div>
@@ -307,7 +307,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                     )}
                     
                     <div className="mt-2 text-xs text-center text-gray-600">
-                      💰 Available: {coins} coins
+                      <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" /> Available: {coins} coins
                     </div>
                   </div>
                 )}
@@ -576,7 +576,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-gray-600">
-                                  {itemValue} 💰
+                                  {itemValue} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" />
                                 </span>
                                 {onSellItem && (
                                   <button

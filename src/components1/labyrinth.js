@@ -2247,7 +2247,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 color: '#000'
               }}
             >
-              <span>💰</span>
+              <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
               <span>{coins}</span>
             </div>
             {onBack && (
@@ -2862,7 +2862,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                                 </span>
                                 <span className="text-yellow-600">{'⭐'.repeat(maze.difficulty)}</span>
                                 {isUnlocked && <span className="text-green-600">✓</span>}
-                                {!isUnlocked && !hasEnoughPoints && <span className="text-red-500">💰</span>}
+                                {!isUnlocked && !hasEnoughPoints && <img src="/horsecoins.png" alt="costs coins" className="w-4 h-4 inline filter" style={{filter: 'hue-rotate(0deg) saturate(1.5) brightness(0.8)'}} />}
                               </div>
                               <div className="text-xs text-gray-600">{maze.description}</div>
                               <div className="text-xs text-blue-600 mt-1">
@@ -2930,7 +2930,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                                   </span>
                                   {isUnlocked && <span className="text-green-600">✓</span>}
                                   {!requiredMazeUnlocked && <span className="text-gray-400">🔒</span>}
-                                  {!isUnlocked && requiredMazeUnlocked && !hasEnoughPoints && <span className="text-red-500">💰</span>}
+                                  {!isUnlocked && requiredMazeUnlocked && !hasEnoughPoints && <img src="/horsecoins.png" alt="costs coins" className="w-4 h-4 inline filter" style={{filter: 'hue-rotate(0deg) saturate(1.5) brightness(0.8)'}} />}
                                 </div>
                                 <div className={`text-xs ${!requiredMazeUnlocked ? 'text-gray-500' : 'text-gray-600'}`}>
                                   {upgrade.description}

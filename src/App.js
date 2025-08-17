@@ -1547,8 +1547,25 @@ const horsePersonalities = [
           initial={{ opacity: 0, scale: 0.9, y: 50 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-          className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4"
+          className="relative z-10 flex flex-col items-center justify-start flex-1 text-center px-4 pt-12"
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="mb-2"
+          >
+            <img 
+              src="/logo.png" 
+              alt="Winner Decides Logo" 
+              style={{
+                width: '400px',
+                height: 'auto',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+              }}
+            />
+          </motion.div>
           <motion.div
             animate={{ rotate: [0, 5, -5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -1561,14 +1578,11 @@ const horsePersonalities = [
               style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
             />
           </motion.div>
-          <h1 className={`text-4xl sm:text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl ${themeUtils.getTextGradient(currentTheme, 'titleGradient')}`}>
-            Winner Decides!
-          </h1>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className={`text-lg sm:text-xl ${titleStyles.subtitle} mb-6 max-w-md`}
+            className={`text-lg sm:text-xl ${titleStyles.subtitle} mb-16 max-w-md mt-16`}
           >
             The ultimate way to make decisions! Add your options and watch them
             race to victory!
@@ -1649,7 +1663,7 @@ const horsePersonalities = [
                 </div>
               )}
               <div className="text-xs bg-yellow-100 px-2 py-1 rounded-full flex items-center gap-1">
-                <span>💰</span>
+                <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
                 <span>{coins}</span>
               </div>
               {isRacing && (
@@ -1986,13 +2000,19 @@ const horsePersonalities = [
   return (
     <div className={`min-h-screen bg-gradient-to-br ${setupStyles.setup?.background || theme.colors.mainBg} w-full overflow-x-hidden`}>
       <div className="w-full max-w-none backdrop-blur-md shadow-2xl min-h-screen" style={{ backgroundColor: 'transparent' }}>
-        <div style={{ paddingTop: window.innerWidth < 640 ? '12px' : '16px', paddingBottom: '12px', paddingLeft: window.innerWidth < 640 ? '12px' : '16px', paddingRight: window.innerWidth < 640 ? '12px' : '16px' }}>
+        <div style={{ paddingTop: '4px', paddingBottom: '12px', paddingLeft: '4px', paddingRight: window.innerWidth < 640 ? '12px' : '16px' }}>
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3 relative">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <h1 className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`} style={{ color: labyrinthStyles.reward, marginTop: window.innerWidth < 640 ? '8px' : '0' }}>
-                Winner Decides!
-              </h1>
+            <div className="flex items-center">
+              <img 
+                src="/logo.png" 
+                alt="Game Logo" 
+                style={{
+                  width: window.innerWidth < 640 ? '200px' : '300px',
+                  height: 'auto',
+                  objectFit: 'contain'
+                }}
+              />
             </div>
             <div className="flex items-center gap-1 sm:gap-3 sm:pr-0 sm:static sm:right-auto absolute right-0 top-0 sm:top-auto">
               {fastestTime && (
@@ -2001,7 +2021,7 @@ const horsePersonalities = [
                 </div>
               )}
               <div className="text-xs sm:text-sm bg-yellow-100 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shadow-md flex items-center gap-1 hidden sm:flex">
-                <span>💰</span>
+                <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
                 <span>{coins}</span>
               </div>
               
@@ -2030,7 +2050,7 @@ const horsePersonalities = [
           </div>
 
           {/* Number Input */}
-          <div className="mb-4 mt-12 sm:mt-4">
+          <div className="mb-4 mt-2">
             <label 
               className="block mb-2 font-semibold text-sm"
               style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}

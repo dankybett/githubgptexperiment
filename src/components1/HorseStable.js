@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
 import { themeUtils } from "../utils/themes";
@@ -31,6 +31,53 @@ const TileSprite = ({ tileX, tileY, className = "" }) => {
   };
   
   return <div className={`tile ${className}`} style={style} />;
+};
+
+// EmojiSprite component for emoji tilesheet (4x4 grid)
+const EmojiSprite = ({ tileX, tileY, size = 24, className = "" }) => {
+  const tilesPerRow = 4; // 4x4 grid
+  
+  // Calculate percentage positions for the 4x4 grid
+  const positionX = (tileX / (tilesPerRow - 1)) * 100;
+  const positionY = (tileY / (tilesPerRow - 1)) * 100;
+  
+  const style = {
+    width: `${size}px`,
+    height: `${size}px`,
+    backgroundImage: 'url(/emojis.png)',
+    backgroundPosition: `${positionX}% ${positionY}%`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${tilesPerRow * 100}% ${tilesPerRow * 100}%`,
+    imageRendering: 'pixelated',
+    display: 'inline-block',
+    filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.3))'
+  };
+  
+  return <div className={`emoji-sprite ${className}`} style={style} />;
+};
+
+// Emoji tilesheet mapping (4x4 grid)
+// Row 0: happy, sad, angry, sick
+// Row 1: heart, broken heart, apple, carrot  
+// Row 2: plaster, content, sleep zzz, music note
+// Row 3: lightning bolt, sponge, sparkle, sparkle
+const EMOJI_MAP = {
+  happy: { x: 0, y: 0 },
+  sad: { x: 1, y: 0 },
+  angry: { x: 2, y: 0 },
+  sick: { x: 3, y: 0 },
+  heart: { x: 0, y: 1 },
+  brokenHeart: { x: 1, y: 1 },
+  apple: { x: 2, y: 1 },
+  carrot: { x: 3, y: 1 },
+  plaster: { x: 0, y: 2 },
+  content: { x: 1, y: 2 },
+  sleep: { x: 2, y: 2 },
+  music: { x: 3, y: 2 },
+  lightning: { x: 0, y: 3 },
+  sponge: { x: 1, y: 3 },
+  sparkle1: { x: 2, y: 3 },
+  sparkle2: { x: 3, y: 3 }
 };
 
 // Tile mappings for record items
@@ -147,6 +194,10 @@ const HorseStable = ({
   const [happinessRewardModal, setHappinessRewardModal] = useState(null);
   const [lastHappinessCheck, setLastHappinessCheck] = useState({});
 
+  // Simple cycling state
+  const [cyclingIndex, setCyclingIndex] = useState({});
+
+
   // Library system state
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
@@ -177,7 +228,7 @@ Your stable is home to up to 5 horses. Each horse has individual care needs that
 • Pasture: Increases happiness and energy
 • Cleanliness: Keeps the stable environment clean
 
-💰 CARE ACTIONS
+COIN CARE ACTIONS
 • Global Care: Affects all horses (Feed, Water, Pasture, Clean)
 • Individual Care: Target specific horses (Groom, Apple, Carrot, Heal)
 
@@ -218,7 +269,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
 🏃‍♂️ MOVEMENT & EXPLORATION
 • Horses move themselves in the maze
 
-💰 TREASURES & REWARDS
+COIN TREASURES & REWARDS
 • Regular treasures: Scattered throughout the maze
 • Vault treasures: Higher value, require keys
 • Lost horses: Rare finds that unlock new horses
@@ -314,14 +365,15 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
   const getHorseStatusIndicators = (horse) => {
     const indicators = [];
     
-    if (horse.isInjured) indicators.push('🏥'); // Injured (highest priority)
-    if (horse.health < 40) indicators.push('🤒'); // Sick
-    if (horse.cleanliness < 30) indicators.push('💩'); // Dirty
-    if (horse.energy < 25) indicators.push('💤'); // Tired
-    if (horse.happiness < 30) indicators.push('💔'); // Unhappy
+    if (horse.isInjured) indicators.push('plaster');        // Using plaster for injured
+    if (horse.health < 40) indicators.push('sick');         // Using sick emoji
+    if (horse.cleanliness < 30) indicators.push('sponge');  // Using sponge for dirty
+    if (horse.energy < 25) indicators.push('sleep');        // Using sleep zzz for tired
+    if (horse.happiness < 30) indicators.push('sad');       // Using sad for unhappy
     
     return indicators;
   };
+
 
   // Remove all the complex logic for now
 
@@ -1126,6 +1178,27 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
     return () => clearInterval(timeInterval);
   }, [stableLoaded, dayCount, coins, onUpdateCoins, onUpdateDayCount, onUpdateStableGameTime, nestEgg]);
 
+  // Simple status cycling effect
+  useEffect(() => {
+    if (!stableLoaded) return;
+    
+    const interval = setInterval(() => {
+      setCyclingIndex(prev => {
+        const next = { ...prev };
+        stableHorses.forEach(horse => {
+          const indicators = getHorseStatusIndicators(horse);
+          if (indicators.length > 1) {
+            const currentIndex = next[horse.id] || 0;
+            next[horse.id] = (currentIndex + 1) % indicators.length;
+          }
+        });
+        return next;
+      });
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [stableLoaded, stableHorses]);
+
   // Helper functions for day/night cycle
   const getTimeOfDayPhase = () => {
     if (gameTime >= 6 && gameTime < 12) return 'morning';
@@ -1361,7 +1434,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
                   color: '#000'
                 }}
               >
-                <span>💰</span>
+                <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
                 <span>{coins}</span>
               </div>
               <motion.button
@@ -1473,19 +1546,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
             zIndex: '5'
           }}></div>
           
-          {/* Bottom fence */}
-          <div style={{
-            position: 'absolute',
-            bottom: '-18px',
-            left: '0px',
-            width: '100%',
-            height: '64px',
-            backgroundImage: 'url(/stable/fence.png)',
-            backgroundRepeat: 'repeat-x',
-            backgroundSize: 'auto 64px',
-            zIndex: '15'
-          }}></div>
-
+     
           {/* Decorative Assets - Distributed across larger stable */}
           {/* Dragon Horse Egg Nest - Top left corner */}
           <motion.div 
@@ -2071,31 +2132,43 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
                   </div>
                 )}
 
-                {/* Horse Status Indicators */}
-                {getHorseStatusIndicators(horse).map((indicator, index) => (
-                  <motion.div
-                    key={indicator}
-                    className="absolute text-xl"
-                    style={{
-                      top: `-${20 + (index * 25)}px`,
-                      left: '50%',
-                      transform: 'translateX(-50%)'
-                    }}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ 
-                      opacity: [0.8, 1, 0.8], 
-                      y: [0, -5, 0],
-                      scale: [1, 1.1, 1]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      delay: index * 0.3
-                    }}
-                  >
-                    {indicator}
-                  </motion.div>
-                ))}
+                {/* Horse Status Indicators - Cycling */}
+                {(() => {
+                  const indicators = getHorseStatusIndicators(horse);
+                  if (indicators.length === 0) return null;
+                  
+                  const currentIndex = cyclingIndex[horse.id] || 0;
+                  const indicator = indicators[currentIndex];
+                  const emojiTile = EMOJI_MAP[indicator];
+                  
+                  return (
+                    <motion.div
+                      key={`${horse.id}-${indicator}`}
+                      className="absolute"
+                      style={{
+                        top: '-25px',
+                        left: '50%',
+                        transform: 'translateX(-50%)'
+                      }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ 
+                        opacity: [0.8, 1, 0.8], 
+                        y: [0, -5, 0],
+                        scale: [1, 1.1, 1]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity
+                      }}
+                    >
+                      <EmojiSprite 
+                        tileX={emojiTile.x} 
+                        tileY={emojiTile.y} 
+                        size={24} 
+                      />
+                    </motion.div>
+                  );
+                })()}
                 {showNameTags && (
                   <motion.div
                     className="absolute bg-amber-800 text-amber-100 px-2 py-1 border border-amber-600 text-xs whitespace-nowrap"
@@ -2383,7 +2456,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
                 </div>
                 
                 <div className="text-amber-700 text-xs mb-6 opacity-80">
-                  💰 Daily Income Received!
+                  <span className="inline-flex items-center gap-1"><img src="/horsecoins.png" alt="coins" className="w-3 h-3" /> Daily Income Received!</span>
                 </div>
                 
                 <button
@@ -3110,7 +3183,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
         >
           <div className="text-center space-y-4">
             <div className="text-4xl mb-2">
-              {happinessRewardModal.type === 'coins' ? '💰' : '🗝️'}
+              {happinessRewardModal.type === 'coins' ? <img src="/horsecoins.png" alt="coins" className="w-12 h-12 mx-auto" /> : '🗝️'}
             </div>
             
             <h3 className="text-xl font-bold text-gray-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '14px' }}>
@@ -3124,7 +3197,7 @@ The labyrinth is a dangerous maze filled with treasures, vaults, and the fearsom
               
               {happinessRewardModal.type === 'coins' ? (
                 <p className="text-yellow-600 font-bold">
-                  💰 {happinessRewardModal.amount} coins!
+                  <span className="inline-flex items-center gap-1"><img src="/horsecoins.png" alt="coins" className="w-4 h-4" /> {happinessRewardModal.amount} coins!</span>
                   {happinessRewardModal.noSpace && (
                     <span className="block text-orange-600 text-xs mt-1">
                       (Inventory was full - converted key to coins)
