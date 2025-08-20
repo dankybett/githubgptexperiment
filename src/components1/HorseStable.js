@@ -201,6 +201,7 @@ const HorseStable = ({
   // Library system state
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [showStableStatsModal, setShowStableStatsModal] = useState(false);
   const [unlockedBooks, setUnlockedBooks] = useState({
     stable: true,
     labyrinth: true
@@ -1116,7 +1117,7 @@ COIN TREASURES & REWARDS
         cleanliness: Math.max(0, prev.cleanliness - 0.4 - Math.random() * 0.8)
       }));
       
-    }, 15000); // Every 15 seconds
+    }, 60000); // Every 60 seconds
     
     return () => clearInterval(decayInterval);
   }, [stableLoaded, stableHorses.length]);
@@ -1603,8 +1604,18 @@ COIN TREASURES & REWARDS
               left: '1200px',
               width: '350px',
               height: '320  px',
-              zIndex: '10'
+              zIndex: '10',
+              cursor: 'pointer'
             }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={(e) => {
+              if (!isDragging) {
+                e.stopPropagation();
+                setShowStableStatsModal(true);
+              }
+            }}
+            title="View Stable Resources"
           >
             <img 
               src="/stable/house.png" 
@@ -1663,9 +1674,18 @@ COIN TREASURES & REWARDS
               }
             }}
           >
-            <img 
+            <motion.img 
               src="/stable/turntable.png" 
               alt="Turntable" 
+              animate={isPlaying ? {
+                scale: [1, 1.05, 1, 1.03, 1],
+                rotate: [0, 2, -2, 1, 0]
+              } : {}}
+              transition={{
+                duration: isPlaying ? 2 : 0,
+                repeat: isPlaying ? Infinity : 0,
+                ease: "easeInOut"
+              }}
               style={{
                 width: '100%',
                 height: '100%',
@@ -1673,6 +1693,55 @@ COIN TREASURES & REWARDS
                 filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))'
               }}
             />
+            
+            {/* Musical notes around turntable when playing */}
+            {isPlaying && (
+              <div className="absolute inset-0 pointer-events-none">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute text-3xl"
+                    style={{
+                      color: '#3B82F6',
+                      textShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
+                      zIndex: 25
+                    }}
+                    initial={{
+                      x: '50%',
+                      y: '50%',
+                      scale: 0,
+                      opacity: 0
+                    }}
+                    animate={{
+                      x: [
+                        `${50 + 60 * Math.cos(i * Math.PI / 2)}%`,
+                        `${50 + 60 * Math.cos(i * Math.PI / 2 + Math.PI / 2)}%`,
+                        `${50 + 60 * Math.cos(i * Math.PI / 2 + Math.PI)}%`,
+                        `${50 + 60 * Math.cos(i * Math.PI / 2 + 3 * Math.PI / 2)}%`,
+                        `${50 + 60 * Math.cos(i * Math.PI / 2 + 2 * Math.PI)}%`
+                      ],
+                      y: [
+                        `${50 + 60 * Math.sin(i * Math.PI / 2)}%`,
+                        `${50 + 60 * Math.sin(i * Math.PI / 2 + Math.PI / 2)}%`,
+                        `${50 + 60 * Math.sin(i * Math.PI / 2 + Math.PI)}%`,
+                        `${50 + 60 * Math.sin(i * Math.PI / 2 + 3 * Math.PI / 2)}%`,
+                        `${50 + 60 * Math.sin(i * Math.PI / 2 + 2 * Math.PI)}%`
+                      ],
+                      scale: [0, 1, 0.8, 1, 0],
+                      opacity: [0, 1, 0.7, 1, 0]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      delay: i * 0.8,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    {i % 2 === 0 ? '♪' : '♫'}
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
           
           {/* Main Pond - Center */}
@@ -2202,188 +2271,6 @@ COIN TREASURES & REWARDS
           ))}
 
 
-          {/* Stable Info Panel */}
-          <motion.div
-            className="absolute top-4 right-4 border-2"
-            style={{
-              backgroundColor: stableStyles.panel,
-              borderColor: stableStyles.panelBorder,
-              color: '#fef3c7',
-              padding: '16px',
-              fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-              fontSize: '8px',
-              letterSpacing: '1px',
-              zIndex: '20'
-            }}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <h3 style={{
-              fontWeight: 'bold',
-              marginBottom: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-              fontSize: '8px'
-            }}>
-              <span>🏠</span>
-              STABLE STATUS
-            </h3>
-            <div style={{
-              fontSize: '7px',
-              fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-              lineHeight: '1.4'
-            }}>
-              <p style={{ fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace', fontSize: '7px', marginBottom: '4px' }}>
-                🐎 HORSES: {stableHorses.length}/5
-              </p>
-              
-              {/* Day/Night Cycle Info */}
-              <div style={{ 
-                marginBottom: '4px',
-                padding: '2px 0',
-                borderBottom: '1px solid #d97706'
-              }}>
-                <div style={{ 
-                  color: '#fef3c7',
-                  fontSize: '7px',
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginBottom: '2px'
-                }}>
-                  <span>
-                    {getTimeOfDayPhase() === 'morning' && '🌅'}
-                    {getTimeOfDayPhase() === 'afternoon' && '☀️'}
-                    {getTimeOfDayPhase() === 'evening' && '🌇'}
-                    {getTimeOfDayPhase() === 'night' && '🌙'}
-                  </span>
-                  <span style={{ textTransform: 'capitalize' }}>
-                    {getTimeOfDayPhase().toUpperCase()}
-                  </span>
-                </div>
-                <div style={{ 
-                  color: '#fed7aa',
-                  fontSize: '7px',
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace'
-                }}>
-                  📅 DAY {dayCount}
-                </div>
-              </div>
-              
-              {/* Interactive Feed Status */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  marginBottom: '2px',
-                  cursor: coins >= careCosts.feed ? 'pointer' : 'not-allowed',
-                  opacity: coins >= careCosts.feed ? 1 : 0.6
-                }}
-                onClick={() => handleCareAction('feed')}
-                title={`Feed horses (${careCosts.feed} coins)`}
-              >
-                <span style={{ 
-                  color: getResourceColor(stableResources.feed),
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                  fontSize: '7px'
-                }}>
-                  🌾 FEED: {Math.round(stableResources.feed)}%
-                </span>
-              </div>
-              
-              {/* Interactive Water Status */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  marginBottom: '2px',
-                  cursor: coins >= careCosts.water ? 'pointer' : 'not-allowed',
-                  opacity: coins >= careCosts.water ? 1 : 0.6
-                }}
-                onClick={() => handleCareAction('water')}
-                title={`Refill water (${careCosts.water} coins)`}
-              >
-                <span style={{ 
-                  color: getResourceColor(stableResources.water),
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                  fontSize: '7px'
-                }}>
-                  💧 WATER: {Math.round(stableResources.water)}%
-                </span>
-              </div>
-              
-              {/* Interactive Pasture Status */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  marginBottom: '2px',
-                  cursor: coins >= careCosts.pasture ? 'pointer' : 'not-allowed',
-                  opacity: coins >= careCosts.pasture ? 1 : 0.6
-                }}
-                onClick={() => handleCareAction('pasture')}
-                title={`Maintain pasture (${careCosts.pasture} coins)`}
-              >
-                <span style={{ 
-                  color: getResourceColor(stableResources.pasture),
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                  fontSize: '7px'
-                }}>
-                  🌱 PASTURE: {Math.round(stableResources.pasture)}%
-                </span>
-              </div>
-              
-              {/* Interactive Cleanliness Status */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  marginBottom: '2px',
-                  cursor: coins >= careCosts.cleanliness ? 'pointer' : 'not-allowed',
-                  opacity: coins >= careCosts.cleanliness ? 1 : 0.6
-                }}
-                onClick={() => handleCareAction('cleanliness')}
-                title={`Clean stable (${careCosts.cleanliness} coins)`}
-              >
-                <span style={{ 
-                  color: getResourceColor(stableResources.cleanliness),
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                  fontSize: '7px'
-                }}>
-                  🧼 CLEAN: {Math.round(stableResources.cleanliness)}%
-                </span>
-              </div>
-              
-              <div style={{ 
-                marginTop: '6px', 
-                paddingTop: '4px', 
-                borderTop: '1px solid #d97706',
-                fontSize: '6px',
-                color: '#fed7aa'
-              }}>
-                CLICK TO CARE FOR HORSES
-              </div>
-              
-              {/* Zoom Indicator */}
-              <div style={{ 
-                marginTop: '4px', 
-                paddingTop: '4px', 
-                borderTop: '1px solid #d97706',
-                fontSize: '6px',
-                color: '#fed7aa'
-              }}>
-                🔍 ZOOM: {Math.round(zoom * 100)}%
-              </div>
-            </div>
-          </motion.div>
 
           {/* Library Decorative Asset */}
           <motion.div
@@ -3350,6 +3237,200 @@ COIN TREASURES & REWARDS
               </div>
             </div>
           )}
+        </motion.div>
+      </div>
+    )}
+
+    {/* Stable Stats Modal */}
+    {showStableStatsModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-br from-amber-100 to-orange-100 border-3 border-amber-600 rounded-xl p-6 max-w-lg mx-4 shadow-2xl"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '18px' }}>
+              🏠 Stable Resources
+            </h2>
+            <button
+              onClick={() => setShowStableStatsModal(false)}
+              className="text-amber-600 hover:text-amber-800 text-2xl font-bold"
+              style={{ fontFamily: 'Press Start 2P, monospace' }}
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <p className="text-amber-700 mb-4" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '11px', lineHeight: '1.6' }}>
+              Monitor your stable's essential resources. Click to spend coins and care for your horses.
+            </p>
+            
+            {/* Feed Status */}
+            <div 
+              className="bg-white bg-opacity-50 rounded-lg p-4 border border-amber-300 hover:bg-opacity-70 transition-all cursor-pointer"
+              onClick={() => {
+                if (coins >= careCosts.feed) {
+                  handleCareAction('feed');
+                }
+              }}
+              style={{ opacity: coins >= careCosts.feed ? 1 : 0.6 }}
+              title={`Feed horses (${careCosts.feed} coins)`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🌾</span>
+                  <div>
+                    <h3 className="font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}>
+                      FEED
+                    </h3>
+                    <p className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                      Keeps horses healthy and energetic
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div 
+                    className="font-bold text-lg"
+                    style={{ 
+                      fontFamily: 'Press Start 2P, monospace', 
+                      fontSize: '14px',
+                      color: getResourceColor(stableResources.feed)
+                    }}
+                  >
+                    {Math.round(stableResources.feed)}%
+                  </div>
+                  <div className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                    {careCosts.feed} coins
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Water Status */}
+            <div 
+              className="bg-white bg-opacity-50 rounded-lg p-4 border border-amber-300 hover:bg-opacity-70 transition-all cursor-pointer"
+              onClick={() => {
+                if (coins >= careCosts.water) {
+                  handleCareAction('water');
+                }
+              }}
+              style={{ opacity: coins >= careCosts.water ? 1 : 0.6 }}
+              title={`Refill water (${careCosts.water} coins)`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💧</span>
+                  <div>
+                    <h3 className="font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}>
+                      WATER
+                    </h3>
+                    <p className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                      Maintains health and happiness
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div 
+                    className="font-bold text-lg"
+                    style={{ 
+                      fontFamily: 'Press Start 2P, monospace', 
+                      fontSize: '14px',
+                      color: getResourceColor(stableResources.water)
+                    }}
+                  >
+                    {Math.round(stableResources.water)}%
+                  </div>
+                  <div className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                    {careCosts.water} coins
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pasture Status */}
+            <div 
+              className="bg-white bg-opacity-50 rounded-lg p-4 border border-amber-300 hover:bg-opacity-70 transition-all cursor-pointer"
+              onClick={() => {
+                if (coins >= careCosts.pasture) {
+                  handleCareAction('pasture');
+                }
+              }}
+              style={{ opacity: coins >= careCosts.pasture ? 1 : 0.6 }}
+              title={`Maintain pasture (${careCosts.pasture} coins)`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🌱</span>
+                  <div>
+                    <h3 className="font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}>
+                      PASTURE
+                    </h3>
+                    <p className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                      Increases happiness and energy
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div 
+                    className="font-bold text-lg"
+                    style={{ 
+                      fontFamily: 'Press Start 2P, monospace', 
+                      fontSize: '14px',
+                      color: getResourceColor(stableResources.pasture)
+                    }}
+                  >
+                    {Math.round(stableResources.pasture)}%
+                  </div>
+                  <div className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                    {careCosts.pasture} coins
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cleanliness Status */}
+            <div 
+              className="bg-white bg-opacity-50 rounded-lg p-4 border border-amber-300 hover:bg-opacity-70 transition-all cursor-pointer"
+              onClick={() => {
+                if (coins >= careCosts.cleanliness) {
+                  handleCareAction('cleanliness');
+                }
+              }}
+              style={{ opacity: coins >= careCosts.cleanliness ? 1 : 0.6 }}
+              title={`Clean stable (${careCosts.cleanliness} coins)`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🧼</span>
+                  <div>
+                    <h3 className="font-bold text-amber-800" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}>
+                      CLEAN
+                    </h3>
+                    <p className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                      Keeps the stable environment clean
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div 
+                    className="font-bold text-lg"
+                    style={{ 
+                      fontFamily: 'Press Start 2P, monospace', 
+                      fontSize: '14px',
+                      color: getResourceColor(stableResources.cleanliness)
+                    }}
+                  >
+                    {Math.round(stableResources.cleanliness)}%
+                  </div>
+                  <div className="text-amber-600" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                    {careCosts.cleanliness} coins
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     )}
