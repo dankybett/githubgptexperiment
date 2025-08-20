@@ -2396,8 +2396,8 @@ COIN TREASURES & REWARDS
           <motion.div
             style={{
               position: 'absolute',
-              top: '150px',
-              right: '550px',
+              top: '50px',
+              right: '750px',
               width: '120px',
               height: '150px',
               zIndex: '12',
