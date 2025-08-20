@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
+import ThemedTarotGame from "./ThemedTarotGame";
 import { themeUtils } from "../utils/themes";
 
 // TileSprite component for tileset rendering
@@ -203,6 +204,7 @@ const HorseStable = ({
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [showStableStatsModal, setShowStableStatsModal] = useState(false);
+  const [showTarotModal, setShowTarotModal] = useState(false);
   const [unlockedBooks, setUnlockedBooks] = useState({
     stable: true,
     labyrinth: true
@@ -2394,15 +2396,22 @@ COIN TREASURES & REWARDS
           <motion.div
             style={{
               position: 'absolute',
-              top: '50px',
-              right: '700px',
-              width: '200px',
-              height: '240px',
-              zIndex: '12'
+              top: '150px',
+              right: '550px',
+              width: '120px',
+              height: '150px',
+              zIndex: '12',
+              cursor: 'pointer'
             }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            title="Fortune Teller"
+            onClick={(e) => {
+              if (!isDragging) {
+                e.stopPropagation();
+                setShowTarotModal(true);
+              }
+            }}
+            title="Get Your Fortune Read"
           >
             <img 
               src="/stable/fortuneteller.png" 
@@ -3581,6 +3590,37 @@ COIN TREASURES & REWARDS
                 </div>
               </div>
             </div>
+          </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Tarot Reading Modal */}
+    {showTarotModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-br from-purple-900 to-indigo-900 border-4 border-purple-400 rounded-xl p-6 max-w-6xl max-h-[90vh] mx-4 shadow-2xl overflow-y-auto"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-3xl font-bold text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '18px' }}>
+              🔮 Mystic Fortune Teller
+            </h2>
+            <button
+              onClick={() => setShowTarotModal(false)}
+              className="text-purple-300 hover:text-purple-100 text-2xl font-bold"
+              style={{ fontFamily: 'Press Start 2P, monospace' }}
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="text-center">
+            <ThemedTarotGame 
+              onClose={() => setShowTarotModal(false)}
+              currentTheme={currentTheme}
+            />
           </div>
         </motion.div>
       </div>
