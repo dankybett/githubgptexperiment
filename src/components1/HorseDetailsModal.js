@@ -41,7 +41,10 @@ const TILE_MAP = {
   // Record tiles for music unlocks
   RECORD_WILD_MANE: { x: 4, y: 2 },
   RECORD_WILD_UNBRIDLED: { x: 5, y: 2 },
-  RECORD_CLOVER: { x: 6, y: 2 }
+  RECORD_CLOVER: { x: 6, y: 2 },
+  RECORD_HORSE_POWER_CEREAL: { x: 8, y: 8 },
+  RECORD_HORSE_BROS: { x: 7, y: 8 },
+  RECORD_PARTNERS_IN_HOOF: { x: 9, y: 8 }
 };
 
 // Helper function to get tile coordinates for inventory items
@@ -60,6 +63,9 @@ const getItemTileCoords = (item) => {
   if (item.name === 'Wild Mane Record') return TILE_MAP.RECORD_WILD_MANE;
   if (item.name === 'Wild and Unbridled Record') return TILE_MAP.RECORD_WILD_UNBRIDLED;
   if (item.name === 'Clover Record') return TILE_MAP.RECORD_CLOVER;
+  if (item.name === 'Horse Power Cereal Record') return TILE_MAP.RECORD_HORSE_POWER_CEREAL;
+  if (item.name === 'Horse Bros Record') return TILE_MAP.RECORD_HORSE_BROS;
+  if (item.name === 'Partners in Hoof Record') return TILE_MAP.RECORD_PARTNERS_IN_HOOF;
   
   // Handle other labyrinth items
   if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;

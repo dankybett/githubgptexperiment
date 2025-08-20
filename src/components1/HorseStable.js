@@ -85,7 +85,10 @@ const EMOJI_MAP = {
 const TILE_MAP = {
   RECORD_WILD_MANE: { x: 8, y: 9 },
   RECORD_WILD_UNBRIDLED: { x: 9, y: 9 },
-  RECORD_CLOVER: { x: 7, y: 9 }
+  RECORD_CLOVER: { x: 7, y: 9 },
+  RECORD_HORSE_POWER_CEREAL: { x: 8, y: 8 },
+  RECORD_HORSE_BROS: { x: 7, y: 8 },
+  RECORD_PARTNERS_IN_HOOF: { x: 9, y: 8 }
 };
 
 // Helper function to get tile key from record name
@@ -94,6 +97,9 @@ const getRecordTileKey = (recordName) => {
     case 'Wild Mane Record': return 'RECORD_WILD_MANE';
     case 'Wild and Unbridled Record': return 'RECORD_WILD_UNBRIDLED';
     case 'Clover Record': return 'RECORD_CLOVER';
+    case 'Horse Power Cereal Record': return 'RECORD_HORSE_POWER_CEREAL';
+    case 'Horse Bros Record': return 'RECORD_HORSE_BROS';
+    case 'Partners in Hoof Record': return 'RECORD_PARTNERS_IN_HOOF';
     default: return null;
   }
 };
@@ -1024,7 +1030,10 @@ COIN TREASURES & REWARDS
     const recordMapping = {
       'Wild Mane Record': 'WILD MANE',
       'Wild and Unbridled Record': 'WILD AND UNBRIDLED', 
-      'Clover Record': 'CLOVER'
+      'Clover Record': 'CLOVER',
+      'Horse Power Cereal Record': 'HORSE POWER CEREAL',
+      'Horse Bros Record': 'HORSE BROS',
+      'Partners in Hoof Record': 'PARTNERS IN HOOF'
     };
     
     // Check all horses for records
@@ -2838,6 +2847,159 @@ COIN TREASURES & REWARDS
               >
                 <span className={unlockedSongs['CLOVER'] ? "text-amber-100" : "text-gray-300"}>
                   {unlockedSongs['CLOVER'] ? '♪ CLOVER' : '🔒 CLOVER'}
+                </span>
+              </div>
+              
+              {/* Horse Power Cereal */}
+              <div 
+                className={`border px-3 py-2 transition-colors ${
+                  unlockedSongs['HORSE POWER CEREAL'] 
+                    ? 'bg-amber-700 border-amber-500 cursor-pointer hover:bg-amber-600' 
+                    : 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                }`}
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '8px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (!unlockedSongs['HORSE POWER CEREAL']) return;
+                  
+                  if (isPlaying) {
+                    return;
+                  }
+                  
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Horse Power Cereal.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'HORSE POWER CEREAL',
+                    image: '/record collection/Horse Power Cereal.png'
+                  });
+                  
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentSong(null);
+                    setCurrentAudio(null);
+                  });
+                  
+                  audio.play().catch(error => {
+                    console.error('Error playing Horse Power Cereal audio:', error);
+                    setIsPlaying(false);
+                    setCurrentSong(null);
+                    setCurrentAudio(null);
+                  });
+                }}
+              >
+                <span className={unlockedSongs['HORSE POWER CEREAL'] ? "text-amber-100" : "text-gray-300"}>
+                  {unlockedSongs['HORSE POWER CEREAL'] ? '♪ HORSE POWER CEREAL' : '🔒 HORSE POWER CEREAL'}
+                </span>
+              </div>
+              
+              {/* Horse Bros */}
+              <div 
+                className={`border px-3 py-2 transition-colors ${
+                  unlockedSongs['HORSE BROS'] 
+                    ? 'bg-amber-700 border-amber-500 cursor-pointer hover:bg-amber-600' 
+                    : 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                }`}
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '8px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (!unlockedSongs['HORSE BROS']) return;
+                  
+                  if (isPlaying) {
+                    return;
+                  }
+                  
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Horse Bros.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'HORSE BROS',
+                    image: '/record collection/Horse Bros.png'
+                  });
+                  
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentSong(null);
+                    setCurrentAudio(null);
+                  });
+                  
+                  audio.play().catch(error => {
+                    console.error('Error playing Horse Bros audio:', error);
+                    setIsPlaying(false);
+                    setCurrentSong(null);
+                    setCurrentAudio(null);
+                  });
+                }}
+              >
+                <span className={unlockedSongs['HORSE BROS'] ? "text-amber-100" : "text-gray-300"}>
+                  {unlockedSongs['HORSE BROS'] ? '♪ HORSE BROS' : '🔒 HORSE BROS'}
+                </span>
+              </div>
+              
+              {/* Partners in Hoof */}
+              <div 
+                className={`border px-3 py-2 transition-colors ${
+                  unlockedSongs['PARTNERS IN HOOF'] 
+                    ? 'bg-amber-700 border-amber-500 cursor-pointer hover:bg-amber-600' 
+                    : 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                }`}
+                style={{
+                  fontFamily: 'Press Start 2P, Courier New, Monaco, Menlo, monospace !important',
+                  fontSize: '8px',
+                  letterSpacing: '1px'
+                }}
+                onClick={() => {
+                  if (!unlockedSongs['PARTNERS IN HOOF']) return;
+                  
+                  if (isPlaying) {
+                    return;
+                  }
+                  
+                  if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                  }
+                  
+                  const audio = new Audio('/sounds/Partners in Hoof.mp3');
+                  setCurrentAudio(audio);
+                  setIsPlaying(true);
+                  setCurrentSong({
+                    name: 'PARTNERS IN HOOF',
+                    image: '/record collection/Partners in Hoof.png'
+                  });
+                  
+                  audio.addEventListener('ended', () => {
+                    setIsPlaying(false);
+                    setCurrentSong(null);
+                    setCurrentAudio(null);
+                  });
+                  
+                  audio.play().catch(error => {
+                    console.error('Error playing Partners in Hoof audio:', error);
+                    setIsPlaying(false);
+                    setCurrentSong(null);
+                    setCurrentAudio(null);
+                  });
+                }}
+              >
+                <span className={unlockedSongs['PARTNERS IN HOOF'] ? "text-amber-100" : "text-gray-300"}>
+                  {unlockedSongs['PARTNERS IN HOOF'] ? '♪ PARTNERS IN HOOF' : '🔒 PARTNERS IN HOOF'}
                 </span>
               </div>
             </div>
