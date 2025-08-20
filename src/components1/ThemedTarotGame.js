@@ -184,7 +184,7 @@ const ThemedTarotGame = ({ onClose, currentTheme = 'retro' }) => {
           <div className="flex justify-center space-x-6 mb-8">
             {drawnCards.map((card, index) => (
               <div key={index} className="text-center">
-                <div className="relative w-32 h-48 mb-4">
+                <div className="relative w-64 h-96 mb-4">
                   {/* Card back */}
                   <motion.div 
                     className="absolute inset-0 bg-gradient-to-br from-purple-800 to-indigo-900 border-3 border-purple-400 rounded-lg flex items-center justify-center"
