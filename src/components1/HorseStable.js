@@ -763,6 +763,7 @@ COIN TREASURES & REWARDS
       isBeingGroomed: false,
       isEatingApple: false,
       isEatingCarrot: false,
+      isEatingGoldenApple: false,
       isBeingHealed: false,
       careAnimationEnd: 0,
       // Injury status - use saved value or default from horse data
@@ -841,6 +842,65 @@ COIN TREASURES & REWARDS
     return horsesWithEggs;
   };
 
+  const handleFeedItem = (horseId, itemIndex, item) => {
+    // Only allow feeding Golden Apples
+    if (item.name !== 'Golden Apple') {
+      console.log('❌ Can only feed Golden Apples');
+      return;
+    }
+
+    // Find the horse and feed the golden apple
+    const horseToFeed = stableHorses.find(h => h.id === horseId);
+    if (!horseToFeed) {
+      console.log('❌ Horse not found in stable');
+      return;
+    }
+
+    console.log(`🍎 Feeding Golden Apple to ${horseToFeed.name}`);
+
+    // Enhanced care stat recovery (much better than regular apple)
+    setStableHorses(prevHorses => {
+      const updatedHorses = prevHorses.map(horse => {
+        if (horse.id === horseId) {
+          return {
+            ...horse,
+            // Golden apple provides much better recovery than regular apple
+            health: Math.min(100, horse.health + 30),      // +30 vs +15 for regular apple
+            happiness: Math.min(100, horse.happiness + 25), // +25 vs +15 for regular apple  
+            energy: Math.min(100, horse.energy + 20),       // +20 vs +10 for regular apple
+            // Also provides cleanliness boost (regular apple doesn't)
+            cleanliness: Math.min(100, horse.cleanliness + 15),
+            // Clear injury if present
+            isInjured: false,
+            // Add feeding animation
+            isEatingGoldenApple: true,
+            careAnimationEnd: Date.now() + 4000 // 4 seconds animation
+          };
+        }
+        return horse;
+      });
+      
+      // Save the updated care stats
+      saveHorseCareStats(updatedHorses);
+      return updatedHorses;
+    });
+
+    // Remove the golden apple from inventory
+    if (onRemoveItemFromHorseInventoryByIndex) {
+      onRemoveItemFromHorseInventoryByIndex(horseId, itemIndex);
+    }
+
+    // Show feedback message
+    setCareActionFeedback({
+      message: `✨ ${horseToFeed.name} enjoyed the Golden Apple! Care stats significantly boosted!`,
+      type: 'success'
+    });
+
+    setTimeout(() => setCareActionFeedback(null), 4000);
+    
+    // Close the modal to show the feeding animation
+    setSelectedHorse(null);
+  };
 
   // Function to add egg to nest (remove from horse inventory)
   const handleAddEggToNest = () => {
@@ -1258,6 +1318,7 @@ COIN TREASURES & REWARDS
               isBeingGroomed: false,
               isEatingApple: false,
               isEatingCarrot: false,
+              isEatingGoldenApple: false,
               isBeingHealed: false,
               careAnimationEnd: 0
             };
@@ -2126,6 +2187,35 @@ COIN TREASURES & REWARDS
                   </motion.div>
                 )}
                 
+                {horse.isEatingGoldenApple && (
+                  <motion.div
+                    className="absolute -top-12 left-1/2 transform -translate-x-1/2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: [1, 1, 1, 0],
+                      y: [0, -15, -25, -30],
+                      scale: [1, 1.3, 1.1, 0.9],
+                      rotate: [0, 15, -15, 0]
+                    }}
+                    transition={{ duration: 3, repeat: 1 }}
+                    style={{ 
+                      filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 15px rgba(255, 165, 0, 0.6))'
+                    }}
+                  >
+                    <div 
+                      className="w-16 h-16"
+                      style={{ 
+                        filter: 'drop-shadow(0 0 5px rgba(255, 215, 0, 0.9))'
+                      }}
+                    >
+                      <TileSprite 
+                        tileX={7} 
+                        tileY={0}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+                
                 {horse.isBeingHealed && (
                   <motion.div
                     className="absolute inset-0 pointer-events-none"
@@ -2466,6 +2556,7 @@ COIN TREASURES & REWARDS
             setSelectedHorse(null); // Close modal to see animation effects
           }}
           onSellItem={handleSellItem}
+          onFeedItem={handleFeedItem}
           coins={coins}
           careCosts={individualCareCosts}
         />

@@ -122,7 +122,7 @@ const SKILL_TREE = {
   }
 };
 
-export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth, onCareAction, onSellItem, coins, careCosts }) {
+export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth, onCareAction, onSellItem, onFeedItem, coins, careCosts }) {
   const [name, setName] = useState(horse.name);
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'status', 'skills', or 'inventory'
 
@@ -574,18 +574,32 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                               <div className="text-xs font-medium text-gray-800 leading-tight">
                                 {item.name}
                               </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-600">
+                              <div className="space-y-1">
+                                <div className="text-xs text-gray-600 text-center">
                                   {itemValue} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" />
-                                </span>
-                                {onSellItem && (
-                                  <button
-                                    onClick={() => onSellItem(horse.id, index)}
-                                    className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                                  >
-                                    Sell
-                                  </button>
-                                )}
+                                </div>
+                                <div className="flex gap-1">
+                                  {/* Feed button for Golden Apple */}
+                                  {item.name === 'Golden Apple' && onFeedItem && (
+                                    <button
+                                      onClick={() => onFeedItem(horse.id, index, item)}
+                                      className="flex-1 px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition-colors"
+                                      title="Feed to boost care stats significantly"
+                                    >
+                                      Feed
+                                    </button>
+                                  )}
+                                  {onSellItem && (
+                                    <button
+                                      onClick={() => onSellItem(horse.id, index)}
+                                      className={`px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors ${
+                                        item.name === 'Golden Apple' ? 'flex-1' : ''
+                                      }`}
+                                    >
+                                      Sell
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ) : (
