@@ -136,6 +136,7 @@ const HorseStable = ({
   // selectedHorseIds now comes from props as selectedGrazingHorses
   const [showSelector, setShowSelector] = useState(false);
   const [showNameTags, setShowNameTags] = useState(false);
+  const [horseSortOrder, setHorseSortOrder] = useState('default'); // 'default' or 'alphabetical'
   const [showMusicLibrary, setShowMusicLibrary] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -2364,23 +2365,55 @@ COIN TREASURES & REWARDS
           <div className="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Grazing Horses</h2>
             <p className="text-sm text-gray-600 mb-3">Maximum 5 horses can graze at once ({selectedGrazingHorses.length}/5)</p>
+            
+            {/* Sort Filter */}
+            {availableHorses.length > 5 && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sort horses by:
+                </label>
+                <select 
+                  value={horseSortOrder} 
+                  onChange={(e) => setHorseSortOrder(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                >
+                  <option value="default">Default Order</option>
+                  <option value="alphabetical">Alphabetical (A-Z)</option>
+                </select>
+              </div>
+            )}
+            
             <div className="space-y-2">
-              {availableHorses.map((horse) => {
-                const isChecked = selectedGrazingHorses.includes(horse.id);
-                const isDisabled = !isChecked && selectedGrazingHorses.length >= 5;
-                return (
-                  <label key={horse.id} className={`flex items-center gap-2 ${isDisabled ? 'opacity-50' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleHorseRoaming(horse.id)}
-                      disabled={isDisabled}
-                    />
-                    <span>{horse.name}</span>
-                    {isDisabled && <span className="text-xs text-gray-500">(limit reached)</span>}
-                  </label>
-                );
-              })}
+              {(() => {
+                // Sort horses based on selected order
+                const sortedHorses = [...availableHorses];
+                if (horseSortOrder === 'alphabetical') {
+                  sortedHorses.sort((a, b) => {
+                    const nameA = (customHorseNames?.[a.id] || a.name || '').toLowerCase();
+                    const nameB = (customHorseNames?.[b.id] || b.name || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  });
+                }
+                
+                return sortedHorses.map((horse) => {
+                  const isChecked = selectedGrazingHorses.includes(horse.id);
+                  const isDisabled = !isChecked && selectedGrazingHorses.length >= 5;
+                  const displayName = customHorseNames?.[horse.id] || horse.name;
+                  
+                  return (
+                    <label key={horse.id} className={`flex items-center gap-2 ${isDisabled ? 'opacity-50' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleHorseRoaming(horse.id)}
+                        disabled={isDisabled}
+                      />
+                      <span>{displayName}</span>
+                      {isDisabled && <span className="text-xs text-gray-500">(limit reached)</span>}
+                    </label>
+                  );
+                });
+              })()}
             </div>
             <div className="flex justify-between items-center gap-4 mt-4">
               {onShowLockedHorses && (
