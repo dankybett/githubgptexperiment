@@ -2390,6 +2390,33 @@ COIN TREASURES & REWARDS
             />
           </motion.div>
 
+          {/* Fortune Teller Decorative Asset */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '50px',
+              right: '700px',
+              width: '200px',
+              height: '240px',
+              zIndex: '12'
+            }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            title="Fortune Teller"
+          >
+            <img 
+              src="/stable/fortuneteller.png" 
+              alt="Fortune Teller" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2))',
+                transition: 'filter 0.2s ease'
+              }}
+            />
+          </motion.div>
+
           {/* Care Action Feedback */}
           {careActionFeedback && (
             <motion.div

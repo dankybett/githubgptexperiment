@@ -137,6 +137,16 @@ export default function RandomPicker() {
     "/horses/predatorhorse.png",
     "/horses/sharkhorse.png",
     "/horses/skellyhorse.png",
+    "/horses/Chainsawhorse.png",
+    "/horses/Clockhorse.png",
+    "/horses/Crocohorse.png",
+    "/horses/Noodlehorse.png",
+    "/horses/Shadowhorse.png",
+    "/horses/cutedragonhorse.png",
+    "/horses/fairyhorse.png",
+    "/horses/fiercedragonhorse.png",
+    "/horses/magicalgirlhorse.png",
+    "/horses/scarecrowhorse.png",
   ];
 
 const horseNames = [
@@ -177,6 +187,16 @@ const horseNames = [
     "Hunter",
     "Jaws",
     "Bones",
+    "Chainsaw",
+    "Clockwork",
+    "Crocs",
+    "Noodles",
+    "Shadow",
+    "Cuddles",
+    "Fairy",
+    "Fierce",
+    "Magical Girl",
+    "Scarecrow",
 ];
 
 const horsePersonalities = [
@@ -217,6 +237,16 @@ const horsePersonalities = [
   "Hunts victory with predatory instinct.",
   "Fin-ished opponents with aquatic speed.",
   "Rattles bones on the racetrack.",
+  "Cuts through competition with mechanical precision.",
+  "Ticks towards victory with perfect timing.",
+  "Snaps at the finish line with reptilian power.",
+  "Slurps through races with flexible form.",
+  "Lurks in darkness, striking at the perfect moment.",
+  "Adorably fierce with dragon-like determination.",
+  "Sprinkles magic dust on every stride.",
+  "Breathes fire and dominates the track.",
+  "Transforms racing into pure enchantment.",
+  "Guards the finish line with rustic charm.",
 ];
 
   const [unlockedHorses, setUnlockedHorses] = useState(
@@ -2004,15 +2034,19 @@ const horsePersonalities = [
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3 relative">
             <div className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="Game Logo" 
+              <h1 
                 style={{
-                  width: window.innerWidth < 640 ? '200px' : '300px',
-                  height: 'auto',
-                  objectFit: 'contain'
+                  fontSize: window.innerWidth < 640 ? '1.5rem' : '2.5rem',
+                  fontWeight: 'bold',
+                  color: '#fbbf24',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                  fontFamily: '"Press Start 2P", monospace',
+                  letterSpacing: '0.05em',
+                  margin: 0
                 }}
-              />
+              >
+                Winner Decides!
+              </h1>
             </div>
             <div className="flex items-center gap-1 sm:gap-3 sm:pr-0 sm:static sm:right-auto absolute right-0 top-0 sm:top-auto">
               {fastestTime && (
@@ -2050,7 +2084,7 @@ const horsePersonalities = [
           </div>
 
           {/* Number Input */}
-          <div className="mb-4 mt-2">
+          <div className="mb-4 mt-8">
             <label 
               className="block mb-2 font-semibold text-sm"
               style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
