@@ -1,43 +1,29 @@
 /**
  * RACE ENGINE ADAPTER
  * 
- * This adapter allows seamless switching between original and experimental
- * racing logic without changing the main App.js structure.
+ * Simplified adapter that uses the ExcitingRaceEngine as the main racing engine.
+ * This manages the race flow and callbacks to App.js.
  */
 
-import { experimentalRaceEngine } from './ExperimentalRaceEngine';
 import { excitingRaceEngine } from './ExcitingRaceEngine';
 
 export class RaceEngineAdapter {
   constructor() {
-    this.useExperimentalEngine = true; // Default to experimental engine (new main engine)
     this.originalCallbacks = {};
     this.lastCommentaryTime = 0;
     this.commentaryInterval = 2000; // Commentary every 2 seconds
     this.winnerAnnounced = false; // Track if winner announcement has been made
   }
 
-  // Toggle between racing engines
-  setExperimentalMode(enabled) {
-    this.useExperimentalEngine = enabled;
-    console.log(`Racing engine switched to: ${enabled ? 'EXPERIMENTAL' : 'ORIGINAL'}`);
-  }
-
-  // Initialize race with current engine
+  // Initialize race
   initializeRace(horses, settings, callbacks) {
     this.originalCallbacks = callbacks;
-    
-    if (this.useExperimentalEngine) {
-      excitingRaceEngine.initializeHorses(horses);
-      return this.startExperimentalRace(settings);
-    } else {
-      // Use original logic (pass-through)
-      return callbacks.originalStartRace(settings);
-    }
+    excitingRaceEngine.initializeHorses(horses);
+    return this.startRace(settings);
   }
 
-  // Start experimental race and handle updates
-  startExperimentalRace(settings) {
+  // Start race and handle updates
+  startRace(settings) {
     // Reset commentary timer and winner announcement flag for new race
     this.lastCommentaryTime = 0;
     this.winnerAnnounced = false;
@@ -72,7 +58,7 @@ export class RaceEngineAdapter {
       horse.recentPositionHistory = [0];
     });
     
-    // Start the update loop for experimental engine
+    // Start the update loop
     const updateLoop = () => {
       if (excitingRaceEngine.raceState === 'racing' || excitingRaceEngine.raceState === 'finished') {
         excitingRaceEngine.updatePositions(0.016); // ~60fps
@@ -155,31 +141,24 @@ export class RaceEngineAdapter {
     }
   }
 
-  // Get current engine status
+  // Get engine info
   getEngineInfo() {
     return {
-      mode: this.useExperimentalEngine ? 'experimental' : 'original',
-      features: this.useExperimentalEngine ? [
+      mode: 'exciting',
+      features: [
         'Rubber-band catch-up mechanics',
         'Random surge system for overtaking',
         'Pack dynamics and slipstreaming', 
         'Final stretch excitement boost',
         'Tight racing with constant position changes',
         'Maximum excitement optimization'
-      ] : [
-        'Classic random-based racing',
-        'Weather effects',
-        'Surge/fatigue system',
-        'Traditional racing mechanics'
       ]
     };
   }
 
   // Reset function
   reset() {
-    if (this.useExperimentalEngine) {
-      excitingRaceEngine.reset();
-    }
+    excitingRaceEngine.reset();
   }
 }
 

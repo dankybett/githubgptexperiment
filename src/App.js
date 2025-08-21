@@ -63,8 +63,10 @@ export default function RandomPicker() {
   const [betHorse, setBetHorse] = useState(null);
   const [betEnabled, setBetEnabled] = useState(false);
   const [gameLoaded, setGameLoaded] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
+  const [recentlyUnlockedSpecialHorse, setRecentlyUnlockedSpecialHorse] = useState(null);
   const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME);
 
   // Apply theme fonts using CSS classes
@@ -97,6 +99,19 @@ export default function RandomPicker() {
   const [unlockedSongs, setUnlockedSongs] = useState({ 'THEME SONG': true }); // Theme song is unlocked by default
   const [nestEgg, setNestEgg] = useState(null); // Dragon egg in nest: { placedOn: timestamp, daysRemaining: number }
   const [selectedGrazingHorses, setSelectedGrazingHorses] = useState([]); // Array of horse IDs selected for grazing
+
+  // Progress tracking for special unlocks
+  const [specialUnlockProgress, setSpecialUnlockProgress] = useState({
+    win_streak: 0,
+    current_win_streak: 0,
+    perfect_bet: 0,
+    current_bet_streak: 0,
+    best_time: null,
+    care_count: 0,
+    labyrinth_completions: 0,
+    unlocked_songs_count: 0,
+    dragon_hatches: 0
+  });
 
   // Horse avatars can now be custom images located in the `public` folder.
   const horseAvatars = [
@@ -148,6 +163,221 @@ export default function RandomPicker() {
     "/horses/magicalgirlhorse.png",
     "/horses/scarecrowhorse.png",
   ];
+
+  const [unlockedHorses, setUnlockedHorses] = useState(
+    horseAvatars.map((_, index) => index < 5)
+  );
+
+  const [shuffledAvatars, setShuffledAvatars] = useState(() => {
+    const initialUnlocked = horseAvatars.filter((_, index) => index < 5);
+    // Inline shuffle since shuffleArray isn't defined yet at this point
+    const shuffled = [...initialUnlocked];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
+
+  // Check if special unlock criteria are met
+  const checkSpecialUnlock = (type, progress, requirement = null) => {
+    switch(type) {
+      case 'win_streak':
+        return progress.current_win_streak >= 3;
+      case 'perfect_bet':
+        return progress.current_bet_streak >= 5;
+      case 'speed_demon':
+        return progress.best_time && progress.best_time <= 25;
+      case 'caretaker':
+        return progress.care_count >= 50;
+      case 'labyrinth_explorer':
+        return progress.labyrinth_completions >= 10;
+      case 'music_lover':
+        return progress.unlocked_songs_count >= 6;
+      case 'dragon_hatch':
+        return (Number(progress.dragon_hatches) || 0) >= (requirement || 1);
+      default:
+        return false;
+    }
+  };
+
+  // Update progress and check for unlocks
+  const updateSpecialProgress = (type, value = 1) => {
+    setSpecialUnlockProgress((prev) => {
+      const updated = { ...prev };
+      
+      switch(type) {
+        case 'race_win':
+          updated.current_win_streak += value;
+          updated.win_streak = Math.max(updated.win_streak, updated.current_win_streak);
+          break;
+        case 'race_lose':
+          updated.current_win_streak = 0;
+          break;
+        case 'bet_win':
+          updated.current_bet_streak += value;
+          updated.perfect_bet = Math.max(updated.perfect_bet, updated.current_bet_streak);
+          break;
+        case 'bet_lose':
+          updated.current_bet_streak = 0;
+          break;
+        case 'race_time':
+          if (!updated.best_time || value < updated.best_time) {
+            updated.best_time = value;
+          }
+          break;
+        case 'care_action':
+          updated.care_count += value;
+          break;
+        case 'labyrinth_completion':
+          updated.labyrinth_completions += value;
+          break;
+        case 'song_unlock':
+          updated.unlocked_songs_count = Object.keys(unlockedSongs).length;
+          break;
+        case 'dragon_hatch':
+          updated.dragon_hatches = (Number(updated.dragon_hatches) || 0) + value;
+          break;
+      }
+
+      // Unlock checking is now handled by useEffect hooks that watch specialUnlockProgress
+      return updated;
+    });
+  };
+
+  const handleUnlockHorse = (index, cost) => {
+    if (unlockedHorses[index] || (Number(coins) || 0) < cost) return;
+    setCoins((prev) => (Number(prev) || 0) - cost);
+    setUnlockedHorses((prev) => {
+      const updated = [...prev];
+      updated[index] = true;
+      return updated;
+    });
+  };
+
+  const handleUnlockSong = (songName) => {
+    setUnlockedSongs((prev) => ({
+      ...prev,
+      [songName]: true
+    }));
+    updateSpecialProgress('song_unlock');
+  };
+
+  const handleRemoveItemFromHorseInventory = (horseId, itemName) => {
+    setHorseInventories((prev) => ({
+      ...prev,
+      [horseId]: (prev[horseId] || []).filter((item) => item.name !== itemName)
+    }));
+  };
+
+  const handleRemoveItemFromHorseInventoryByIndex = (horseId, itemIndex) => {
+    setHorseInventories((prev) => {
+      const currentItems = prev[horseId] || [];
+      if (itemIndex < 0 || itemIndex >= currentItems.length) {
+        console.warn('Invalid item index:', itemIndex);
+        return prev;
+      }
+      
+      const newItems = currentItems.filter((_, index) => index !== itemIndex);
+      return {
+        ...prev,
+        [horseId]: newItems
+      };
+    });
+  };
+
+  const handleRemoveItemFromHorseInventoryById = (horseId, itemId) => {
+    setHorseInventories((prev) => {
+      const currentItems = prev[horseId] || [];
+      const newItems = currentItems.filter((item) => item.id !== itemId);
+      return {
+        ...prev,
+        [horseId]: newItems
+      };
+    });
+  };
+
+  const handleAddItemToHorseInventory = (horseId, item) => {
+    setHorseInventories((prev) => {
+      const existingItems = prev[horseId] || [];
+      return {
+        ...prev,
+        [horseId]: [...existingItems, { 
+          ...item, 
+          id: Date.now() + Math.random(), // Simple unique ID
+          addedAt: Date.now() 
+        }]
+      };
+    });
+  };
+
+  // Update shuffled avatars when unlocked horses change
+  useEffect(() => {
+    const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
+    setShuffledAvatars(available);
+  }, [unlockedHorses]);
+
+
+  // Check for special unlocks when entering stable screen or when progress changes
+  useEffect(() => {
+    if (showStable && !recentlyUnlockedSpecialHorse) {
+      Object.keys(specialUnlockCriteria).forEach(horseIndex => {
+        const index = parseInt(horseIndex);
+        const criteria = specialUnlockCriteria[index];
+        
+        if (!unlockedHorses[index] && checkSpecialUnlock(criteria.type, specialUnlockProgress, criteria.requirement)) {
+          setUnlockedHorses((prev) => {
+            const newUnlocked = [...prev];
+            newUnlocked[index] = true;
+            return newUnlocked;
+          });
+          
+          const unlockData = {
+            index: index,
+            avatar: horseAvatars[index],
+            name: horseNames[index],
+            personality: horsePersonalities[index],
+            criteria: criteria
+          };
+          setRecentlyUnlockedSpecialHorse(unlockData);
+          
+          // Only unlock one horse at a time
+          return;
+        }
+      });
+    }
+  }, [showStable, specialUnlockProgress, unlockedHorses, recentlyUnlockedSpecialHorse]);
+
+  // Also check for unlocks whenever specialUnlockProgress changes, regardless of screen
+  useEffect(() => {
+    if (!recentlyUnlockedSpecialHorse) {
+      Object.keys(specialUnlockCriteria).forEach(horseIndex => {
+        const index = parseInt(horseIndex);
+        const criteria = specialUnlockCriteria[index];
+        
+        if (!unlockedHorses[index] && checkSpecialUnlock(criteria.type, specialUnlockProgress, criteria.requirement)) {
+          setUnlockedHorses((prev) => {
+            const newUnlocked = [...prev];
+            newUnlocked[index] = true;
+            return newUnlocked;
+          });
+          
+          const unlockData = {
+            index: index,
+            avatar: horseAvatars[index],
+            name: horseNames[index],
+            personality: horsePersonalities[index],
+            criteria: criteria
+          };
+          setRecentlyUnlockedSpecialHorse(unlockData);
+          
+          // Only unlock one horse at a time
+          return;
+        }
+      });
+    }
+  }, [specialUnlockProgress]);
+
 
 const horseNames = [
     "Shadowfax",
@@ -249,103 +479,66 @@ const horsePersonalities = [
   "Guards the finish line with rustic charm.",
 ];
 
-  const [unlockedHorses, setUnlockedHorses] = useState(
-    horseAvatars.map((_, index) => index < 5)
-  );
-  const [shuffledAvatars, setShuffledAvatars] = useState(() => {
-    const initialUnlocked = horseAvatars.filter((_, index) => index < 5);
-    // Inline shuffle since shuffleArray isn't defined yet at this point
-    const shuffled = [...initialUnlocked];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  });
-
-  const handleUnlockHorse = (index, cost) => {
-    if (unlockedHorses[index] || coins < cost) return;
-    setCoins((prev) => prev - cost);
-    setUnlockedHorses((prev) => {
-      const updated = [...prev];
-      updated[index] = true;
-      return updated;
-    });
-  };
-
-  const handleUnlockSong = (songName) => {
-    setUnlockedSongs((prev) => ({
-      ...prev,
-      [songName]: true
-    }));
-  };
-
-  const handleRemoveItemFromHorseInventory = (horseId, itemName) => {
-    setHorseInventories((prev) => ({
-      ...prev,
-      [horseId]: (prev[horseId] || []).filter(item => item.name !== itemName)
-    }));
-  };
-
-  const handleRemoveItemFromHorseInventoryByIndex = (horseId, itemIndex) => {
-    setHorseInventories((prev) => {
-      const currentInventory = prev[horseId] || [];
-      if (itemIndex < 0 || itemIndex >= currentInventory.length) return prev;
-      
-      const updatedInventory = [...currentInventory];
-      updatedInventory.splice(itemIndex, 1);
-      
-      return {
-        ...prev,
-        [horseId]: updatedInventory
-      };
-    });
-  };
-
-  const handleRemoveItemFromHorseInventoryById = (horseId, itemId) => {
-    setHorseInventories((prev) => {
-      const currentInventory = prev[horseId] || [];
-      const itemIndex = currentInventory.findIndex(item => item.id === itemId);
-      
-      if (itemIndex === -1) return prev;
-      
-      const updatedInventory = [...currentInventory];
-      updatedInventory.splice(itemIndex, 1);
-      
-      console.log(`🔑 App - Removed ${itemId} from horse ${horseId} inventory`);
-      
-      return {
-        ...prev,
-        [horseId]: updatedInventory
-      };
-    });
-  };
-
-  const handleAddItemToHorseInventory = (horseId, item) => {
-    setHorseInventories((prev) => {
-      const currentInventory = prev[horseId] || [];
-      const maxSlots = 4 + (horseSkills[horseId]?.saddlebags || 0);
-      
-      // Check if there's space
-      if (currentInventory.length >= maxSlots) {
-        console.log(`🎒 App - No space in horse ${horseId} inventory (${currentInventory.length}/${maxSlots})`);
-        return prev;
-      }
-      
-      const updatedInventory = [...currentInventory, item];
-      console.log(`🎒 App - Added ${item.name} to horse ${horseId} inventory`);
-      
-      return {
-        ...prev,
-        [horseId]: updatedInventory
-      };
-    });
-  };
-
-  useEffect(() => {
-    const available = horseAvatars.filter((_, index) => unlockedHorses[index]);
-    setShuffledAvatars(available);
-  }, [unlockedHorses]);
+// Special unlock criteria for horses
+// Each horse can have either a coin cost OR special criteria (but not both)
+const specialUnlockCriteria = {
+  5: { // First special horse (index 5)
+    type: 'win_streak',
+    requirement: 3,
+    name: 'Win Streak Champion',
+    description: 'Win 3 races in a row',
+    icon: '🏆'
+  },
+  6: { // Second special horse (index 6)
+    type: 'perfect_bet',
+    requirement: 5,
+    name: 'Master Gambler',
+    description: 'Win 5 bets in a row',
+    icon: '🎯'
+  },
+  7: { // Third special horse (index 7)
+    type: 'speed_demon',
+    requirement: 8.0,
+    name: 'Speed Demon',
+    description: 'Complete a race in under 8 seconds',
+    icon: '⚡'
+  },
+  8: { // Fourth special horse (index 8)
+    type: 'caretaker',
+    requirement: 50,
+    name: 'Master Caretaker',
+    description: 'Care for horses 50 times',
+    icon: '🍎'
+  },
+  9: { // Fifth special horse (index 9)
+    type: 'labyrinth_explorer',
+    requirement: 10,
+    name: 'Labyrinth Explorer',
+    description: 'Complete labyrinth 10 times',
+    icon: '🏰'
+  },
+  10: { // Sixth special horse (index 10)
+    type: 'music_lover',
+    requirement: 6,
+    name: 'Music Lover',
+    description: 'Unlock all 6 songs',
+    icon: '🎵'
+  },
+  42: { // Cuddles - Dragon Horse (index 42)
+    type: 'dragon_hatch',
+    requirement: 1,
+    name: 'Hatchling',
+    description: 'This horse hatches from an egg?',
+    icon: '🥚'
+  },
+  44: { // Fierce - Dragon Horse (index 44)
+    type: 'dragon_hatch',
+    requirement: 2,
+    name: 'Hatchling',
+    description: 'This horse hatches from an egg?',
+    icon: '🥚'
+  }
+};
 
   // Load saved game data on startup
   useEffect(() => {
@@ -357,7 +550,7 @@ const horsePersonalities = [
       console.log('🏠 App - savedData.horseSkillPoints:', savedData?.horseSkillPoints);
       
       if (savedData.coins !== undefined) {
-        setCoins(savedData.coins);
+        setCoins(Number(savedData.coins) || 1000);
       }
       
       if (savedData.fastestTime !== null) {
@@ -447,17 +640,48 @@ const horsePersonalities = [
         console.log('🐴 No saved grazing horses found');
       }
       
+      // Load special unlock progress
+      if (savedData.specialUnlockProgress && typeof savedData.specialUnlockProgress === 'object') {
+        // Merge with defaults to ensure all fields exist
+        const defaultProgress = {
+          win_streak: 0,
+          current_win_streak: 0,
+          perfect_bet: 0,
+          current_bet_streak: 0,
+          best_time: null,
+          care_count: 0,
+          labyrinth_completions: 0,
+          unlocked_songs_count: 0,
+          dragon_hatches: 0
+        };
+        
+        const mergedProgress = {
+          ...defaultProgress,
+          ...savedData.specialUnlockProgress,
+          // Ensure numeric fields are properly converted
+          dragon_hatches: Number(savedData.specialUnlockProgress.dragon_hatches) || 0,
+          care_count: Number(savedData.specialUnlockProgress.care_count) || 0,
+          labyrinth_completions: Number(savedData.specialUnlockProgress.labyrinth_completions) || 0,
+          unlocked_songs_count: Number(savedData.specialUnlockProgress.unlocked_songs_count) || 0
+        };
+        
+        setSpecialUnlockProgress(mergedProgress);
+      }
+      
       console.log('Game data loaded successfully');
     } else {
       console.warn('localStorage not available, game progress will not be saved');
     }
     
     setGameLoaded(true);
+    // Add a small delay to ensure state updates from loading are complete before enabling saves
+    setTimeout(() => setInitialLoadComplete(true), 100);
   }, []);
 
-  // Auto-save game state when key values change
+  // Auto-save game state when key values change (but not on initial load)
   useEffect(() => {
-    if (gameLoaded && gameStorage.isAvailable()) {
+    console.log(`💾 Save useEffect triggered. gameLoaded: ${gameLoaded}, initialLoadComplete: ${initialLoadComplete}`);
+    if (gameLoaded && initialLoadComplete && gameStorage.isAvailable()) {
       const gameState = {
         coins,
         unlockedHorses,
@@ -475,16 +699,64 @@ const horsePersonalities = [
         currentTheme,
         unlockedSongs,
         nestEgg,
-        selectedGrazingHorses
+        selectedGrazingHorses,
+        specialUnlockProgress
       };
       
       console.log('🏠 App - Saving game state:', gameState);
       console.log('🏠 App - horseSkills being saved:', horseSkills);
       console.log('🏠 App - horseSkillPoints being saved:', horseSkillPoints);
+      console.log('🏆 App - specialUnlockProgress being saved:', specialUnlockProgress);
+      console.log('🏆 App - care_count being saved:', specialUnlockProgress?.care_count);
       
       gameStorage.save(gameState);
+      
+      // Verify what was actually saved
+      const savedCheck = gameStorage.load();
+      console.log('🏆 Verification - what was actually saved to localStorage:', savedCheck?.specialUnlockProgress);
+      console.log('🏆 Verification - care_count in localStorage:', savedCheck?.specialUnlockProgress?.care_count);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, nestEgg, selectedGrazingHorses, gameLoaded]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, nestEgg, selectedGrazingHorses, specialUnlockProgress, gameLoaded, initialLoadComplete]);
+
+  // Handle betting logic when a winner is declared
+  useEffect(() => {
+    if (winnerIndex !== null && betHorse !== null && betAmount > 0) {
+      console.log('🎰 Betting logic triggered:', { winnerIndex, betHorse, betAmount, coins });
+      
+      if (winnerIndex === betHorse) {
+        // Player won the bet
+        const multiplier = Math.min(3, Math.max(1.5, itemCount * 0.5));
+        const payout = Math.floor(betAmount * multiplier);
+        console.log('🎉 Player won bet! Payout:', payout);
+        setCoins((c) => (Number(c) || 0) + payout);
+        updateSpecialProgress('bet_win');
+      } else {
+        // Player lost the bet
+        console.log('😔 Player lost bet, losing:', betAmount);
+        setCoins((c) => Math.max(0, (Number(c) || 0) - betAmount));
+        updateSpecialProgress('bet_lose');
+      }
+    }
+  }, [winnerIndex, betHorse, betAmount, itemCount]);
+
+  // Track race wins/losses and race times for special unlocks
+  useEffect(() => {
+    if (winner && winnerIndex !== null) {
+      // Check if any of the player's horses won (assuming first 5 horses are player's)
+      const playerWon = winnerIndex < 5; // Adjust this logic based on your game rules
+      
+      if (playerWon) {
+        updateSpecialProgress('race_win');
+      } else {
+        updateSpecialProgress('race_lose');
+      }
+      
+      // Track best race time
+      if (raceTime > 0) {
+        updateSpecialProgress('race_time', raceTime);
+      }
+    }
+  }, [winner, winnerIndex, raceTime]);
 
   // Enhanced preloading with loading state
   useEffect(() => {
@@ -1261,15 +1533,7 @@ const horsePersonalities = [
             ...prev.slice(0, 9),
           ]);
 
-          if (betHorse !== null && betAmount > 0) {
-            if (winnerIdx === betHorse) {
-              // Cap the multiplier at 3x to prevent excessive payouts
-              const multiplier = Math.min(3, Math.max(1.5, itemCount * 0.5));
-              setCoins((c) => c + Math.floor(betAmount * multiplier));
-            } else {
-              setCoins((c) => Math.max(0, c - betAmount));
-            }
-          }
+          // Betting logic moved to useEffect that watches winnerIndex
 
           clearInterval(commentaryIntervalRef.current);
           
@@ -1410,9 +1674,22 @@ const horsePersonalities = [
       setCustomHorseNames({});
       setHorseCareStats({});
       setDayCount(1);
+      setStableGameTime(0);
       setCurrentTheme(DEFAULT_THEME);
+      setUnlockedMazes({ standard: true });
+      setUnlockedSongs({ 'THEME SONG': true });
       setNestEgg(null);
       setSelectedGrazingHorses([]);
+      setSpecialUnlockProgress({
+        win_streak: 0,
+        current_win_streak: 0,
+        perfect_bet: 0,
+        current_bet_streak: 0,
+        best_time: null,
+        care_count: 0,
+        labyrinth_completions: 0,
+        unlocked_songs_count: 0
+      });
       console.log('All save data cleared');
     }
   };
@@ -1463,8 +1740,7 @@ const horsePersonalities = [
     dramaMomentRef.current = 0;
     usedCommentaryRef.current.clear();
     lastCommentaryRef.current = "";
-    setBetHorse(null);
-    setBetAmount(0);
+    // Don't reset betting state - user should keep their bet for the next race
     setTimeout(() => startRace(), 500);
   };
 
@@ -1472,7 +1748,7 @@ const horsePersonalities = [
 
   const isStartDisabled =
   itemCount === 0 ||
-    (betEnabled && (!betAmount || betAmount > coins || betHorse === null));
+    (betEnabled && (!betAmount || betAmount > (Number(coins) || 0) || betHorse === null));
 
   const getRaceDistanceInfo = (distance) => {
     // Only one race type now - always return "Classic"
@@ -1694,7 +1970,7 @@ const horsePersonalities = [
               )}
               <div className="text-xs bg-yellow-100 px-2 py-1 rounded-full flex items-center gap-1">
                 <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
-                <span>{coins}</span>
+                <span>{Number(coins) || 0}</span>
               </div>
               {isRacing && (
                 <div className="text-sm font-bold text-blue-600">
@@ -1910,6 +2186,7 @@ const horsePersonalities = [
         onUpdateNestEgg={setNestEgg}
         selectedGrazingHorses={selectedGrazingHorses}
         onUpdateSelectedGrazingHorses={setSelectedGrazingHorses}
+        onSpecialProgressUpdate={updateSpecialProgress}
       />
     );
   }
@@ -1927,6 +2204,8 @@ const horsePersonalities = [
           setShowLockedHorses(false);
           setShowStable(true);
         }}
+        specialUnlockCriteria={specialUnlockCriteria}
+        specialUnlockProgress={specialUnlockProgress}
       />
     );
   }
@@ -2009,6 +2288,7 @@ const horsePersonalities = [
             });
           }
         }}
+        onSpecialProgressUpdate={updateSpecialProgress}
       />
     );
   }
@@ -2030,24 +2310,25 @@ const horsePersonalities = [
   return (
     <div className={`min-h-screen bg-gradient-to-br ${setupStyles.setup?.background || theme.colors.mainBg} w-full overflow-x-hidden`}>
       <div className="w-full max-w-none backdrop-blur-md shadow-2xl min-h-screen" style={{ backgroundColor: 'transparent' }}>
-        <div style={{ paddingTop: '4px', paddingBottom: '12px', paddingLeft: '4px', paddingRight: window.innerWidth < 640 ? '12px' : '16px' }}>
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3 relative">
-            <div className="flex items-center">
-              <h1 
-                style={{
-                  fontSize: window.innerWidth < 640 ? '1.5rem' : '2.5rem',
-                  fontWeight: 'bold',
-                  color: '#fbbf24',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-                  fontFamily: '"Press Start 2P", monospace',
-                  letterSpacing: '0.05em',
-                  margin: 0
-                }}
-              >
-                Winner Decides!
-              </h1>
-            </div>
+        {/* Header */}
+        <div 
+          className="flex items-center justify-between mb-3"
+          style={{ 
+            padding: window.innerWidth < 640 ? '8px' : '16px',
+            paddingTop: window.innerWidth < 640 ? '12px' : '16px'
+          }}
+        >
+            <h1 
+              className={`screen-header ${currentTheme === 'saturday' ? 'saturday-title' : ''}`}
+              style={{
+                color: '#fbbf24',
+                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                fontFamily: '"Press Start 2P", monospace',
+                letterSpacing: '0.05em'
+              }}
+            >
+              Winner Decides!
+            </h1>
             <div className="flex items-center gap-1 sm:gap-3 sm:pr-0 sm:static sm:right-auto absolute right-0 top-0 sm:top-auto">
               {fastestTime && (
                 <div className="text-xs sm:text-sm bg-gradient-to-r from-yellow-200 to-yellow-300 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shadow-md hidden sm:block">
@@ -2056,7 +2337,7 @@ const horsePersonalities = [
               )}
               <div className="text-xs sm:text-sm bg-yellow-100 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shadow-md flex items-center gap-1 hidden sm:flex">
                 <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
-                <span>{coins}</span>
+                <span>{Number(coins) || 0}</span>
               </div>
               
               <button
@@ -2081,20 +2362,22 @@ const horsePersonalities = [
                 Stable
               </button>
             </div>
-          </div>
-
+        </div>
+        
+        {/* Content */}
+        <div style={{ padding: window.innerWidth < 640 ? '8px' : '16px', paddingTop: 0 }}>
           {/* Number Input */}
-          <div className="mb-4 mt-8">
+          <div className="mb-4 mt-16">
             <label 
               className="block mb-2 font-semibold text-sm"
               style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
             >
-              Number of Horses (1-{maxItems})
+              Number of Horses (2-{maxItems})
             </label>
             <div className="flex gap-2">
               <input
                 type="number"
-                min="1"
+                min="2"
                 max={maxItems}
                 className="flex-1 px-4 py-3 rounded-xl border-2 focus:outline-none text-sm shadow-md"
                 style={{
@@ -2227,7 +2510,7 @@ const horsePersonalities = [
                   className="font-semibold text-sm"
                   style={{ color: currentTheme === 'saturday' ? '#FFE4B5' : '#e5e7eb' }}
                 >
-                  Place Your Bet (Coins: {coins})
+                  Place Your Bet (Coins: {Number(coins) || 0})
                 </label>
                 <label 
                   className="flex items-center text-xs"
@@ -2262,7 +2545,7 @@ const horsePersonalities = [
                       }}
                       value={betAmount || ""}
                       onChange={(e) =>
-                        setBetAmount(parseInt(e.target.value, 10) || 0)
+                        setBetAmount(Math.max(0, parseInt(e.target.value, 10) || 0))
                       }
                       placeholder="Bet amount"
                     />
@@ -2403,6 +2686,91 @@ const horsePersonalities = [
           />
         </div>
       </div>
+      
+      {/* Special Horse Unlock Modal - show when there's a pending unlock */}
+      {recentlyUnlockedSpecialHorse && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          style={{ zIndex: 9999 }}
+          onClick={() => {
+            setRecentlyUnlockedSpecialHorse(null);
+          }}
+        >
+          <motion.div
+            className="text-center p-6 bg-gradient-to-r from-purple-200 via-purple-300 to-purple-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {Array.from({ length: 30 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-sm"
+                  style={{
+                    backgroundColor: [
+                      "#9333EA",
+                      "#A855F7", 
+                      "#C084FC",
+                      "#DDD6FE",
+                      "#FDE047",
+                    ][i % 5],
+                  }}
+                  initial={{
+                    x: Math.random() * window.innerWidth,
+                    y: -20,
+                    rotate: 0,
+                    opacity: 1,
+                  }}
+                  animate={{
+                    y: window.innerHeight + 20,
+                    x: Math.random() * window.innerWidth,
+                    rotate: Math.random() * 360,
+                    opacity: 0,
+                  }}
+                  transition={{ duration: 3 + Math.random() * 2, delay: Math.random() }}
+                />
+              ))}
+            </div>
+            <div className="relative mb-2 flex justify-center">
+              <MotionFadeInImage
+                src={recentlyUnlockedSpecialHorse.avatar}
+                alt={recentlyUnlockedSpecialHorse.name}
+                className="w-24 h-24 mx-auto object-contain rounded-lg"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl">{recentlyUnlockedSpecialHorse.criteria.icon}</span>
+              <p className="text-lg font-bold text-purple-800">SPECIAL HORSE UNLOCKED!</p>
+            </div>
+            <p className="text-xl font-bold text-purple-900 mb-2">
+              {recentlyUnlockedSpecialHorse.name}
+            </p>
+            <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-3 mb-3">
+              <p className="text-sm font-bold text-purple-800 mb-1">
+                🏆 {recentlyUnlockedSpecialHorse.criteria.name}
+              </p>
+              <p className="text-xs text-purple-700">
+                {recentlyUnlockedSpecialHorse.criteria.description}
+              </p>
+            </div>
+            <p className="text-base text-gray-700 mb-4">
+              Personality: {recentlyUnlockedSpecialHorse.personality}
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setRecentlyUnlockedSpecialHorse(null)}
+              className="px-4 py-2 bg-purple-600 text-purple-100 rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow-lg"
+            >
+              Awesome!
+            </motion.button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

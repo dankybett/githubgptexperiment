@@ -135,6 +135,7 @@ const HorseStable = ({
   onUpdateNestEgg,
   selectedGrazingHorses,
   onUpdateSelectedGrazingHorses,
+  onSpecialProgressUpdate,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -150,6 +151,7 @@ const HorseStable = ({
   const [currentSong, setCurrentSong] = useState(null);
   const [showLabyrinthEntrance, setShowLabyrinthEntrance] = useState(false);
   const [horseBeingSent, setHorseBeingSent] = useState(null);
+  const [showTvModal, setShowTvModal] = useState(false);
   const [showSongUnlockModal, setShowSongUnlockModal] = useState(false);
   const [unlockedSongData, setUnlockedSongData] = useState(null);
   const [showDragonNestModal, setShowDragonNestModal] = useState(false);
@@ -482,6 +484,11 @@ COIN TREASURES & REWARDS
     }
     setCareActionFeedback({ type: 'success', message: feedbackMessage });
     setTimeout(() => setCareActionFeedback(null), 2000);
+
+    // Track progress for special unlocks
+    if (onSpecialProgressUpdate) {
+      onSpecialProgressUpdate('care_action');
+    }
 
     // SIMPLEST POSSIBLE APPROACH - Just update the horse directly
     setStableHorses(prevHorses => {
@@ -1227,6 +1234,12 @@ COIN TREASURES & REWARDS
               if (onUpdateNestEgg) {
                 onUpdateNestEgg(null);
               }
+              
+              // Track progress for dragon horse unlocks
+              if (onSpecialProgressUpdate) {
+                onSpecialProgressUpdate('dragon_hatch');
+              }
+              
               setShowHatchingModal(true);
               setNewDayNotification(`Day ${newDay} - Dragon egg has hatched! 🐉`);
             } else {
@@ -2066,6 +2079,34 @@ COIN TREASURES & REWARDS
             />
           </motion.div>
 
+          {/* TV - Decorative Asset */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: '800px',
+              left: '1200px',
+              width: '150px',
+              height: '120px',
+              zIndex: '10',
+              cursor: 'pointer'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowTvModal(true);
+            }}
+            title="Click to watch TV"
+          >
+            <img 
+              src="/TV/TV.png" 
+              alt="TV" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </motion.div>
+
           
          
           {/* Roaming Horses */}
@@ -2405,10 +2446,10 @@ COIN TREASURES & REWARDS
           <motion.div
             style={{
               position: 'absolute',
-              top: '50px',
+              top: '55px',
               right: '750px',
-              width: '120px',
-              height: '150px',
+              width: '160px',
+              height: '190px',
               zIndex: '12',
               cursor: 'pointer'
             }}
@@ -3783,6 +3824,61 @@ COIN TREASURES & REWARDS
               onClose={() => setShowTarotModal(false)}
               currentTheme={currentTheme}
             />
+          </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* TV Modal */}
+    {showTvModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          className="relative bg-gray-900 rounded-lg p-6 max-w-4xl w-full mx-4"
+          style={{ maxHeight: '90vh' }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 
+              className="text-xl font-bold text-white"
+              style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}
+            >
+              📺 TV - Now Playing
+            </h2>
+            <button
+              onClick={() => setShowTvModal(false)}
+              className="text-white hover:text-gray-300 text-2xl font-bold"
+              style={{ fontFamily: 'Press Start 2P, monospace' }}
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="flex justify-center">
+            <video
+              width="800"
+              height="450"
+              controls
+              autoPlay
+              style={{
+                maxWidth: '100%',
+                height: 'auto',
+                borderRadius: '8px'
+              }}
+            >
+              <source src="/TV/One day we'll run.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          
+          <div className="text-center mt-4">
+            <p 
+              className="text-gray-300"
+              style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}
+            >
+              "One Day We'll Run"
+            </p>
           </div>
         </motion.div>
       </div>

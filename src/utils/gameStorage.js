@@ -14,6 +14,22 @@ const defaultGameState = {
   horseCareStats: {}, // Store health, energy, happiness, cleanliness, isInjured by horse index
   dayCount: 1, // Persistent day counter for stable
   stableGameTime: 0, // Persistent time of day in stable (0-24 hours)
+  specialUnlockProgress: {
+    win_streak: 0,
+    current_win_streak: 0,
+    perfect_bet: 0,
+    current_bet_streak: 0,
+    best_time: null,
+    care_count: 0,
+    labyrinth_completions: 0,
+    unlocked_songs_count: 0,
+    dragon_hatches: 0
+  },
+  unlockedMazes: { standard: true },
+  currentTheme: 'default',
+  unlockedSongs: { 'THEME SONG': true },
+  nestEgg: null,
+  selectedGrazingHorses: [],
   version: STORAGE_VERSION
 };
 
@@ -61,6 +77,13 @@ export const gameStorage = {
         customHorseNames: typeof parsed.customHorseNames === 'object' && parsed.customHorseNames !== null ? parsed.customHorseNames : {},
         horseCareStats: typeof parsed.horseCareStats === 'object' && parsed.horseCareStats !== null ? parsed.horseCareStats : {},
         dayCount: typeof parsed.dayCount === 'number' && parsed.dayCount >= 1 ? parsed.dayCount : defaultGameState.dayCount,
+        stableGameTime: typeof parsed.stableGameTime === 'number' ? parsed.stableGameTime : defaultGameState.stableGameTime,
+        specialUnlockProgress: typeof parsed.specialUnlockProgress === 'object' && parsed.specialUnlockProgress !== null ? parsed.specialUnlockProgress : defaultGameState.specialUnlockProgress,
+        unlockedMazes: typeof parsed.unlockedMazes === 'object' && parsed.unlockedMazes !== null ? parsed.unlockedMazes : defaultGameState.unlockedMazes,
+        currentTheme: typeof parsed.currentTheme === 'string' ? parsed.currentTheme : defaultGameState.currentTheme,
+        unlockedSongs: typeof parsed.unlockedSongs === 'object' && parsed.unlockedSongs !== null ? parsed.unlockedSongs : defaultGameState.unlockedSongs,
+        nestEgg: parsed.nestEgg !== undefined ? parsed.nestEgg : defaultGameState.nestEgg,
+        selectedGrazingHorses: Array.isArray(parsed.selectedGrazingHorses) ? parsed.selectedGrazingHorses : defaultGameState.selectedGrazingHorses,
         version: STORAGE_VERSION
       };
 

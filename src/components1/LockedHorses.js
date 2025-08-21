@@ -55,6 +55,8 @@ const LockedHorses = ({
   coins,
   onUnlockHorse,
   onBack,
+  specialUnlockCriteria = {},
+  specialUnlockProgress = {}
 }) => {
     const [recentlyUnlocked, setRecentlyUnlocked] = useState(null);
 
@@ -65,6 +67,60 @@ const LockedHorses = ({
       name: horseNames[index],
       personality: horsePersonalities[index],
     });
+  };
+
+  // Check if special unlock criteria are met
+  const isSpecialUnlockMet = (index) => {
+    const criteria = specialUnlockCriteria[index];
+    if (!criteria) return false;
+    
+    const progress = specialUnlockProgress;
+    
+    switch (criteria.type) {
+      case 'win_streak':
+        return progress.current_win_streak >= criteria.requirement;
+      case 'perfect_bet':
+        return progress.current_bet_streak >= criteria.requirement;
+      case 'speed_demon':
+        return progress.best_time && progress.best_time <= criteria.requirement;
+      case 'caretaker':
+        return progress.care_count >= criteria.requirement;
+      case 'labyrinth_explorer':
+        return progress.labyrinth_completions >= criteria.requirement;
+      case 'music_lover':
+        return progress.unlocked_songs_count >= criteria.requirement;
+      case 'dragon_hatch':
+        return progress.dragon_hatches >= criteria.requirement;
+      default:
+        return false;
+    }
+  };
+
+  // Get progress display text for special unlocks
+  const getProgressText = (index) => {
+    const criteria = specialUnlockCriteria[index];
+    if (!criteria) return '';
+    
+    const progress = specialUnlockProgress;
+    
+    switch (criteria.type) {
+      case 'win_streak':
+        return `${progress.current_win_streak || 0}/${criteria.requirement}`;
+      case 'perfect_bet':
+        return `${progress.current_bet_streak || 0}/${criteria.requirement}`;
+      case 'speed_demon':
+        return progress.best_time ? `${progress.best_time.toFixed(1)}s (need ≤${criteria.requirement}s)` : 'No time recorded';
+      case 'caretaker':
+        return `${progress.care_count || 0}/${criteria.requirement}`;
+      case 'labyrinth_explorer':
+        return `${progress.labyrinth_completions || 0}/${criteria.requirement}`;
+      case 'music_lover':
+        return `${progress.unlocked_songs_count || 0}/${criteria.requirement}`;
+      case 'dragon_hatch':
+        return `${progress.dragon_hatches || 0}/${criteria.requirement}`;
+      default:
+        return '';
+    }
   };
 
   return (
@@ -92,21 +148,50 @@ const LockedHorses = ({
                 alt="Locked horse"
                 className="w-20 h-20 object-contain opacity-50 silhouette"
               />
-               <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs font-semibold text-amber-800">
+              <div className="mt-2 text-center">
+                <div className="text-xs font-semibold text-amber-800 mb-2">
                   {horseNames[index]}
-                </span>
-                <button
-                  onClick={() => handleUnlock(index)}
-                  disabled={coins < UNLOCK_COST}
-                  className={`px-3 py-1 text-xs rounded ${
-                    coins < UNLOCK_COST
-                      ? "bg-gray-400 text-gray-200"
-                      : "bg-green-600 text-white"
-                  }`}
-                >
-                  Unlock ({UNLOCK_COST})
-                </button>
+                </div>
+                
+                {/* Check if this is a special horse */}
+                {specialUnlockCriteria[index] ? (
+                  // Special unlock horse
+                  <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-2">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <span className="text-lg">{specialUnlockCriteria[index].icon}</span>
+                      <span className="text-xs font-bold text-purple-800">SPECIAL</span>
+                    </div>
+                    <div className="text-xs text-purple-700 mb-1 font-medium">
+                      {specialUnlockCriteria[index].name}
+                    </div>
+                    <div className="text-xs text-purple-600 mb-2">
+                      {specialUnlockCriteria[index].description}
+                    </div>
+                    <div className="text-xs font-bold">
+                      Progress: <span className={isSpecialUnlockMet(index) ? "text-green-600" : "text-orange-600"}>
+                        {getProgressText(index)}
+                      </span>
+                    </div>
+                    {isSpecialUnlockMet(index) && (
+                      <div className="text-xs text-green-600 font-bold mt-1">
+                        ✓ UNLOCKED!
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Regular coin unlock horse
+                  <button
+                    onClick={() => handleUnlock(index)}
+                    disabled={coins < UNLOCK_COST}
+                    className={`px-3 py-1 text-xs rounded ${
+                      coins < UNLOCK_COST
+                        ? "bg-gray-400 text-gray-200"
+                        : "bg-green-600 text-white"
+                    }`}
+                  >
+                    Unlock ({UNLOCK_COST} coins)
+                  </button>
+                )}
               </div>
             </div>
           )
