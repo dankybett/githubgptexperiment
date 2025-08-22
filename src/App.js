@@ -27,6 +27,7 @@ export default function RandomPicker() {
   const [isRacing, setIsRacing] = useState(false);
   const [winner, setWinner] = useState(null);
   const [winnerIndex, setWinnerIndex] = useState(null);
+  const [raceParticipantNames, setRaceParticipantNames] = useState([]);
   const [commentary, setCommentary] = useState("");
   const [history, setHistory] = useState([]);
   const [positions, setPositionsState] = useState(Array(5).fill(0));
@@ -1503,7 +1504,7 @@ const specialUnlockCriteria = {
             ((Date.now() - raceStartTime.current) / 1000).toFixed(1)
           );
 
-          const winnerName = getHorseName(items[winnerIdx], winnerIdx);
+          const winnerName = raceParticipantNames[winnerIdx] || getHorseName(items[winnerIdx], winnerIdx);
           setWinner(winnerName);
           setWinnerIndex(winnerIdx);
           setCommentary(`🏆 ${winnerName} wins in a thrilling finish!`);
@@ -1569,6 +1570,10 @@ const specialUnlockCriteria = {
       id: index,
       item: item
     }));
+    
+    // Store the participant names at race start to prevent name changes during unlocks
+    const participantNames = horseData.map(horse => horse.name);
+    setRaceParticipantNames(participantNames);
 
     // Prepare settings
     const settings = {
@@ -2124,7 +2129,7 @@ const specialUnlockCriteria = {
             shuffledAvatars={shuffledAvatars}
             surgingHorses={surgingHorses}
             fatiguedHorses={fatiguedHorses}
-            getHorseName={getHorseName}
+            getHorseName={(item, index) => raceParticipantNames[index] || getHorseName(item, index)}
             getRaceSettings={getRaceSettings}
             getRaceDistanceInfo={getRaceDistanceInfo}
             onRaceAgain={handleRaceAgain}

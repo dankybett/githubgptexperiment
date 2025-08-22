@@ -152,6 +152,7 @@ const HorseStable = ({
   const [showLabyrinthEntrance, setShowLabyrinthEntrance] = useState(false);
   const [horseBeingSent, setHorseBeingSent] = useState(null);
   const [showTvModal, setShowTvModal] = useState(false);
+  const [currentTvVideo, setCurrentTvVideo] = useState(0);
   const [showSongUnlockModal, setShowSongUnlockModal] = useState(false);
   const [unlockedSongData, setUnlockedSongData] = useState(null);
   const [showDragonNestModal, setShowDragonNestModal] = useState(false);
@@ -180,6 +181,18 @@ const HorseStable = ({
   // Stable dimensions - much larger world to explore
   const STABLE_WIDTH = 1600;  // 2x larger than original 800
   const STABLE_HEIGHT = 1800; // 3x larger than original 600
+  
+  // TV videos list
+  const tvVideos = [
+    {
+      src: "/TV/One day we'll run.mp4",
+      title: "One Day We'll Run"
+    },
+    {
+      src: "/TV/partners in hoof.mp4",
+      title: "Partners in Hoof"
+    }
+  ];
   
   // Zoom limits
   const MIN_ZOOM = 0.5;
@@ -1643,7 +1656,7 @@ COIN TREASURES & REWARDS
               left: '1025px',
               width: '120px',
               height: '120px',
-              backgroundImage: 'url(/stable/dragoneggnest.png)',
+              backgroundImage: `url(/stable/${nestEgg ? 'fullnest' : 'dragoneggnest'}.png)`,
               backgroundSize: 'contain',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
@@ -3293,7 +3306,7 @@ COIN TREASURES & REWARDS
             <div 
               className="w-32 h-32 mx-auto mb-4 relative"
               style={{
-                backgroundImage: 'url(/stable/dragoneggnest.png)',
+                backgroundImage: `url(/stable/${nestEgg ? 'fullnest' : 'dragoneggnest'}.png)`,
                 backgroundSize: 'contain',
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center'
@@ -3855,8 +3868,27 @@ COIN TREASURES & REWARDS
             </button>
           </div>
           
+          {/* Video Selection Buttons */}
+          <div className="flex justify-center gap-4 mb-4">
+            {tvVideos.map((video, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentTvVideo(index)}
+                className={`px-4 py-2 rounded font-bold text-sm ${
+                  currentTvVideo === index
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+                style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}
+              >
+                {video.title}
+              </button>
+            ))}
+          </div>
+
           <div className="flex justify-center">
             <video
+              key={currentTvVideo} // Force re-render when video changes
               width="800"
               height="450"
               controls
@@ -3867,7 +3899,7 @@ COIN TREASURES & REWARDS
                 borderRadius: '8px'
               }}
             >
-              <source src="/TV/One day we'll run.mp4" type="video/mp4" />
+              <source src={tvVideos[currentTvVideo].src} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           </div>
@@ -3877,7 +3909,7 @@ COIN TREASURES & REWARDS
               className="text-gray-300"
               style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}
             >
-              "One Day We'll Run"
+              "{tvVideos[currentTvVideo].title}"
             </p>
           </div>
         </motion.div>
