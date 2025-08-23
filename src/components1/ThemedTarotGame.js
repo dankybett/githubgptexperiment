@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { themeUtils } from "../utils/themes";
+import { TAROT_CARDS } from "../utils/tarotCards";
 
-const ThemedTarotGame = ({ onClose, currentTheme = 'retro' }) => {
+const ThemedTarotGame = ({ onClose, currentTheme = 'retro', unlockedTarotCards = [] }) => {
   const [gameState, setGameState] = useState('start'); // start, dealing, revealing, complete
   const [drawnCards, setDrawnCards] = useState([]);
   const [revealedCards, setRevealedCards] = useState([false, false, false]);
@@ -55,11 +56,24 @@ const ThemedTarotGame = ({ onClose, currentTheme = 'retro' }) => {
     { name: "The World", number: 21, filename: "21.theworld.png",
       past: "completion of journey", present: "success and accomplishment", future: "cosmic fulfillment" }
   ];
+  
+  // Filter major arcana to only include unlocked cards
+  const availableCards = majorArcana.filter(card => 
+    unlockedTarotCards.includes(card.number)
+  );
+  
+  // Check if we have enough cards to play (need at least 3)
+  const canPlay = availableCards.length >= 3;
 
   const positions = ["Past", "Present", "Future"];
 
   const drawThreeCards = () => {
-    const shuffled = [...majorArcana].sort(() => Math.random() - 0.5);
+    if (!canPlay) {
+      console.log('Not enough unlocked cards to play tarot game');
+      return;
+    }
+    
+    const shuffled = [...availableCards].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 3);
     setDrawnCards(selected);
     setGameState('dealing');
@@ -136,26 +150,56 @@ const ThemedTarotGame = ({ onClose, currentTheme = 'retro' }) => {
     <div className="w-full text-center" style={{ fontFamily: 'Press Start 2P, monospace' }}>
       {gameState === 'start' && (
         <div>
-          <div className="mb-8 p-6 border-2 border-purple-400 bg-purple-900/20 rounded-lg">
-            <div className="text-4xl mb-4">🔮</div>
-            <p className="text-lg mb-4 text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px', lineHeight: '1.6' }}>
-              The ancient cards await your call. Three sacred arcana will reveal the threads of your past, 
-              illuminate your present, and unveil the mysteries of your future.
-            </p>
-            <p className="text-purple-300" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
-              Are you ready to glimpse your destiny?
-            </p>
-          </div>
-          
-          <motion.button 
-            onClick={drawThreeCards}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`px-8 py-4 ${buttonStyles} font-bold text-lg shadow-lg`}
-            style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '14px' }}
-          >
-            ✨ TELL MY FORTUNE ✨
-          </motion.button>
+          {canPlay ? (
+            <div>
+              <div className="mb-8 p-6 border-2 border-purple-400 bg-purple-900/20 rounded-lg">
+                <div className="text-4xl mb-4">🔮</div>
+                <p className="text-lg mb-4 text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px', lineHeight: '1.6' }}>
+                  The ancient cards await your call. Three sacred arcana will reveal the threads of your past, 
+                  illuminate your present, and unveil the mysteries of your future.
+                </p>
+                <p className="text-purple-300" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                  Are you ready to glimpse your destiny?
+                </p>
+                <p className="text-purple-400 mt-3" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                  Cards available: {availableCards.length}/{majorArcana.length}
+                </p>
+              </div>
+              
+              <motion.button 
+                onClick={drawThreeCards}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-8 py-4 ${buttonStyles} font-bold text-lg shadow-lg`}
+                style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '14px' }}
+              >
+                ✨ TELL MY FORTUNE ✨
+              </motion.button>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-8 p-6 border-2 border-red-400 bg-red-900/20 rounded-lg">
+                <div className="text-4xl mb-4">🔒</div>
+                <p className="text-lg mb-4 text-red-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px', lineHeight: '1.6' }}>
+                  The cards remain hidden in shadow. The fortune teller needs at least 3 cards to divine your destiny.
+                </p>
+                <p className="text-red-300" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                  Find more cards in the labyrinth to unlock this ancient wisdom.
+                </p>
+                <p className="text-red-400 mt-3" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                  Cards found: {availableCards.length}/3 needed
+                </p>
+              </div>
+              
+              <button 
+                className="px-8 py-4 bg-gray-600 text-gray-300 font-bold text-lg shadow-lg cursor-not-allowed"
+                style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '14px' }}
+                disabled
+              >
+                🔒 FIND MORE CARDS 🔒
+              </button>
+            </div>
+          )}
         </div>
       )}
 

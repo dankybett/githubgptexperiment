@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { INVENTORY_ITEMS, inventoryUtils } from "../utils/inventoryItems";
 import ItemSelectionModal from "./ItemSelectionModal";
 import { themeUtils } from "../utils/themes";
+import { tarotCardUtils, TAROT_CARDS } from "../utils/tarotCards";
 
 const MAZE_SIZE = 12;
 const VIEWPORT_SIZE = 6; // 6x6 visible area
@@ -20,6 +21,7 @@ const CELL_PORTAL_A = 11;
 const CELL_PORTAL_B = 12;
 const CELL_DARK_ZONE = 13;
 const CELL_VAULT = 14;
+const CELL_TAROT_CHEST = 16;
 const CELL_KEY = 15;
 
 // TileSprite component for tileset rendering
@@ -81,6 +83,7 @@ const TILE_MAP = {
   [CELL_PORTAL_B]: { x: 2, y: 1 },    // Portal B (could be same or different)
   [CELL_DARK_ZONE]: { x: 0, y: 1},   // Dark zone
   [CELL_VAULT]: { x: 3, y: 1},       // Vault
+  [CELL_TAROT_CHEST]: { x: 5, y: 6}, // Tarot Chest
   [CELL_KEY]: { x: 8, y: 0},         // Key
   [CELL_MOVING_WALL]: { x: 0, y: 0}, // Moving wall
   
@@ -186,6 +189,7 @@ const TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
   CELL_PORTAL_A,
   CELL_PORTAL_B,
   CELL_VAULT,
+  CELL_TAROT_CHEST,
   // Add more cell types that have transparent backgrounds
 ]);
 
@@ -460,7 +464,7 @@ const getViewportBounds = (horseX, horseY) => {
   return { startX, startY };
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro', unlockedSongs = {} }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro', unlockedSongs = {}, unlockedTarotCards = [] }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [horseDirection, setHorseDirection] = useState('right'); // 'left' or 'right'
@@ -486,14 +490,22 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [foundHorse, setFoundHorse] = useState(null);
 
 
-  // Debug when selectedHorse changes
+  // Debug when selectedHorse changes and sync inventories
   useEffect(() => {
     console.log('🐎 Labyrinth - selectedHorse prop changed:', selectedHorse);
     console.log('🎒 Labyrinth - Horse inventory from prop:', selectedHorse?.inventory);
+    
     if (selectedHorse?.inventory) {
+      // Sync horseInventory state with the actual horse's inventory
+      setHorseInventory(selectedHorse.inventory);
+      
       const keyCount = inventoryUtils.getItemCount(selectedHorse.inventory, 'key');
       console.log('🗝️ Labyrinth - Keys counted in inventory:', keyCount);
       setAvailableKeys(keyCount);
+    } else {
+      // No horse or no inventory
+      setHorseInventory([]);
+      setAvailableKeys(0);
     }
   }, [selectedHorse]);
 
@@ -712,6 +724,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [showTreasureReveal, setShowTreasureReveal] = useState(false);
   const [currentVault, setCurrentVault] = useState(null);
   
+  // Tarot chest interaction states
+  const [showTarotChestModal, setShowTarotChestModal] = useState(false);
+  const [showTarotReveal, setShowTarotReveal] = useState(false);
+  const [currentTarotChest, setCurrentTarotChest] = useState(null);
+  
   // Visual feedback functions
   const addFloatingText = useCallback((text, color = '#10b981') => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -774,6 +791,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     const mazeType = MAZE_TYPES[selectedMazeType];
     let keysPlaced = 0;
     let vaultPlaced = false;
+    let tarotChestPlaced = false;
     
     for (let y = 1; y < MAZE_SIZE - 1; y++) {
       for (let x = 1; x < MAZE_SIZE - 1; x++) {
@@ -806,6 +824,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           } else if (rand < 0.42 && !vaultPlaced && newVaultKeys.length > 0) {
             newMaze[y][x] = CELL_VAULT;
             vaultPlaced = true;
+          } else if (rand < 0.45 && !tarotChestPlaced) {
+            newMaze[y][x] = CELL_TAROT_CHEST;
+            tarotChestPlaced = true;
           } else {
             // Only add maze-specific features if no base feature was placed
             // Maze-type specific features
@@ -884,6 +905,27 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     } else {
       setMaxLevel(1);
       setCurrentLevel(1);
+    }
+    
+    // Guarantee that exactly 1 tarot chest is placed
+    if (!tarotChestPlaced) {
+      // Find a suitable empty location for the tarot chest
+      const emptyCells = [];
+      for (let y = 1; y < MAZE_SIZE - 1; y++) {
+        for (let x = 1; x < MAZE_SIZE - 1; x++) {
+          if (newMaze[y][x] === CELL_EMPTY && 
+              !(x === 1 && y === 1) && // Avoid horse spawn
+              !(x === MAZE_SIZE - 2 && y === MAZE_SIZE - 2)) { // Avoid minotaur spawn
+            emptyCells.push({ x, y });
+          }
+        }
+      }
+      
+      if (emptyCells.length > 0) {
+        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        newMaze[randomCell.y][randomCell.x] = CELL_TAROT_CHEST;
+        tarotChestPlaced = true;
+      }
     }
     
     // Set the reward positions state
@@ -1509,6 +1551,52 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         setShowVaultModal(true);
         // Game will be paused while modal is open
         return prevPos; // Don't move onto vault yet
+      } else if (cell === CELL_TAROT_CHEST) {
+        // Pause game and show tarot chest interaction modal
+        console.log('🔮 Tarot chest interaction - availableKeys state:', availableKeys);
+        
+        // Get a random locked tarot card
+        const randomLockedCard = tarotCardUtils.getRandomLockedCard(unlockedTarotCards);
+        
+        if (!randomLockedCard) {
+          // All cards are already unlocked, give a generic reward instead
+          console.log('🔮 All tarot cards already unlocked, giving generic reward');
+          const genericReward = { 
+            name: 'Mystical Energy', 
+            emoji: '✨', 
+            tileKey: 'REWARD_MYSTICAL_ENERGY',
+            ...INVENTORY_ITEMS.treasure 
+          };
+          
+          setCurrentTarotChest({
+            position: { x: nextMove.x, y: nextMove.y },
+            reward: genericReward
+          });
+        } else {
+          // Create a proper tarot card reward with the specific card data
+          const tarotCardReward = {
+            id: `tarot_card_${randomLockedCard.id}`,
+            name: randomLockedCard.name,
+            description: randomLockedCard.description,
+            image: `/Tarot cards/${randomLockedCard.fileName}`,
+            category: 'tarot_card',
+            stackable: false,
+            cardId: randomLockedCard.id, // Store the card ID for unlocking
+            emoji: '🔮',
+            tileKey: 'CELL_TAROT_CHEST'
+          };
+          
+          console.log('🔮 Selected tarot card:', randomLockedCard.name, 'ID:', randomLockedCard.id);
+          
+          setCurrentTarotChest({
+            position: { x: nextMove.x, y: nextMove.y },
+            reward: tarotCardReward
+          });
+        }
+        
+        setShowTarotChestModal(true);
+        // Game will be paused while modal is open
+        return prevPos; // Don't move onto tarot chest yet
       } else if (cell === CELL_TRAP) {
         const trapSense = getSkillLevel('trapSense');
         const thickSkin = getSkillLevel('thickSkin');
@@ -1662,10 +1750,99 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     
     setCurrentVault(null);
   }, [currentVault]);
+  
+  // Tarot chest interaction functions
+  const handleTarotChestUnlock = useCallback(() => {
+    if (!currentTarotChest || availableKeys < 2) return;
+    
+    // Add reward and consume 2 keys
+    setCurrentRewards(prev => [...prev, currentTarotChest.reward]);
+    setAvailableKeys(prev => prev - 2);
+    
+    // Remove 2 keys from appropriate sources (prioritize inventory first)
+    const hasKeysInInventory = horseInventory.filter(item => item.id === 'key').length;
+    const keysCollectedThisRun = collectedItemsThisRun.filter(item => item.id === 'key').length;
+    
+    let keysToRemoveFromInventory = Math.min(2, hasKeysInInventory);
+    let keysToRemoveFromCollected = 2 - keysToRemoveFromInventory;
+    
+    // Remove keys from horse inventory first
+    if (keysToRemoveFromInventory > 0) {
+      setHorseInventory(prev => {
+        let newInventory = [...prev];
+        for (let i = 0; i < keysToRemoveFromInventory; i++) {
+          newInventory = inventoryUtils.removeItem(newInventory, 'key');
+        }
+        console.log('🔮 Tarot chest - Removed', keysToRemoveFromInventory, 'keys from horse inventory');
+        return newInventory;
+      });
+    }
+    
+    // Remove remaining keys from collected items
+    if (keysToRemoveFromCollected > 0) {
+      setCollectedItemsThisRun(prev => {
+        let newItems = [...prev];
+        let removed = 0;
+        for (let i = newItems.length - 1; i >= 0 && removed < keysToRemoveFromCollected; i--) {
+          if (newItems[i].id === 'key') {
+            newItems.splice(i, 1);
+            removed++;
+          }
+        }
+        console.log('🔮 Tarot chest - Removed', removed, 'keys from items collected this run');
+        return newItems;
+      });
+    }
+    
+    // Add the tarot card to collected items
+    setCollectedItemsThisRun(prev => [...prev, currentTarotChest.reward]);
+    
+    // Close tarot chest modal and show tarot reveal
+    setShowTarotChestModal(false);
+    setShowTarotReveal(true);
+  }, [currentTarotChest, availableKeys, horseInventory, collectedItemsThisRun]);
+  
+  const handleTarotRevealContinue = useCallback(() => {
+    if (!currentTarotChest) return;
+    
+    // Remove tarot chest from maze
+    setMaze(prevMaze => {
+      const newMaze = prevMaze.map(row => [...row]);
+      newMaze[currentTarotChest.position.y][currentTarotChest.position.x] = CELL_EMPTY;
+      return newMaze;
+    });
+    
+    // Move horse to tarot chest position
+    setHorsePos({ x: currentTarotChest.position.x, y: currentTarotChest.position.y });
+    
+    // Close reveal modal and resume game
+    setShowTarotReveal(false);
+    setCurrentTarotChest(null);
+    
+    // Visual feedback
+    addFloatingText(`${selectedHorse?.name} found ${currentTarotChest.reward.name}!`, '#7c3aed');
+    flashHorse('#7c3aed');
+  }, [currentTarotChest, addFloatingText, flashHorse]);
+  
+  const handleTarotChestLeave = useCallback(() => {
+    // Close modal and remove tarot chest from maze so horse can continue
+    setShowTarotChestModal(false);
+    
+    // Remove tarot chest from maze (same as unlock but without rewards)
+    if (currentTarotChest) {
+      setMaze(prevMaze => {
+        const newMaze = prevMaze.map(row => [...row]);
+        newMaze[currentTarotChest.position.y][currentTarotChest.position.x] = CELL_EMPTY;
+        return newMaze;
+      });
+    }
+    
+    setCurrentTarotChest(null);
+  }, [currentTarotChest]);
 
   // Game loop
   useEffect(() => {
-    if (gameState === 'exploring' && !showVaultModal && !showTreasureReveal) {
+    if (gameState === 'exploring' && !showVaultModal && !showTreasureReveal && !showTarotChestModal && !showTarotReveal) {
       const performanceModifiers = getHorsePerformanceModifiers();
       const adjustedGameSpeed = gameSpeed / performanceModifiers.speed;
       
@@ -1804,6 +1981,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     setTrapHits(0);
     setCollectedKeys([]);
     setCurrentLevel(1);
+    
+    // Reset tarot chest states
+    setShowTarotChestModal(false);
+    setShowTarotReveal(false);
+    setCurrentTarotChest(null);
     setCollectedItemsThisRun([]);
     // Reset session injury flag for new runs
     setHorseInjuredThisSession(false);
@@ -2201,6 +2383,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     // Handle other labyrinth items
     if (item.id === 'key' || item.name === 'Key') return TILE_MAP[CELL_KEY];
     if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP[CELL_VAULT];
+    if (item.id === 'tarot_card' || item.name === 'Tarot Card') return TILE_MAP[CELL_TAROT_CHEST];
     // Note: powerups are not included since they're consumed immediately, never stored in inventory
     
     // Fallback to null if no tile mapping exists
@@ -3076,6 +3259,100 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           </div>
         </div>
       )}
+      
+      {/* Tarot Chest Interaction Modal */}
+      {showTarotChestModal && currentTarotChest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div style={{ width: '80px', height: '80px' }}>
+                  <TileSprite 
+                    tileX={TILE_MAP[CELL_TAROT_CHEST].x} 
+                    tileY={TILE_MAP[CELL_TAROT_CHEST].y}
+                  />
+                </div>
+              </div>
+              
+              <h2 className="text-xl font-bold text-gray-800">
+                {selectedHorse?.name} has found a mystical tarot chest!
+              </h2>
+              
+              <p className="text-sm text-gray-600">
+                This ancient chest contains powerful tarot cards but requires 2 keys to unlock.
+              </p>
+              
+              <button
+                onClick={handleTarotChestUnlock}
+                disabled={availableKeys < 2}
+                className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
+                  availableKeys >= 2 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                🗝️🗝️ Unlock {availableKeys >= 2 ? `(${availableKeys} keys)` : `(Need 2 keys, have ${availableKeys})`}
+              </button>
+              
+              <button
+                onClick={handleTarotChestLeave}
+                className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              >
+                Leave Chest
+              </button>
+              
+              {availableKeys < 2 && (
+                <p className="text-xs text-red-600 mt-2">
+                  You need 2 keys to unlock this tarot chest. Find more keys scattered throughout the maze!
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Tarot Card Reveal Modal */}
+      {showTarotReveal && currentTarotChest && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div className="text-center space-y-4">
+              <div className="text-6xl mb-4">🔮</div>
+              <h2 className="text-2xl font-bold text-purple-800">
+                Tarot Card Discovered!
+              </h2>
+              
+              {/* Show the tarot card */}
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <div className="mb-2 flex justify-center">
+                  <div style={{ width: '64px', height: '64px' }}>
+                    <TileSprite 
+                      tileX={TILE_MAP[CELL_TAROT_CHEST].x} 
+                      tileY={TILE_MAP[CELL_TAROT_CHEST].y}
+                    />
+                  </div>
+                </div>
+                <div className="text-lg font-bold text-purple-800">
+                  {currentTarotChest.reward.name}
+                </div>
+                <div className="text-sm text-purple-700 mt-1">
+                  A mystical tarot card!
+                </div>
+              </div>
+              
+              <p className="text-gray-600">
+                {selectedHorse?.name} has unlocked the tarot chest and discovered this mystical card!
+              </p>
+              
+              <button
+                onClick={handleTarotRevealContinue}
+                className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+              >
+                Continue Adventure
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lost Horse Announcement Modal */}
       {showLostHorseAnnouncement && lostHorse && (
@@ -3165,7 +3442,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       {/* ItemSelectionModal */}
       <ItemSelectionModal
         isOpen={showItemSelection}
-        horse={selectedHorse}
+        horse={{ ...selectedHorse, inventory: horseInventory }}
         collectedItems={collectedItemsThisRun}
         onConfirm={handleItemSelectionConfirm}
         onCancel={handleItemSelectionCancel}

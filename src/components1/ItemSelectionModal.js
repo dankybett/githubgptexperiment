@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { TAROT_CARDS } from "../utils/tarotCards";
 
 // TileSprite component for tileset rendering (copied from labyrinth)
 const TileSprite = ({ tileX, tileY, className = "" }) => {
@@ -65,6 +66,10 @@ const getItemTileCoords = (item) => {
   if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;
   if (item.id === 'powerup' || item.name === 'Power-up') return TILE_MAP.POWERUP;
   if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP.VAULT;
+  
+  // Handle tarot cards and mystical energy - these should use images, not tiles
+  if (item.id === 'tarot_card' || item.category === 'mystical') return null;
+  if (item.id === 'mystical_energy') return null;
   
   // Fallback to null if no tile mapping exists
   return null;
@@ -224,6 +229,21 @@ const ItemSelectionModal = ({
                             if (tileCoords) {
                               return <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />;
                             } else {
+                              // Special handling for tarot cards
+                              if (item.id === 'tarot_card' && item.cardId !== undefined) {
+                                const tarotCard = TAROT_CARDS.find(card => card.id === item.cardId);
+                                if (tarotCard) {
+                                  return (
+                                    <img 
+                                      src={`/Tarot Cards/${tarotCard.fileName}`}
+                                      alt={tarotCard.name}
+                                      className="w-12 h-12 mx-auto object-cover rounded"
+                                      style={{ imageRendering: 'pixelated' }}
+                                    />
+                                  );
+                                }
+                              }
+                              // Default image rendering
                               return (
                                 <img 
                                   src={item.image} 
@@ -234,7 +254,14 @@ const ItemSelectionModal = ({
                             }
                           })()}
                           <div className="text-xs text-center mt-1 font-medium">
-                            {item.name}
+                            {(() => {
+                              // Show specific tarot card name if available
+                              if (item.id === 'tarot_card' && item.cardId !== undefined) {
+                                const tarotCard = TAROT_CARDS.find(card => card.id === item.cardId);
+                                return tarotCard ? tarotCard.name : item.name;
+                              }
+                              return item.name;
+                            })()}
                           </div>
                           {isDiscarded && (
                             <div className="text-center mt-1">
@@ -286,6 +313,21 @@ const ItemSelectionModal = ({
                       if (tileCoords) {
                         return <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />;
                       } else {
+                        // Special handling for tarot cards
+                        if (item.id === 'tarot_card' && item.cardId !== undefined) {
+                          const tarotCard = TAROT_CARDS.find(card => card.id === item.cardId);
+                          if (tarotCard) {
+                            return (
+                              <img 
+                                src={`/Tarot Cards/${tarotCard.fileName}`}
+                                alt={tarotCard.name}
+                                className="w-12 h-12 mx-auto object-cover rounded"
+                                style={{ imageRendering: 'pixelated' }}
+                              />
+                            );
+                          }
+                        }
+                        // Default image rendering
                         return (
                           <img 
                             src={item.image} 
@@ -296,7 +338,14 @@ const ItemSelectionModal = ({
                       }
                     })()}
                     <div className="text-xs text-center mt-1 font-medium">
-                      {item.name}
+                      {(() => {
+                        // Show specific tarot card name if available
+                        if (item.id === 'tarot_card' && item.cardId !== undefined) {
+                          const tarotCard = TAROT_CARDS.find(card => card.id === item.cardId);
+                          return tarotCard ? tarotCard.name : item.name;
+                        }
+                        return item.name;
+                      })()}
                     </div>
                     {isSelected && (
                       <div className="text-center mt-1">

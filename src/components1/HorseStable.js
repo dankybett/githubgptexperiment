@@ -4,6 +4,7 @@ import FadeInImage from "./FadeInImage";
 import HorseDetailsModal from "./HorseDetailsModal";
 import ThemedTarotGame from "./ThemedTarotGame";
 import { themeUtils } from "../utils/themes";
+import { tarotCardUtils, TAROT_CARDS } from "../utils/tarotCards";
 
 // TileSprite component for tileset rendering
 const TileSprite = ({ tileX, tileY, className = "" }) => {
@@ -136,6 +137,8 @@ const HorseStable = ({
   selectedGrazingHorses,
   onUpdateSelectedGrazingHorses,
   onSpecialProgressUpdate,
+  unlockedTarotCards = [],
+  onUnlockTarotCard,
 }) => {
   const [stableHorses, setStableHorses] = useState([]);
   const [stableLoaded, setStableLoaded] = useState(false);
@@ -226,6 +229,8 @@ const HorseStable = ({
   const [selectedBook, setSelectedBook] = useState(null);
   const [showStableStatsModal, setShowStableStatsModal] = useState(false);
   const [showTarotModal, setShowTarotModal] = useState(false);
+  const [showLockedTarotCards, setShowLockedTarotCards] = useState(false);
+  const [showTarotGame, setShowTarotGame] = useState(false);
   const [unlockedBooks, setUnlockedBooks] = useState({
     stable: true,
     labyrinth: true
@@ -3811,17 +3816,17 @@ COIN TREASURES & REWARDS
       </div>
     )}
 
-    {/* Tarot Reading Modal */}
+    {/* Fortune Teller Modal */}
     {showTarotModal && (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-gradient-to-br from-purple-900 to-indigo-900 border-4 border-purple-400 rounded-xl p-6 max-w-6xl max-h-[90vh] mx-4 shadow-2xl overflow-y-auto"
+          className="bg-gradient-to-br from-purple-900 to-indigo-900 border-4 border-purple-400 rounded-xl p-6 max-w-2xl max-h-[90vh] mx-4 shadow-2xl overflow-y-auto"
         >
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-3xl font-bold text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '18px' }}>
-              🔮 Mystic Fortune Teller
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}>
+              🔮 Fortune Teller
             </h2>
             <button
               onClick={() => setShowTarotModal(false)}
@@ -3832,11 +3837,148 @@ COIN TREASURES & REWARDS
             </button>
           </div>
           
-          <div className="text-center">
-            <ThemedTarotGame 
-              onClose={() => setShowTarotModal(false)}
-              currentTheme={currentTheme}
-            />
+          <div className="text-center space-y-6">
+            {/* Fortune Teller Image */}
+            <div className="mb-4">
+              <img 
+                src="/stable/fortuneteller.png" 
+                alt="Fortune Teller" 
+                className="w-32 h-32 mx-auto object-contain filter drop-shadow-lg"
+              />
+            </div>
+            
+            {/* Fortune Teller Message */}
+            <div className="text-purple-100 space-y-4" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px', lineHeight: '1.6' }}>
+              <p>"A fortune teller has visited the stable."</p>
+              <p>"I would tell the fortunes of your horses, however I have lost my cards."</p>
+              <p>"If you find them in the labyrinth, please return them to me."</p>
+              
+              {/* Progress indicator */}
+              <div className="bg-purple-800 bg-opacity-50 rounded-lg p-4 mt-6">
+                <p className="text-purple-300 mb-2">Cards Found: {unlockedTarotCards.length} / {TAROT_CARDS.length}</p>
+                <div className="w-full bg-purple-950 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(unlockedTarotCards.length / TAROT_CARDS.length) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex gap-4 justify-center mt-6">
+              <button
+                onClick={() => setShowLockedTarotCards(true)}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors"
+                style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}
+              >
+                🂮 Show Tarot Cards
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowTarotModal(false);
+                  setShowTarotGame(true);
+                }}
+                className={`px-6 py-3 font-bold transition-colors rounded-lg ${
+                  unlockedTarotCards.length >= 3 
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                    : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                }`}
+                style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}
+                disabled={unlockedTarotCards.length < 3}
+              >
+                {unlockedTarotCards.length >= 3 ? '✨ Tell My Fortune ✨' : '🔒 Find More Cards 🔒'}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Locked Tarot Cards Modal */}
+    {showLockedTarotCards && (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-br from-purple-900 to-indigo-900 border-4 border-purple-400 rounded-xl p-6 max-w-6xl max-h-[90vh] mx-4 shadow-2xl overflow-y-auto"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}>
+              🂮 Tarot Card Collection
+            </h2>
+            <button
+              onClick={() => setShowLockedTarotCards(false)}
+              className="text-purple-300 hover:text-purple-100 text-2xl font-bold"
+              style={{ fontFamily: 'Press Start 2P, monospace' }}
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Progress */}
+          <div className="text-center mb-6">
+            <p className="text-purple-200 mb-2" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '12px' }}>
+              Cards Found: {unlockedTarotCards.length} / {TAROT_CARDS.length}
+            </p>
+            <div className="w-full bg-purple-950 rounded-full h-3 mb-4">
+              <div 
+                className="bg-gradient-to-r from-purple-400 to-pink-400 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${(unlockedTarotCards.length / TAROT_CARDS.length) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          {/* Tarot Cards Grid */}
+          <div className="grid grid-cols-6 gap-4">
+            {TAROT_CARDS.map((card) => {
+              const isUnlocked = unlockedTarotCards.includes(card.id);
+              
+              return (
+                <div key={card.id} className="flex flex-col items-center">
+                  <div className="relative w-20 h-32 mb-2">
+                    <img 
+                      src={`/Tarot cards/${card.fileName}`}
+                      alt={card.name}
+                      className={`w-full h-full object-cover rounded-lg border-2 transition-all duration-300 ${
+                        isUnlocked 
+                          ? 'border-purple-400 filter-none' 
+                          : 'border-gray-600 filter grayscale brightness-30'
+                      }`}
+                      style={{
+                        filter: isUnlocked ? 'none' : 'grayscale(100%) brightness(0.3)'
+                      }}
+                    />
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-4xl opacity-60">🔒</div>
+                      </div>
+                    )}
+                  </div>
+                  <p 
+                    className={`text-xs text-center ${
+                      isUnlocked ? 'text-purple-200' : 'text-gray-500'
+                    }`}
+                    style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px', lineHeight: '1.3' }}
+                  >
+                    {card.name}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Instructions */}
+          <div className="mt-6 text-center">
+            <p className="text-purple-300 text-xs" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px', lineHeight: '1.5' }}>
+              Find tarot chests in the labyrinth to unlock cards!
+            </p>
+            {unlockedTarotCards.length >= TAROT_CARDS.length && (
+              <p className="text-yellow-300 text-xs mt-2" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                ✨ All cards found! The fortune teller can now read your horses' fortunes! ✨
+              </p>
+            )}
           </div>
         </motion.div>
       </div>
@@ -3912,6 +4054,41 @@ COIN TREASURES & REWARDS
               "{tvVideos[currentTvVideo].title}"
             </p>
           </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Tarot Game Modal */}
+    {showTarotGame && (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          className="relative bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg p-6 max-w-6xl w-full mx-4"
+          style={{ maxHeight: '95vh', overflow: 'auto' }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 
+              className="text-xl font-bold text-purple-200"
+              style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}
+            >
+              🔮 Mystic Tarot Reading 🔮
+            </h2>
+            <button
+              onClick={() => setShowTarotGame(false)}
+              className="text-purple-300 hover:text-purple-100 text-2xl font-bold"
+              style={{ fontFamily: 'Press Start 2P, monospace' }}
+            >
+              ×
+            </button>
+          </div>
+          
+          <ThemedTarotGame 
+            onClose={() => setShowTarotGame(false)}
+            currentTheme={currentTheme}
+            unlockedTarotCards={unlockedTarotCards}
+          />
         </motion.div>
       </div>
     )}

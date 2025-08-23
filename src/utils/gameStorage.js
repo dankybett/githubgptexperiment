@@ -28,6 +28,7 @@ const defaultGameState = {
   unlockedMazes: { standard: true },
   currentTheme: 'default',
   unlockedSongs: { 'THEME SONG': true },
+  unlockedTarotCards: [], // Array of unlocked tarot card IDs
   nestEgg: null,
   selectedGrazingHorses: [],
   version: STORAGE_VERSION

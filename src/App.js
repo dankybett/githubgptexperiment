@@ -12,6 +12,7 @@ import { raceEngineAdapter } from "./racing/RaceEngineAdapter";
 import { createSeededRng } from "./utils/prng";
 import { gameStorage } from "./utils/gameStorage";
 import { themeUtils, DEFAULT_THEME } from "./utils/themes";
+import { tarotCardUtils } from "./utils/tarotCards";
 
 const MotionFadeInImage = motion(FadeInImage);
 
@@ -98,6 +99,9 @@ export default function RandomPicker() {
   const [dayCount, setDayCount] = useState(1);
   const [stableGameTime, setStableGameTime] = useState(0);
   const [unlockedSongs, setUnlockedSongs] = useState({ 'THEME SONG': true }); // Theme song is unlocked by default
+  const [unlockedTarotCards, setUnlockedTarotCards] = useState([]); // Array of unlocked tarot card IDs
+  const [showTarotUnlockModal, setShowTarotUnlockModal] = useState(false);
+  const [newlyUnlockedTarotCards, setNewlyUnlockedTarotCards] = useState([]);
   const [nestEgg, setNestEgg] = useState(null); // Dragon egg in nest: { placedOn: timestamp, daysRemaining: number }
   const [selectedGrazingHorses, setSelectedGrazingHorses] = useState([]); // Array of horse IDs selected for grazing
 
@@ -624,6 +628,14 @@ const specialUnlockCriteria = {
       } else {
         console.log('🎵 No saved songs found, starting with Theme Song only');
       }
+      
+      // Load unlocked tarot cards
+      if (savedData.unlockedTarotCards && Array.isArray(savedData.unlockedTarotCards)) {
+        console.log('🔮 Loading saved tarot cards:', savedData.unlockedTarotCards);
+        setUnlockedTarotCards(savedData.unlockedTarotCards);
+      } else {
+        console.log('🔮 No saved tarot cards found, starting with none unlocked');
+      }
 
       // Load nest egg data
       if (savedData.nestEgg && typeof savedData.nestEgg === 'object') {
@@ -699,6 +711,7 @@ const specialUnlockCriteria = {
         stableGameTime,
         currentTheme,
         unlockedSongs,
+        unlockedTarotCards,
         nestEgg,
         selectedGrazingHorses,
         specialUnlockProgress
@@ -717,7 +730,7 @@ const specialUnlockCriteria = {
       console.log('🏆 Verification - what was actually saved to localStorage:', savedCheck?.specialUnlockProgress);
       console.log('🏆 Verification - care_count in localStorage:', savedCheck?.specialUnlockProgress?.care_count);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, nestEgg, selectedGrazingHorses, specialUnlockProgress, gameLoaded, initialLoadComplete]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, unlockedTarotCards, nestEgg, selectedGrazingHorses, specialUnlockProgress, gameLoaded, initialLoadComplete]);
 
   // Handle betting logic when a winner is declared
   useEffect(() => {
@@ -1713,6 +1726,16 @@ const specialUnlockCriteria = {
       [horseId]: newName
     }));
   };
+  
+  const unlockTarotCard = (cardId) => {
+    setUnlockedTarotCards(prev => {
+      if (!prev.includes(cardId)) {
+        console.log('🔮 Unlocking tarot card:', cardId);
+        return [...prev, cardId];
+      }
+      return prev;
+    });
+  };
 
   const randomizeHorseNames = () => {
     const categoryList =
@@ -2192,6 +2215,8 @@ const specialUnlockCriteria = {
         selectedGrazingHorses={selectedGrazingHorses}
         onUpdateSelectedGrazingHorses={setSelectedGrazingHorses}
         onSpecialProgressUpdate={updateSpecialProgress}
+        unlockedTarotCards={unlockedTarotCards}
+        onUnlockTarotCard={unlockTarotCard}
       />
     );
   }
@@ -2231,6 +2256,7 @@ const specialUnlockCriteria = {
         onUnlockHorse={handleUnlockHorse}
         currentTheme={currentTheme}
         unlockedSongs={unlockedSongs}
+        unlockedTarotCards={unlockedTarotCards}
         onBack={() => {
           console.log('🏠 App - Horse returning from labyrinth:', selectedHorseForLabyrinth);
           setShowLabyrinth(false);
@@ -2291,6 +2317,47 @@ const specialUnlockCriteria = {
               console.log('🏥 App - Updated horseCareStats:', newCareStats);
               return newCareStats;
             });
+            
+            // Check for tarot cards in inventory and unlock them
+            if (updatedHorse.inventory) {
+              const tarotCardsInInventory = updatedHorse.inventory.filter(item => 
+                item.category === 'tarot_card' && item.cardId !== undefined
+              );
+              
+              if (tarotCardsInInventory.length > 0) {
+                console.log('🔮 App - Found tarot cards in inventory:', tarotCardsInInventory);
+                
+                const cardsToUnlock = [];
+                
+                // Unlock each tarot card
+                tarotCardsInInventory.forEach(tarotItem => {
+                  if (!unlockedTarotCards.includes(tarotItem.cardId)) {
+                    console.log('🔮 App - Unlocking tarot card:', tarotItem.cardId, tarotItem.name);
+                    unlockTarotCard(tarotItem.cardId);
+                    cardsToUnlock.push(tarotItem);
+                  }
+                });
+                
+                // Show unlock popup if any cards were unlocked
+                if (cardsToUnlock.length > 0) {
+                  setNewlyUnlockedTarotCards(cardsToUnlock);
+                  setShowTarotUnlockModal(true);
+                }
+                
+                // Remove tarot card items from horse inventory (they're now unlocked in collection)
+                const cleanedInventory = updatedHorse.inventory.filter(item => 
+                  !(item.category === 'tarot_card' && item.cardId !== undefined)
+                );
+                
+                // Update the inventory to remove the consumed tarot cards
+                setHorseInventories(prev => ({
+                  ...prev,
+                  [updatedHorse.id]: cleanedInventory
+                }));
+                
+                console.log('🔮 App - Cleaned inventory, removed tarot cards:', cleanedInventory.length, 'items remaining');
+              }
+            }
           }
         }}
         onSpecialProgressUpdate={updateSpecialProgress}
@@ -2689,6 +2756,67 @@ const specialUnlockCriteria = {
             currentTheme={currentTheme}
             onThemeChange={handleThemeChange}
           />
+          
+          {/* Tarot Card Unlock Modal */}
+          {showTarotUnlockModal && newlyUnlockedTarotCards.length > 0 && (
+            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-gradient-to-br from-purple-900 to-indigo-900 border-4 border-purple-400 rounded-xl p-6 max-w-md shadow-2xl"
+              >
+                <div className="text-center space-y-4">
+                  <div className="text-6xl mb-4">🔮</div>
+                  <h2 className="text-2xl font-bold text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}>
+                    Tarot Card{newlyUnlockedTarotCards.length > 1 ? 's' : ''} Found!
+                  </h2>
+                  
+                  {/* Show each unlocked card */}
+                  <div className="space-y-3">
+                    {newlyUnlockedTarotCards.map((tarotCard, index) => {
+                      const cardData = tarotCardUtils.getCardById(tarotCard.cardId);
+                      return (
+                        <div key={index} className="bg-purple-800 bg-opacity-50 rounded-lg p-3">
+                          <div className="flex items-center justify-center mb-2">
+                            {cardData && (
+                              <img 
+                                src={`/Tarot cards/${cardData.fileName}`}
+                                alt={cardData.name}
+                                className="w-16 h-24 object-cover rounded border-2 border-purple-400"
+                              />
+                            )}
+                          </div>
+                          <p className="text-purple-200 font-bold" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                            {tarotCard.name}
+                          </p>
+                          {cardData && (
+                            <p className="text-purple-300 text-xs mt-1" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
+                              {cardData.description}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <p className="text-purple-300 text-xs" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
+                    The fortune teller will be pleased!
+                  </p>
+                  
+                  <button
+                    onClick={() => {
+                      setShowTarotUnlockModal(false);
+                      setNewlyUnlockedTarotCards([]);
+                    }}
+                    className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors"
+                    style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}
+                  >
+                    ✨ Continue ✨
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       </div>
       

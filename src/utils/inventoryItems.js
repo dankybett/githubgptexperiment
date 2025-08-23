@@ -31,6 +31,22 @@ export const INVENTORY_ITEMS = {
     image: '/maze/vault.png',
     category: 'rare_treasure',
     stackable: false
+  },
+  tarot_card: {
+    id: 'tarot_card',
+    name: 'Tarot Card',
+    description: 'Mystical card from a tarot chest',
+    image: '/Tarot cards/tarotchest.png',
+    category: 'mystical',
+    stackable: false
+  },
+  mystical_energy: {
+    id: 'mystical_energy',
+    name: 'Mystical Energy',
+    description: 'Pure magical energy from an empty tarot chest',
+    image: '/maze/treasure.png',
+    category: 'treasure',
+    stackable: false
   }
 };
 
@@ -92,8 +108,10 @@ export const inventoryUtils = {
   // Get item count
   getItemCount: (inventory, itemId) => {
     if (!inventory) return 0;
-    const item = inventory.find(item => item.id === itemId);
-    return item ? (item.quantity || 1) : 0;
+    // Count all items with the specified id (handles both separate items and stacked items)
+    return inventory
+      .filter(item => item.id === itemId)
+      .reduce((total, item) => total + (item.quantity || 1), 0);
   },
 
   // Check if inventory has space (dynamic slots based on saddlebags skill)
