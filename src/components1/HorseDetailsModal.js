@@ -27,8 +27,8 @@ const TileSprite = ({ tileX, tileY, className = "" }) => {
 // Tile mappings
 const TILE_MAP = {
   REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   
-  REWARD_MAGIC_CARROT: { x: 6, y: 0 },   
-  REWARD_HAY_BUNDLE: { x: 9, y: 1 },     
+  REWARD_ENERGY_DRINK: { x: 9, y: 4 },   
+  REWARD_HORSE_POWER_CEREAL: { x: 9, y: 5 },     
   KEY: { x: 8, y: 0 },                  
   POWERUP: { x: 6, y: 0 },              
   VAULT: { x: 3, y: 1 },
@@ -51,8 +51,8 @@ const TILE_MAP = {
 const getItemTileCoords = (item) => {
   // Handle reward items
   if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
-  if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
-  if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+  if (item.name === 'Energy Drink') return TILE_MAP.REWARD_ENERGY_DRINK;
+  if (item.name === 'Horse Power Cereal') return TILE_MAP.REWARD_HORSE_POWER_CEREAL;
   
   // Handle legendary reward items
   if (item.name === 'Ancient Treasure') return TILE_MAP.LEGENDARY_ANCIENT_TREASURE;
@@ -585,12 +585,24 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                                   {itemValue} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" />
                                 </div>
                                 <div className="flex gap-1">
-                                  {/* Feed button for Golden Apple */}
-                                  {item.name === 'Golden Apple' && onFeedItem && (
+                                  {/* Feed button for Golden Apple, Energy Drink, and Horse Power Cereal */}
+                                  {(item.name === 'Golden Apple' || item.name === 'Energy Drink' || item.name === 'Horse Power Cereal') && onFeedItem && (
                                     <button
                                       onClick={() => onFeedItem(horse.id, index, item)}
-                                      className="flex-1 px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition-colors"
-                                      title="Feed to boost care stats significantly"
+                                      className={`flex-1 px-2 py-1 text-white rounded text-xs transition-colors ${
+                                        item.name === 'Golden Apple' 
+                                          ? 'bg-yellow-600 hover:bg-yellow-700'
+                                          : item.name === 'Energy Drink'
+                                          ? 'bg-cyan-600 hover:bg-cyan-700'
+                                          : 'bg-orange-600 hover:bg-orange-700'
+                                      }`}
+                                      title={
+                                        item.name === 'Golden Apple'
+                                          ? "Feed to boost all care stats significantly"
+                                          : item.name === 'Energy Drink'
+                                          ? "Feed to boost energy significantly"
+                                          : "Feed to boost health and happiness"
+                                      }
                                     >
                                       Feed
                                     </button>
@@ -599,7 +611,7 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                                     <button
                                       onClick={() => onSellItem(horse.id, index)}
                                       className={`px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors ${
-                                        item.name === 'Golden Apple' ? 'flex-1' : ''
+                                        (item.name === 'Golden Apple' || item.name === 'Energy Drink' || item.name === 'Horse Power Cereal') ? 'flex-1' : ''
                                       }`}
                                     >
                                       Sell

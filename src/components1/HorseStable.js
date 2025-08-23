@@ -797,6 +797,8 @@ COIN TREASURES & REWARDS
       isEatingApple: false,
       isEatingCarrot: false,
       isEatingGoldenApple: false,
+      isEatingEnergyDrink: false,
+      isEatingHorsePowerCereal: false,
       isBeingHealed: false,
       careAnimationEnd: 0,
       // Injury status - use saved value or default from horse data
@@ -836,6 +838,8 @@ COIN TREASURES & REWARDS
     else if (item.name.includes('Silver')) itemValue = 15;
     else if (item.name.includes('Crystal') || item.name.includes('Gem')) itemValue = 20;
     else if (item.name.includes('Magic')) itemValue = 18;
+    else if (item.name === 'Energy Drink') itemValue = 20;
+    else if (item.name === 'Horse Power Cereal') itemValue = 22;
     else if (item.name.includes('Ancient') || item.name.includes('Dragon') || item.name.includes('Sacred')) itemValue = 30;
     
     // Update coins
@@ -876,37 +880,65 @@ COIN TREASURES & REWARDS
   };
 
   const handleFeedItem = (horseId, itemIndex, item) => {
-    // Only allow feeding Golden Apples
-    if (item.name !== 'Golden Apple') {
-      console.log('❌ Can only feed Golden Apples');
+    // Only allow feeding Golden Apples, Energy Drinks, and Horse Power Cereal
+    if (item.name !== 'Golden Apple' && item.name !== 'Energy Drink' && item.name !== 'Horse Power Cereal') {
+      console.log('❌ Can only feed Golden Apples, Energy Drinks, and Horse Power Cereal');
       return;
     }
 
-    // Find the horse and feed the golden apple
+    // Find the horse and feed the item
     const horseToFeed = stableHorses.find(h => h.id === horseId);
     if (!horseToFeed) {
       console.log('❌ Horse not found in stable');
       return;
     }
 
-    console.log(`🍎 Feeding Golden Apple to ${horseToFeed.name}`);
+    console.log(`🍎 Feeding ${item.name} to ${horseToFeed.name}`);
 
-    // Enhanced care stat recovery (much better than regular apple)
+    // Enhanced care stat recovery
     setStableHorses(prevHorses => {
       const updatedHorses = prevHorses.map(horse => {
         if (horse.id === horseId) {
+          let recoveryStats;
+          let animationType;
+          
+          if (item.name === 'Golden Apple') {
+            // Golden apple provides balanced recovery
+            recoveryStats = {
+              health: Math.min(100, horse.health + 30),      // +30 health
+              happiness: Math.min(100, horse.happiness + 25), // +25 happiness
+              energy: Math.min(100, horse.energy + 20),       // +20 energy
+              cleanliness: Math.min(100, horse.cleanliness + 15), // +15 cleanliness
+              isInjured: false // Clear injury if present
+            };
+            animationType = 'isEatingGoldenApple';
+          } else if (item.name === 'Energy Drink') {
+            // Energy drink focuses on energy restoration
+            recoveryStats = {
+              health: Math.min(100, horse.health + 10),      // +10 health (less than apple)
+              happiness: Math.min(100, horse.happiness + 15), // +15 happiness  
+              energy: Math.min(100, horse.energy + 40),       // +40 energy (more than apple)
+              cleanliness: horse.cleanliness, // No cleanliness boost
+              isInjured: horse.isInjured // No injury healing
+            };
+            animationType = 'isEatingEnergyDrink';
+          } else if (item.name === 'Horse Power Cereal') {
+            // Horse Power Cereal focuses on health and happiness
+            recoveryStats = {
+              health: Math.min(100, horse.health + 35),      // +35 health (more than apple)
+              happiness: Math.min(100, horse.happiness + 30), // +30 happiness (more than apple)
+              energy: Math.min(100, horse.energy + 15),       // +15 energy (less than apple)
+              cleanliness: horse.cleanliness, // No cleanliness boost
+              isInjured: horse.isInjured // No injury healing
+            };
+            animationType = 'isEatingHorsePowerCereal';
+          }
+          
           return {
             ...horse,
-            // Golden apple provides much better recovery than regular apple
-            health: Math.min(100, horse.health + 30),      // +30 vs +15 for regular apple
-            happiness: Math.min(100, horse.happiness + 25), // +25 vs +15 for regular apple  
-            energy: Math.min(100, horse.energy + 20),       // +20 vs +10 for regular apple
-            // Also provides cleanliness boost (regular apple doesn't)
-            cleanliness: Math.min(100, horse.cleanliness + 15),
-            // Clear injury if present
-            isInjured: false,
+            ...recoveryStats,
             // Add feeding animation
-            isEatingGoldenApple: true,
+            [animationType]: true,
             careAnimationEnd: Date.now() + 4000 // 4 seconds animation
           };
         }
@@ -1361,6 +1393,8 @@ COIN TREASURES & REWARDS
               isEatingApple: false,
               isEatingCarrot: false,
               isEatingGoldenApple: false,
+              isEatingEnergyDrink: false,
+              isEatingHorsePowerCereal: false,
               isBeingHealed: false,
               careAnimationEnd: 0
             };
@@ -2281,6 +2315,64 @@ COIN TREASURES & REWARDS
                       <TileSprite 
                         tileX={7} 
                         tileY={0}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+                
+                {horse.isEatingEnergyDrink && (
+                  <motion.div
+                    className="absolute -top-12 left-1/2 transform -translate-x-1/2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: [1, 1, 1, 0],
+                      y: [0, -15, -25, -30],
+                      scale: [1, 1.2, 1.1, 0.9],
+                      rotate: [0, -10, 10, 0]
+                    }}
+                    transition={{ duration: 3, repeat: 1 }}
+                    style={{ 
+                      filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.8)) drop-shadow(0 0 15px rgba(0, 200, 255, 0.6))'
+                    }}
+                  >
+                    <div 
+                      className="w-16 h-16"
+                      style={{ 
+                        filter: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.9))'
+                      }}
+                    >
+                      <TileSprite 
+                        tileX={9} 
+                        tileY={4}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+                
+                {horse.isEatingHorsePowerCereal && (
+                  <motion.div
+                    className="absolute -top-12 left-1/2 transform -translate-x-1/2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: [1, 1, 1, 0],
+                      y: [0, -15, -25, -30],
+                      scale: [1, 1.3, 1.15, 0.9],
+                      rotate: [0, 8, -8, 0]
+                    }}
+                    transition={{ duration: 3, repeat: 1 }}
+                    style={{ 
+                      filter: 'drop-shadow(0 0 8px rgba(255, 165, 0, 0.8)) drop-shadow(0 0 15px rgba(255, 140, 0, 0.6))'
+                    }}
+                  >
+                    <div 
+                      className="w-16 h-16"
+                      style={{ 
+                        filter: 'drop-shadow(0 0 5px rgba(255, 165, 0, 0.9))'
+                      }}
+                    >
+                      <TileSprite 
+                        tileX={9} 
+                        tileY={5}
                       />
                     </div>
                   </motion.div>

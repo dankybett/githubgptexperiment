@@ -102,8 +102,8 @@ const TILE_MAP = {
   
   // Reward tiles
   REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   // Golden Apple tile
-  REWARD_MAGIC_CARROT: { x: 6, y: 0 },   // Magic Carrot tile
-  REWARD_HAY_BUNDLE: { x: 9, y: 1 },     // Hay Bundle tile
+  REWARD_ENERGY_DRINK: { x: 9, y: 4 },   // Energy Drink tile
+  REWARD_HORSE_POWER_CEREAL: { x: 9, y: 5 },     // Horse Power Cereal tile
   
   // Legendary reward tiles
   LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },   // Ancient Treasure tile
@@ -206,8 +206,8 @@ const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
   'MINOTAUR_LOST',
   // Reward tiles
   'REWARD_GOLDEN_APPLE',
-  'REWARD_MAGIC_CARROT', 
-  'REWARD_HAY_BUNDLE',
+  'REWARD_ENERGY_DRINK', 
+  'REWARD_HORSE_POWER_CEREAL',
   // Legendary reward tiles
   'LEGENDARY_ANCIENT_TREASURE',
   'LEGENDARY_DRAGON_EGG',
@@ -235,8 +235,8 @@ const renderSpecialTile = (tileKey, x, y, direction = null) => {
 
 const REWARDS = [
   { name: 'Golden Apple', emoji: '🍎', rarity: 0.3, tileKey: 'REWARD_GOLDEN_APPLE' },
-  { name: 'Magic Carrot', emoji: '🥕', rarity: 0.4, tileKey: 'REWARD_MAGIC_CARROT' },
-  { name: 'Hay Bundle', emoji: '🌾', rarity: 0.3, tileKey: 'REWARD_HAY_BUNDLE' }
+  { name: 'Energy Drink', emoji: '🥤', rarity: 0.4, tileKey: 'REWARD_ENERGY_DRINK' },
+  { name: 'Horse Power Cereal', emoji: '🥣', rarity: 0.3, tileKey: 'REWARD_HORSE_POWER_CEREAL' }
 ];
 
 const TRAPS = [
@@ -2367,8 +2367,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const getItemTileCoords = (item) => {
     // Handle reward items
     if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
-    if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
-    if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+    if (item.name === 'Energy Drink') return TILE_MAP.REWARD_ENERGY_DRINK;
+    if (item.name === 'Horse Power Cereal') return TILE_MAP.REWARD_HORSE_POWER_CEREAL;
     
     // Handle legendary reward items
     if (item.name === 'Ancient Treasure') return TILE_MAP.LEGENDARY_ANCIENT_TREASURE;

@@ -28,8 +28,8 @@ const TileSprite = ({ tileX, tileY, className = "" }) => {
 // Tile mappings (copied from labyrinth)
 const TILE_MAP = {
   REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   
-  REWARD_MAGIC_CARROT: { x: 6, y: 0 },   
-  REWARD_HAY_BUNDLE: { x: 9, y: 1 },     
+  REWARD_ENERGY_DRINK: { x: 9, y: 4 },   
+  REWARD_HORSE_POWER_CEREAL: { x: 9, y: 5 },     
   KEY: { x: 8, y: 0 },                  
   POWERUP: { x: 6, y: 0 },              
   VAULT: { x: 3, y: 1 },
@@ -49,8 +49,8 @@ const TILE_MAP = {
 const getItemTileCoords = (item) => {
   // Handle reward items
   if (item.name === 'Golden Apple') return TILE_MAP.REWARD_GOLDEN_APPLE;
-  if (item.name === 'Magic Carrot') return TILE_MAP.REWARD_MAGIC_CARROT;
-  if (item.name === 'Hay Bundle') return TILE_MAP.REWARD_HAY_BUNDLE;
+  if (item.name === 'Energy Drink') return TILE_MAP.REWARD_ENERGY_DRINK;
+  if (item.name === 'Horse Power Cereal') return TILE_MAP.REWARD_HORSE_POWER_CEREAL;
   
   // Handle legendary reward items
   if (item.name === 'Ancient Treasure') return TILE_MAP.LEGENDARY_ANCIENT_TREASURE;
