@@ -261,143 +261,9 @@ const MAZE_TYPES = {
     difficulty: 1,
     unlocked: true,
     mechanics: ['Static walls', 'Portals', 'Dark zones', 'Vaults & keys']
-  },
-  pyramid: {
-    name: 'Pyramid Maze',
-    description: 'Multi-level maze with ramps connecting floors',
-    difficulty: 2,
-    unlocked: false,
-    researchCost: 25,
-    researchCategory: 'architectural',
-    mechanics: ['Moving walls', 'One-way doors', '3D movement', 'Ramps up/down']
-  },
-  cave: {
-    name: 'Cave Maze',
-    description: 'Natural caverns with stalactites and underground rivers',
-    difficulty: 2,
-    unlocked: false,
-    researchCost: 30,
-    researchCategory: 'environmental',
-    mechanics: ['Natural obstacles', 'Underground streams', 'Crystal formations']
-  },
-  temporal: {
-    name: 'Temporal Maze',
-    description: 'Time flows differently in various sections',
-    difficulty: 3,
-    unlocked: false,
-    researchCost: 40,
-    researchCategory: 'temporal',
-    mechanics: ['Time zones', 'Slow/fast areas', 'Temporal echoes']
-  },
-  random: {
-    name: 'Chaos Maze',
-    description: 'Layout shifts and changes unpredictably',
-    difficulty: 3,
-    unlocked: false,
-    researchCost: 35,
-    researchCategory: 'chaos',
-    mechanics: ['Shifting walls', 'Probability zones', 'Unstable terrain']
-  },
-  gear: {
-    name: 'Clockwork Maze',
-    description: 'Mechanical maze with rotating sections',
-    difficulty: 4,
-    unlocked: false,
-    researchCost: 50,
-    researchCategory: 'architectural',
-    mechanics: ['Rotating sections', 'Gear mechanisms', 'Timed passages']
-  },
-  flooded: {
-    name: 'Flooded Maze',
-    description: 'Partially underwater with air pockets',
-    difficulty: 4,
-    unlocked: false,
-    researchCost: 60,
-    researchCategory: 'environmental',
-    mechanics: ['Water levels', 'Swimming required', 'Air pocket safe zones']
-  },
-  phase: {
-    name: 'Phase Maze',
-    description: 'Ethereal walls that phase in and out of reality',
-    difficulty: 5,
-    unlocked: false,
-    researchCost: 100,
-    researchCategory: 'architectural',
-    mechanics: ['Phasing walls', 'Reality shifts', 'Ethereal passages']
   }
 };
 
-const RESEARCH_TREE = {
-  architectural: {
-    name: 'Architectural Research',
-    color: 'blue',
-    description: 'Study advanced construction techniques',
-    mazes: ['pyramid', 'gear', 'phase']
-  },
-  environmental: {
-    name: 'Environmental Research', 
-    color: 'green',
-    description: 'Explore natural and elemental mazes',
-    mazes: ['cave', 'flooded']
-  },
-  temporal: {
-    name: 'Temporal Research',
-    color: 'purple', 
-    description: 'Investigate time-based phenomena',
-    mazes: ['temporal']
-  },
-  chaos: {
-    name: 'Chaos Research',
-    color: 'red',
-    description: 'Embrace unpredictability and randomness', 
-    mazes: ['random']
-  }
-};
-
-const STABLE_UPGRADES = {
-  automaticFeeder: {
-    name: 'Automatic Feeder',
-    description: 'Feed reduces 50% slower',
-    researchCost: 50,
-    unlockedBy: 'pyramid',
-    category: 'architectural'
-  },
-  springWell: {
-    name: 'Natural Spring Well',
-    description: 'Water reduces 60% slower',
-    researchCost: 40,
-    unlockedBy: 'cave',
-    category: 'environmental'
-  },
-  selfCleaningStalls: {
-    name: 'Self-Cleaning Stalls',
-    description: 'Cleanliness reduces 70% slower',
-    researchCost: 60,
-    unlockedBy: 'gear',
-    category: 'architectural'
-  },
-  healingPonds: {
-    name: 'Healing Ponds',
-    description: 'Horses slowly recover health in stable',
-    researchCost: 80,
-    unlockedBy: 'flooded',
-    category: 'environmental'
-  },
-  timeAccelerator: {
-    name: 'Time Acceleration Chamber',
-    description: 'Horses recover from fatigue 3x faster',
-    researchCost: 100,
-    unlockedBy: 'temporal',
-    category: 'temporal'
-  },
-  chaosFeeder: {
-    name: 'Chaos Energy Feeder',
-    description: 'Randomly provides free stable resources',
-    researchCost: 75,
-    unlockedBy: 'random',
-    category: 'chaos'
-  }
-};
 
 const SKILL_TREE = {
   survival: {
@@ -464,7 +330,7 @@ const getViewportBounds = (horseX, horseY) => {
   return { startX, startY };
 };
 
-function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, onUpdateResearchPoints, coins, onUpdateCoins, unlockedMazes, onUpdateUnlockedMazes, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro', unlockedSongs = {}, unlockedTarotCards = [] }) {
+function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCoins, horseAvatars, horseNames, unlockedHorses, onUnlockHorse, currentTheme = 'retro', unlockedSongs = {}, unlockedTarotCards = [] }) {
   const [maze, setMaze] = useState([]);
   const [horsePos, setHorsePos] = useState({ x: 1, y: 1 });
   const [horseDirection, setHorseDirection] = useState('right'); // 'left' or 'right'
@@ -555,10 +421,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [collectedKeys, setCollectedKeys] = useState([]);
   const [visionRange] = useState(2);
   
-  // Research system
-  const [selectedMazeType, setSelectedMazeType] = useState('standard');
-  const [lastGeneratedMazeType, setLastGeneratedMazeType] = useState('standard');
-  const [showResearchTree, setShowResearchTree] = useState(false);
   
   // Get theme styles
   const labyrinthStyles = themeUtils.getScreenStyles(currentTheme, 'labyrinth');
@@ -685,8 +547,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     });
   }, [lostHorse, gameState, maze]);
   
-  // Stable upgrades system
-  const [stableUpgrades, setStableUpgrades] = useState({});
   
   // Maze-specific features
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -728,6 +588,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
   const [showTarotChestModal, setShowTarotChestModal] = useState(false);
   const [showTarotReveal, setShowTarotReveal] = useState(false);
   const [currentTarotChest, setCurrentTarotChest] = useState(null);
+  
+  // Performance info modal
+  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
   
   // Visual feedback functions
   const addFloatingText = useCallback((text, color = '#10b981') => {
@@ -787,8 +650,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     let portalA = null;
     let portalB = null;
     
-    // Add features based on maze type
-    const mazeType = MAZE_TYPES[selectedMazeType];
+    // Add standard maze features
     let keysPlaced = 0;
     let vaultPlaced = false;
     let tarotChestPlaced = false;
@@ -806,7 +668,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           
           const rand = Math.random();
           
-          // Base features (all maze types) - these take priority
+          // Standard maze features
           if (rand < 0.15) {
             // Select a random reward type
             const selectedReward = REWARDS[Math.floor(Math.random() * REWARDS.length)];
@@ -827,85 +689,35 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           } else if (rand < 0.45 && !tarotChestPlaced) {
             newMaze[y][x] = CELL_TAROT_CHEST;
             tarotChestPlaced = true;
-          } else {
-            // Only add maze-specific features if no base feature was placed
-            // Maze-type specific features
-            if (selectedMazeType === 'standard') {
-              // Standard maze: static internal walls only, no moving mechanics
-              if (rand < 0.35) {
-                newMaze[y][x] = CELL_WALL;
-              } else if (rand < 0.37 && !portalA) {
-                newMaze[y][x] = CELL_PORTAL_A;
-                portalA = { x, y };
-              } else if (rand < 0.39 && portalA && !portalB) {
-                newMaze[y][x] = CELL_PORTAL_B;
-                portalB = { x, y };
-              } else if (rand < 0.41) {
-                newMaze[y][x] = CELL_DARK_ZONE;
-                newDarkZones.push({ x, y });
-              }
-            } else if (selectedMazeType === 'pyramid' || selectedMazeType === 'cave') {
-              // Pyramid and cave mazes: keep original distribution with one-way tiles
-              if (rand < 0.48) {
-                newMaze[y][x] = CELL_MOVING_WALL;
-                newMovingWalls.push({ x, y, closed: true, timer: Math.floor(Math.random() * 6) + 2 });
-              } else if (rand < 0.52) {
-                const directions = [CELL_ONEWAY_N, CELL_ONEWAY_S, CELL_ONEWAY_E, CELL_ONEWAY_W];
-                newMaze[y][x] = directions[Math.floor(Math.random() * directions.length)];
-              } else if (rand < 0.54 && !portalA) {
-                newMaze[y][x] = CELL_PORTAL_A;
-                portalA = { x, y };
-              } else if (rand < 0.56 && portalA && !portalB) {
-                newMaze[y][x] = CELL_PORTAL_B;
-                portalB = { x, y };
-              } else if (rand < 0.58) {
-                newMaze[y][x] = CELL_DARK_ZONE;
-                newDarkZones.push({ x, y });
-              }
-            }
-            
-            // Flooded maze - add water cells
-            if (selectedMazeType === 'flooded' && rand < 0.5) {
-              newWaterCells.push({ x, y });
-            }
-            
-            // Gear maze - add rotating sections
-            if (selectedMazeType === 'gear' && rand < 0.6) {
-              newRotatingGears.push({ x, y, rotation: 0, timer: 5 });
-            }
-            
-            // Temporal maze - add time zones
-            if (selectedMazeType === 'temporal' && rand < 0.65) {
-              newTimeZones.push({ x, y, type: Math.random() < 0.5 ? 'slow' : 'fast' });
-            }
-            
-            // Phase maze - add phasing walls
-            if (selectedMazeType === 'phase' && rand < 0.7) {
-              newPhasingWalls.push({ x, y, solid: true, timer: Math.floor(Math.random() * 8) + 3 });
-            }
+          } else if (rand < 0.50) {
+            newMaze[y][x] = CELL_WALL;
+          } else if (rand < 0.52 && !portalA) {
+            newMaze[y][x] = CELL_PORTAL_A;
+            portalA = { x, y };
+          } else if (rand < 0.54 && portalA && !portalB) {
+            newMaze[y][x] = CELL_PORTAL_B;
+            portalB = { x, y };
+          } else if (rand < 0.56) {
+            newMaze[y][x] = CELL_DARK_ZONE;
+            newDarkZones.push({ x, y });
           }
         }
       }
     }
     
-    // Update state for all maze features
-    setMovingWalls(newMovingWalls);
+    // Update state for standard maze features only
+    setMovingWalls([]);
     setPortals({ A: portalA, B: portalB });
     setDarkZones(newDarkZones);
     setVaultKeys(newVaultKeys);
-    setWaterCells(newWaterCells);
-    setRotatingGears(newRotatingGears);
-    setTimeZones(newTimeZones);
-    setPhasingWalls(newPhasingWalls);
+    setWaterCells([]);
+    setRotatingGears([]);
+    setTimeZones([]);
+    setPhasingWalls([]);
     
-    // Set level limits based on maze type
-    if (selectedMazeType === 'pyramid') {
-      setMaxLevel(3);
-      setCurrentLevel(1);
-    } else {
-      setMaxLevel(1);
-      setCurrentLevel(1);
-    }
+    // Set to single level for standard maze
+    setMaxLevel(1);
+    setCurrentLevel(1);
     
     // Guarantee that exactly 1 tarot chest is placed
     if (!tarotChestPlaced) {
@@ -932,13 +744,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     setRewardPositions(rewardPositionsTemp);
     
     return newMaze;
-  }, [selectedMazeType]);
+  }, []);
 
   // Initialize maze
   useEffect(() => {
     setMaze(generateMaze());
-    setLastGeneratedMazeType(selectedMazeType);
-  }, [generateMaze, selectedMazeType]);
+  }, [generateMaze]);
 
   // Initialize horse skills when selectedHorse changes
   useEffect(() => {
@@ -992,40 +803,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     return true;
   }, [movingWalls]);
 
-  // Research system functions
-  const canResearchMaze = useCallback((mazeKey) => {
-    const maze = MAZE_TYPES[mazeKey];
-    return !maze.unlocked && !unlockedMazes[mazeKey] && researchPoints >= maze.researchCost;
-  }, [researchPoints, unlockedMazes]);
-  
-  const researchMaze = useCallback((mazeKey) => {
-    if (!canResearchMaze(mazeKey)) return;
-    
-    const maze = MAZE_TYPES[mazeKey];
-    onUpdateResearchPoints(prev => prev - maze.researchCost);
-    onUpdateUnlockedMazes(prev => ({ ...prev, [mazeKey]: true }));
-  }, [canResearchMaze, onUpdateResearchPoints, onUpdateUnlockedMazes]);
-
-  // Stable upgrade functions
-  const canResearchStableUpgrade = useCallback((upgradeKey) => {
-    const upgrade = STABLE_UPGRADES[upgradeKey];
-    const mazeUnlocked = unlockedMazes[upgrade.unlockedBy];
-    return mazeUnlocked && !stableUpgrades[upgradeKey] && researchPoints >= upgrade.researchCost;
-  }, [researchPoints, stableUpgrades, unlockedMazes]);
-  
-  const researchStableUpgrade = useCallback((upgradeKey) => {
-    if (!canResearchStableUpgrade(upgradeKey)) return;
-    
-    const upgrade = STABLE_UPGRADES[upgradeKey];
-    onUpdateResearchPoints(prev => prev - upgrade.researchCost);
-    setStableUpgrades(prev => ({ ...prev, [upgradeKey]: true }));
-    
-    // Pass upgrade info to parent for stable integration
-    if (onHorseReturn) {
-      // Create a temporary object to communicate the upgrade
-      onHorseReturn(selectedHorse, { stableUpgrade: { key: upgradeKey, ...upgrade } });
-    }
-  }, [canResearchStableUpgrade, selectedHorse, onHorseReturn, onUpdateResearchPoints]);
 
   // Check if cell is visible (always visible now - no fog of war)
   const isCellVisible = useCallback(() => {
@@ -1277,7 +1054,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         
         // INJURY CALCULATION - Apply immediately when caught by minotaur
         const injuryChance = 0.7; // INCREASED FOR TESTING
-        const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+        const difficultyMultiplier = 1;
         const injuryRoll = Math.random();
         const finalInjuryChance = injuryChance * difficultyMultiplier;
         
@@ -1305,11 +1082,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         
         // Award points based on performance and maze difficulty
         const basePoints = Math.floor(currentRewards.length / 2) + 1;
-        const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
         const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
-        const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.2);
         setSkillPoints(prev => prev + skillPointsEarned);
-        onUpdateResearchPoints(prev => prev + researchPointsEarned);
         return prevPos;
       }
       
@@ -1327,7 +1101,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           
           // INJURY CALCULATION - Apply immediately when caught by minotaur (second case)
           const injuryChance = 0.7; // INCREASED FOR TESTING
-          const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+          const difficultyMultiplier = 1;
           const injuryRoll = Math.random();
           const finalInjuryChance = injuryChance * difficultyMultiplier;
           
@@ -1354,11 +1128,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           }
           
           const basePoints = Math.floor(currentRewards.length / 2) + 1;
-          const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
+          const difficultyBonus = 1;
           const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
-          const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.2);
           setSkillPoints(prev => prev + skillPointsEarned);
-          onUpdateResearchPoints(prev => prev + researchPointsEarned);
           return { x: nextStep.x, y: nextStep.y };
         }
         
@@ -1624,7 +1396,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         
         // INJURY CALCULATION - Apply immediately when trapped
         const injuryChance = 0.8; // INCREASED FOR TESTING
-        const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+        const difficultyMultiplier = 1;
         const injuryRoll = Math.random();
         const finalInjuryChance = injuryChance * difficultyMultiplier;
         
@@ -1655,11 +1427,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         
         // Award points based on performance and maze difficulty
         const basePoints = Math.floor(currentRewards.length / 2) + 1;
-        const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
         const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 4));
-        const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.2);
         setSkillPoints(prev => prev + skillPointsEarned);
-        onUpdateResearchPoints(prev => prev + researchPointsEarned);
         return prevPos;
       }
 
@@ -1940,17 +1709,15 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
     
     console.log('🚀 StartGame - Starting new game directly');
     
-    // Regenerate maze if: type changed OR starting a new adventure after a completed/active run
+    // Regenerate maze if starting a new adventure after a completed/active run
     const shouldRegenerateMaze = 
-      selectedMazeType !== lastGeneratedMazeType || 
       gameState === 'ended' || 
       gameState === 'exploring';
       
     if (shouldRegenerateMaze) {
-      console.log('🚀 StartGame - Regenerating maze (type change or new adventure)');
+      console.log('🚀 StartGame - Regenerating maze (new adventure)');
       const newMaze = generateMaze();
       setMaze(newMaze);
-      setLastGeneratedMazeType(selectedMazeType);
     }
     
     // Always check for lost horse spawn on every game start
@@ -2079,7 +1846,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
       // Apply fatigue and potential injury from labyrinth run
       const fatigueFromRun = Math.min(20, horseMoveCount * 0.5); // More movement = more fatigue
       const injuryChance = (endReason === 'trap') ? 0.8 : (endReason === 'minotaur') ? 0.7 : 0.5; // INCREASED FOR TESTING
-      const difficultyMultiplier = MAZE_TYPES[selectedMazeType].difficulty;
+      const difficultyMultiplier = 1;
       
       console.log('🩹 INJURY DEBUG - Calculating injury chance:');
       console.log('  - End reason:', endReason);
@@ -2451,23 +2218,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
           </div>
         </div>
 
-        {/* 1. Mobile-optimized Maze Display */}
+        {/* Maze Grid */}
         <div className={`${themeUtils.getComponentStyles(currentTheme, 'card')} rounded-xl p-4 shadow-lg mb-3`}>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                {MAZE_TYPES[selectedMazeType].name}
-                <span className="text-yellow-600 text-sm">{'⭐'.repeat(MAZE_TYPES[selectedMazeType].difficulty)}</span>
-              </h2>
-              <div className="text-xs text-gray-600 flex gap-3 mt-1">
-                <span>Run #{totalRuns}</span>
-                <span className="text-purple-600">💎 {skillPoints} SP</span>
-                <span className="text-blue-600">🔬 {researchPoints} RP</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Maze Grid */}
           <div 
             className={`border-2 border-gray-800 w-full rounded-lg overflow-hidden shadow-inner relative`}
             style={{ backgroundColor: labyrinthStyles.wall }}
@@ -2666,109 +2418,66 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
             )}
           </div>
 
-          {/* Mobile-optimized Controls */}
-          <div className="space-y-3">
-            {/* Primary Action Buttons */}
-            {gameState === 'exploring' ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    setEndReason('early_exit');
-                    setGameState('ended');
-                    setInventory(prev => [...prev, ...currentRewards]);
-                    // Award partial points for early exit
-                    const basePoints = Math.floor(currentRewards.length / 3) + 1;
-                    const difficultyBonus = MAZE_TYPES[selectedMazeType].difficulty;
-                    const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 6));
-                    const researchPointsEarned = Math.floor(basePoints * difficultyBonus * 0.1);
-                    setSkillPoints(prev => prev + skillPointsEarned);
-                    onUpdateResearchPoints(prev => prev + researchPointsEarned);
-                  }}
-                  className={`py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} font-medium text-base shadow-md`}
-                >
-                  🚪 End Run
-                </button>
-                <button
-                  onClick={startGame}
-                  disabled={true}
-                  className={`py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')} cursor-not-allowed font-medium text-base shadow-md`}
-                >
-                  🔄 New Adventure
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={startGame}
-                disabled={gameState === 'exploring' || selectedHorse.isInjured || horseInjuredThisSession}
-                className={`w-full py-3 ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} font-medium shadow-md`}
-                style={{ fontSize: currentTheme === 'saturday' ? '12px' : undefined }}
-              >
-                {(selectedHorse.isInjured || horseInjuredThisSession) ? 'Horse is Injured - Cannot Enter' : gameState === 'waiting' ? 'Start Adventure' : '🔄 New Adventure'}
-              </button>
-            )}
-            
-            {/* Settings Row */}
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={selectedMazeType}
-                onChange={(e) => setSelectedMazeType(e.target.value)}
-                className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'input')}`}
-                disabled={gameState === 'exploring'}
-              >
-                {Object.entries(MAZE_TYPES).map(([key, maze]) => (
-                  <option key={key} value={key} disabled={!maze.unlocked && !unlockedMazes[key]}>
-                    {maze.name} {maze.unlocked || unlockedMazes[key] ? '' : '🔒'}
-                  </option>
-                ))}
-              </select>
-              
-              <select
-                value={gameSpeed}
-                onChange={(e) => setGameSpeed(Number(e.target.value))}
-                className={`px-3 py-2 text-sm ${themeUtils.getComponentStyles(currentTheme, 'input')}`}
-                disabled={gameState === 'exploring'}
-              >
-                <option value={1200}>Slow</option>
-                <option value={800}>Normal</option>
-                <option value={400}>Fast</option>
-                <option value={200}>Very Fast</option>
-              </select>
-            </div>
-            
-            {/* Secondary Action Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setShowSkillTree(!showSkillTree)}
-                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} font-medium`}
-                style={{ fontSize: currentTheme === 'saturday' ? '10px' : '14px' }}
-              >
-                Skills ({skillPoints})
-              </button>
-              
-              <button
-                onClick={() => setShowResearchTree(!showResearchTree)}
-                className={`px-3 py-2 ${themeUtils.getComponentStyles(currentTheme, 'button', 'primary')} font-medium shadow-md`}
-                style={{ fontSize: currentTheme === 'saturday' ? '10px' : '14px' }}
-              >
-                Research ({researchPoints})
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* 2. Horse Display with Inventory */}
         {selectedHorse && (
           <div className={`${themeUtils.getComponentStyles(currentTheme, 'card')} rounded-xl p-4 shadow-lg mb-3`}>
-            <div className="flex items-center gap-3 mb-3">
-              <img 
-                src={selectedHorse.avatar} 
-                alt={selectedHorse.name}
-                className="w-16 h-16 rounded-lg object-contain bg-gray-50 border border-gray-200"
-              />
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-gray-800">{selectedHorse.name}</h2>
-                <p className="text-sm text-gray-600">{selectedHorse.personality}</p>
-                <div className="flex items-center gap-3 mt-1 text-xs">
+            <div className="mb-3">
+              {/* Horse Info Row */}
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h2 className="text-base font-bold text-gray-800">
+                    {selectedHorse.name} 
+                    <button 
+                      onClick={() => setShowPerformanceModal(true)}
+                      className={`ml-1 font-normal hover:underline cursor-pointer ${(() => {
+                        const avgCondition = (selectedHorse.happiness + selectedHorse.health + selectedHorse.energy) / 3;
+                        if (selectedHorse.isInjured) {
+                          return 'text-red-600';
+                        } else if (avgCondition >= 80) {
+                          return 'text-green-600';
+                        } else if (avgCondition >= 65) {
+                          return 'text-green-600';
+                        } else if (avgCondition >= 50) {
+                          return 'text-yellow-600';
+                        } else if (avgCondition >= 35) {
+                          return 'text-orange-600';
+                        } else {
+                          return 'text-red-600';
+                        }
+                      })()}`}
+                    >
+                      ({(() => {
+                        const avgCondition = (selectedHorse.happiness + selectedHorse.health + selectedHorse.energy) / 3;
+                        if (selectedHorse.isInjured) {
+                          return 'Injured';
+                        } else if (avgCondition >= 80) {
+                          return 'Excellent';
+                        } else if (avgCondition >= 65) {
+                          return 'Good';
+                        } else if (avgCondition >= 50) {
+                          return 'Fair';
+                        } else if (avgCondition >= 35) {
+                          return 'Tired';
+                        } else {
+                          return 'Weak';
+                        }
+                      })()})
+                    </button>
+                  </h2>
+                  <div className="text-sm text-gray-600">
+                    {(() => {
+                      const modifiers = getHorsePerformanceModifiers();
+                      return (
+                        <span>
+                          Speed: {Math.round(modifiers.speed * 100)}% | Trap Avoid: {modifiers.trapAvoidance}%
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
                   {availableKeys >= 0 && (
                     <span className="text-yellow-700 font-semibold">🗝️ {availableKeys}</span>
                   )}
@@ -2776,104 +2485,132 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                     <span className="text-purple-700 font-semibold">✨ +{collectedItemsThisRun.length}</span>
                   )}
                 </div>
-                
-                {/* Horse Condition Display */}
-                <div className="grid grid-cols-4 gap-1 mt-2 text-xs">
-                  <div className="text-center">
-                    <div className={`text-xs font-bold ${selectedHorse.happiness >= 80 ? 'text-green-600' : selectedHorse.happiness >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      😊 {Math.round(selectedHorse.happiness)}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`text-xs font-bold ${selectedHorse.health >= 80 ? 'text-green-600' : selectedHorse.health >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      ❤️ {Math.round(selectedHorse.health)}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`text-xs font-bold ${selectedHorse.energy >= 80 ? 'text-green-600' : selectedHorse.energy >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      ⚡ {Math.round(selectedHorse.energy)}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`text-xs font-bold ${selectedHorse.cleanliness >= 80 ? 'text-green-600' : selectedHorse.cleanliness >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      🧼 {Math.round(selectedHorse.cleanliness)}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Performance Indicators */}
-                <div className="mt-1 text-xs text-gray-500">
-                  {(() => {
-                    const modifiers = getHorsePerformanceModifiers();
-                    return `Speed: ${Math.round(modifiers.speed * 100)}% | Treasure: ${Math.round(modifiers.treasureBonus * 100)}% | Trap Avoid: ${modifiers.trapAvoidance}%`;
-                  })()}
-                </div>
-                
-                {/* Condition Warnings */}
-                {(selectedHorse.health < 50 || selectedHorse.energy < 30 || selectedHorse.isInjured) && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="text-xs text-red-700 font-semibold flex items-center gap-1">
-                      ⚠️ WARNING
-                    </div>
-                    <div className="text-xs text-red-600 mt-1">
-                      {selectedHorse.isInjured && "This horse is INJURED and cannot enter the labyrinth! Return to stable for healing. "}
-                      {selectedHorse.health < 50 && "This horse is injured and needs medical care! "}
-                      {selectedHorse.energy < 30 && "This horse is exhausted and needs rest! "}
-                      Sending weak horses on adventures increases injury risk.
-                    </div>
-                  </div>
-                )}
-                
-                {(selectedHorse.runsSinceRest || 0) >= 3 && (
-                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="text-xs text-yellow-700 font-semibold flex items-center gap-1">
-                      😴 TIRED
-                    </div>
-                    <div className="text-xs text-yellow-600 mt-1">
-                      This horse has been on {selectedHorse.runsSinceRest} recent adventures. Consider letting them rest in the stable.
-                    </div>
-                  </div>
-                )}
               </div>
+              
+              {/* Inventory Grid */}
+              <div className="grid grid-cols-4 gap-1 mt-2 mb-3">
+                {Array.from({ length: 4 + getSkillLevel('saddlebags') }).map((_, index) => {
+                  const item = selectedHorse.inventory?.[index];
+                  return (
+                    <div
+                      key={index}
+                      className={`w-16 h-16 border-2 border-dashed rounded-md flex items-center justify-center ${
+                        item ? 'bg-white border-solid border-purple-300' : 'bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      {item ? (
+                        (() => {
+                          const tileCoords = getItemTileCoords(item);
+                          if (tileCoords) {
+                            return (
+                              <div className="w-full h-full flex items-center justify-center" title={item.name}>
+                                <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <img 
+                                src={item.image} 
+                                alt={item.name}
+                                className="w-10 h-10 object-contain"
+                                title={item.name}
+                              />
+                            );
+                          }
+                        })()
+                      ) : (
+                        <div className="text-gray-400 text-xs">Empty</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              
+              {/* Condition Warnings */}
+              {(selectedHorse.health < 50 || selectedHorse.energy < 30 || selectedHorse.isInjured) && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="text-xs text-red-700 font-semibold flex items-center gap-1">
+                    ⚠️ WARNING
+                  </div>
+                  <div className="text-xs text-red-600 mt-1">
+                    {selectedHorse.isInjured && "This horse is INJURED and cannot enter the labyrinth! Return to stable for healing. "}
+                    {selectedHorse.health < 50 && "This horse is injured and needs medical care! "}
+                    {selectedHorse.energy < 30 && "This horse is exhausted and needs rest! "}
+                    Sending weak horses on adventures increases injury risk.
+                  </div>
+                </div>
+              )}
+              
+              {(selectedHorse.runsSinceRest || 0) >= 3 && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="text-xs text-yellow-700 font-semibold flex items-center gap-1">
+                    😴 TIRED
+                  </div>
+                  <div className="text-xs text-yellow-600 mt-1">
+                    This horse has been on {selectedHorse.runsSinceRest} recent adventures. Consider letting them rest in the stable.
+                  </div>
+                </div>
+              )}
             </div>
             
-            {/* Inventory Grid */}
-            <div className="grid grid-cols-4 gap-2">
-              {Array.from({ length: 4 + getSkillLevel('saddlebags') }).map((_, index) => {
-                const item = selectedHorse.inventory?.[index];
-                return (
-                  <div
-                    key={index}
-                    className={`aspect-square border-2 border-dashed rounded-lg flex items-center justify-center ${
-                      item ? 'bg-white border-solid border-purple-300' : 'bg-gray-50 border-gray-300'
+            {/* Game Controls */}
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm text-gray-600 font-medium">Game Controls</div>
+                <div className="flex items-center gap-2">
+                  {/* Speed Toggle */}
+                  <button
+                    onClick={() => {
+                      const speeds = [800, 400, 200]; // 1X, 2X, 3X
+                      const currentIndex = speeds.indexOf(gameSpeed);
+                      const nextIndex = (currentIndex + 1) % speeds.length;
+                      setGameSpeed(speeds[nextIndex]);
+                    }}
+                    disabled={gameState === 'exploring'}
+                    className={`px-2 py-1 text-xs font-bold rounded border-2 min-w-[32px] ${
+                      gameState === 'exploring' 
+                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
+                        : 'border-blue-500 text-blue-600 hover:bg-blue-50'
                     }`}
                   >
-                    {item ? (
-                      (() => {
-                        const tileCoords = getItemTileCoords(item);
-                        if (tileCoords) {
-                          return (
-                            <div className="w-12 h-12 flex items-center justify-center" title={item.name}>
-                              <TileSprite tileX={tileCoords.x} tileY={tileCoords.y} />
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-12 h-12 object-contain"
-                              title={item.name}
-                            />
-                          );
-                        }
-                      })()
-                    ) : (
-                      <div className="text-gray-400 text-xs">Empty</div>
-                    )}
-                  </div>
-                );
-              })}
+                    {gameSpeed === 800 ? '1X' : gameSpeed === 400 ? '2X' : '3X'}
+                  </button>
+                  
+                  {/* Action Buttons */}
+                  {gameState === 'exploring' ? (
+                    <button
+                      onClick={() => {
+                        setEndReason('early_exit');
+                        setGameState('ended');
+                        setInventory(prev => [...prev, ...currentRewards]);
+                        const basePoints = Math.floor(currentRewards.length / 3) + 1;
+                        const skillPointsEarned = Math.max(0, Math.floor(currentRewards.length / 6));
+                        setSkillPoints(prev => prev + skillPointsEarned);
+                      }}
+                      className={`px-3 py-1 text-xs ${themeUtils.getComponentStyles(currentTheme, 'button', 'warning')} font-medium rounded`}
+                    >
+                      End Run
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={startGame}
+                        disabled={selectedHorse.isInjured || horseInjuredThisSession}
+                        className={`px-3 py-1 text-xs ${themeUtils.getComponentStyles(currentTheme, 'button', 'success')} font-medium rounded`}
+                      >
+                        {gameState === 'waiting' ? 'Start' : 'New Run'}
+                      </button>
+                      <button
+                        onClick={() => setShowSkillTree(!showSkillTree)}
+                        className={`px-2 py-1 text-xs ${themeUtils.getComponentStyles(currentTheme, 'button', 'secondary')} font-medium rounded`}
+                      >
+                        Skills ({skillPoints})
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -3000,175 +2737,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
         </div>
       )}
 
-      {/* Mobile Research Tree Modal */}
-      {showResearchTree && (
-        <div className={`${themeUtils.getComponentStyles(currentTheme, 'modal')} z-50`}>
-          <div className={`${themeUtils.getComponentStyles(currentTheme, 'modalContent')} rounded-xl w-full max-h-[85vh] overflow-hidden shadow-2xl`}>
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">
-                🔬 Research ({researchPoints} points)
-              </h2>
-              <button
-                onClick={() => setShowResearchTree(false)}
-                className={`${themeUtils.getComponentStyles(currentTheme, 'button', 'muted')} text-xl`}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-4 overflow-y-auto max-h-96">
-              <div className="space-y-4">
-                {Object.entries(RESEARCH_TREE).map(([categoryKey, category]) => (
-                  <div key={categoryKey} className="border rounded-lg p-3">
-                    <h3 className={`font-semibold mb-2 text-${category.color}-700`}>
-                      {category.name}
-                    </h3>
-                    <p className="text-xs text-gray-600 mb-3">{category.description}</p>
-                    
-                    {/* Mazes */}
-                    <div className="space-y-2 mb-3">
-                      <h4 className="text-sm font-medium text-gray-700">🏰 Maze Types</h4>
-                      {category.mazes.map(mazeKey => {
-                        const maze = MAZE_TYPES[mazeKey];
-                        const isUnlocked = maze.unlocked || unlockedMazes[mazeKey];
-                        const canResearch = canResearchMaze(mazeKey);
-                        const hasEnoughPoints = researchPoints >= maze.researchCost;
-                        
-                        return (
-                          <div key={mazeKey} className={`flex items-center justify-between p-2 rounded ${
-                            isUnlocked ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
-                          }`}>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-medium text-sm ${isUnlocked ? 'text-green-800' : 'text-gray-800'}`}>
-                                  {maze.name}
-                                </span>
-                                <span className="text-yellow-600">{'⭐'.repeat(maze.difficulty)}</span>
-                                {isUnlocked && <span className="text-green-600">✓</span>}
-                                {!isUnlocked && !hasEnoughPoints && <img src="/horsecoins.png" alt="costs coins" className="w-4 h-4 inline filter" style={{filter: 'hue-rotate(0deg) saturate(1.5) brightness(0.8)'}} />}
-                              </div>
-                              <div className="text-xs text-gray-600">{maze.description}</div>
-                              <div className="text-xs text-blue-600 mt-1">
-                                Features: {maze.mechanics.join(', ')}
-                              </div>
-                              {!isUnlocked && (
-                                <div className={`text-xs mt-1 flex items-center gap-2 ${
-                                  hasEnoughPoints ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  <span>Cost: {maze.researchCost} 🔬</span>
-                                  <span>|</span>
-                                  <span>Available: {researchPoints} 🔬</span>
-                                  {hasEnoughPoints ? 
-                                    <span className="text-green-600">✓ Ready to unlock!</span> : 
-                                    <span className="text-red-600">Need {maze.researchCost - researchPoints} more</span>
-                                  }
-                                </div>
-                              )}
-                            </div>
-                            {!isUnlocked && (
-                              <button
-                                onClick={() => researchMaze(mazeKey)}
-                                disabled={!canResearch}
-                                className={`px-2 py-1 rounded text-xs font-semibold ${
-                                  canResearch 
-                                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                }`}
-                                title={canResearch ? 
-                                  `Unlock ${maze.name} for ${maze.researchCost} research points` : 
-                                  `Need ${maze.researchCost - researchPoints} more research points`
-                                }
-                              >
-                                {hasEnoughPoints ? 'Unlock' : `${maze.researchCost} 🔬`}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Stable Upgrades */}
-                    <div className="space-y-2 border-t border-gray-200 pt-3">
-                      <h4 className="text-sm font-medium text-gray-700">🏠 Stable Upgrades</h4>
-                      {Object.entries(STABLE_UPGRADES)
-                        .filter(([_, upgrade]) => upgrade.category === categoryKey)
-                        .map(([upgradeKey, upgrade]) => {
-                          const isUnlocked = stableUpgrades[upgradeKey];
-                          const canResearch = canResearchStableUpgrade(upgradeKey);
-                          const requiredMazeUnlocked = unlockedMazes[upgrade.unlockedBy];
-                          const hasEnoughPoints = researchPoints >= upgrade.researchCost;
-                          
-                          return (
-                            <div key={upgradeKey} className={`flex items-center justify-between p-2 rounded ${
-                              isUnlocked ? 'bg-green-100 border border-green-300' : 
-                              !requiredMazeUnlocked ? 'bg-gray-100' : 'bg-green-50'
-                            }`}>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className={`font-medium text-sm ${
-                                    isUnlocked ? 'text-green-800' : 
-                                    !requiredMazeUnlocked ? 'text-gray-500' : 'text-gray-800'
-                                  }`}>
-                                    {upgrade.name}
-                                  </span>
-                                  {isUnlocked && <span className="text-green-600">✓</span>}
-                                  {!requiredMazeUnlocked && <span className="text-gray-400">🔒</span>}
-                                  {!isUnlocked && requiredMazeUnlocked && !hasEnoughPoints && <img src="/horsecoins.png" alt="costs coins" className="w-4 h-4 inline filter" style={{filter: 'hue-rotate(0deg) saturate(1.5) brightness(0.8)'}} />}
-                                </div>
-                                <div className={`text-xs ${!requiredMazeUnlocked ? 'text-gray-500' : 'text-gray-600'}`}>
-                                  {upgrade.description}
-                                </div>
-                                <div className={`text-xs mt-1 ${!requiredMazeUnlocked ? 'text-gray-400' : 'text-purple-600'}`}>
-                                  Requires: {MAZE_TYPES[upgrade.unlockedBy].name}
-                                  {!requiredMazeUnlocked && ' (locked)'}
-                                </div>
-                                {!isUnlocked && requiredMazeUnlocked && (
-                                  <div className={`text-xs mt-1 flex items-center gap-2 ${
-                                    hasEnoughPoints ? 'text-green-600' : 'text-red-600'
-                                  }`}>
-                                    <span>Cost: {upgrade.researchCost} 🔬</span>
-                                    <span>|</span>
-                                    <span>Available: {researchPoints} 🔬</span>
-                                    {hasEnoughPoints ? 
-                                      <span className="text-green-600">✓ Ready!</span> : 
-                                      <span className="text-red-600">Need {upgrade.researchCost - researchPoints} more</span>
-                                    }
-                                  </div>
-                                )}
-                              </div>
-                              {!isUnlocked && requiredMazeUnlocked && (
-                                <button
-                                  onClick={() => researchStableUpgrade(upgradeKey)}
-                                  disabled={!canResearch}
-                                  className={`px-2 py-1 rounded text-xs font-semibold ${
-                                    canResearch 
-                                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                  }`}
-                                  title={canResearch ? 
-                                    `Unlock ${upgrade.name} for ${upgrade.researchCost} research points` : 
-                                    `Need ${upgrade.researchCost - researchPoints} more research points`
-                                  }
-                                >
-                                  {hasEnoughPoints ? 'Unlock' : `${upgrade.researchCost} 🔬`}
-                                </button>
-                              )}
-                              {!isUnlocked && !requiredMazeUnlocked && (
-                                <div className="text-xs text-gray-400 px-2">
-                                  Unlock maze first
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Vault Interaction Modal */}
       {showVaultModal && currentVault && (
@@ -3348,6 +2916,75 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, researchPoints, o
                 className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
               >
                 Continue Adventure
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Info Modal */}
+      {showPerformanceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-800">🐴 Horse Performance</h2>
+                <button
+                  onClick={() => setShowPerformanceModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-1">📊 Condition</h3>
+                  <p className="text-gray-600">
+                    Based on the average of your horse's <strong>Happiness</strong>, <strong>Health</strong>, and <strong>Energy</strong> levels:
+                  </p>
+                  <ul className="mt-1 ml-4 text-xs text-gray-500">
+                    <li>• <span className="text-green-600">Excellent</span>: 80+ average</li>
+                    <li>• <span className="text-green-600">Good</span>: 65-79 average</li>
+                    <li>• <span className="text-yellow-600">Fair</span>: 50-64 average</li>
+                    <li>• <span className="text-orange-600">Tired</span>: 35-49 average</li>
+                    <li>• <span className="text-red-600">Weak</span>: Below 35 average</li>
+                    <li>• <span className="text-red-600">Injured</span>: Cannot enter maze</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-1">🏃‍♂️ Speed</h3>
+                  <p className="text-gray-600">
+                    How fast your horse moves through the maze. Range: <strong>50% - 120%</strong>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Better conditioned horses (high happiness, health, energy) move faster and get more turns.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-1">🛡️ Trap Avoid</h3>
+                  <p className="text-gray-600">
+                    Chance to completely avoid trap damage. Range: <strong>0% - 25%</strong>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Well-conditioned horses can dodge traps entirely. Stacks with Trap Sense skill for even higher avoidance.
+                  </p>
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    💡 <strong>Tip:</strong> Keep your horse well-fed, watered, clean, and happy in the stable for optimal maze performance!
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setShowPerformanceModal(false)}
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Got it!
               </button>
             </div>
           </div>

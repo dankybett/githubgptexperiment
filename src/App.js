@@ -92,10 +92,8 @@ export default function RandomPicker() {
   const [horseInventories, setHorseInventories] = useState({});
   const [horseSkills, setHorseSkills] = useState({});
   const [horseSkillPoints, setHorseSkillPoints] = useState({});
-  const [researchPoints, setResearchPoints] = useState(0);
   const [customHorseNames, setCustomHorseNames] = useState({});
   const [horseCareStats, setHorseCareStats] = useState({}); // Store care stats by horse index
-  const [unlockedMazes, setUnlockedMazes] = useState({ standard: true });
   const [dayCount, setDayCount] = useState(1);
   const [stableGameTime, setStableGameTime] = useState(0);
   const [unlockedSongs, setUnlockedSongs] = useState({ 'THEME SONG': true }); // Theme song is unlocked by default
@@ -589,16 +587,8 @@ const specialUnlockCriteria = {
         setHorseCareStats(savedData.horseCareStats);
       }
       
-      if (typeof savedData.researchPoints === 'number') {
-        setResearchPoints(savedData.researchPoints);
-      }
-      
       if (savedData.customHorseNames && typeof savedData.customHorseNames === 'object') {
         setCustomHorseNames(savedData.customHorseNames);
-      }
-      
-      if (savedData.unlockedMazes && typeof savedData.unlockedMazes === 'object') {
-        setUnlockedMazes(savedData.unlockedMazes);
       }
       
       if (typeof savedData.dayCount === 'number' && savedData.dayCount >= 1) {
@@ -703,10 +693,8 @@ const specialUnlockCriteria = {
         horseInventories,
         horseSkills,
         horseSkillPoints,
-        researchPoints,
         customHorseNames,
         horseCareStats,
-        unlockedMazes,
         dayCount,
         stableGameTime,
         currentTheme,
@@ -730,7 +718,7 @@ const specialUnlockCriteria = {
       console.log('🏆 Verification - what was actually saved to localStorage:', savedCheck?.specialUnlockProgress);
       console.log('🏆 Verification - care_count in localStorage:', savedCheck?.specialUnlockProgress?.care_count);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, researchPoints, customHorseNames, horseCareStats, unlockedMazes, dayCount, stableGameTime, currentTheme, unlockedSongs, unlockedTarotCards, nestEgg, selectedGrazingHorses, specialUnlockProgress, gameLoaded, initialLoadComplete]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, customHorseNames, horseCareStats, dayCount, stableGameTime, currentTheme, unlockedSongs, unlockedTarotCards, nestEgg, selectedGrazingHorses, specialUnlockProgress, gameLoaded, initialLoadComplete]);
 
   // Handle betting logic when a winner is declared
   useEffect(() => {
@@ -2244,12 +2232,8 @@ const specialUnlockCriteria = {
     return (
       <HorseMazeGame
         selectedHorse={selectedHorseForLabyrinth}
-        researchPoints={researchPoints}
-        onUpdateResearchPoints={setResearchPoints}
         coins={coins}
         onUpdateCoins={setCoins}
-        unlockedMazes={unlockedMazes}
-        onUpdateUnlockedMazes={setUnlockedMazes}
         horseAvatars={horseAvatars}
         horseNames={horseNames}
         unlockedHorses={unlockedHorses}

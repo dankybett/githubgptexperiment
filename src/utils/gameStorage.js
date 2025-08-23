@@ -9,7 +9,6 @@ const defaultGameState = {
   horseInventories: {},
   horseSkills: {},
   horseSkillPoints: {},
-  researchPoints: 0,
   customHorseNames: {}, // Store custom names by horse index
   horseCareStats: {}, // Store health, energy, happiness, cleanliness, isInjured by horse index
   dayCount: 1, // Persistent day counter for stable
@@ -25,7 +24,6 @@ const defaultGameState = {
     unlocked_songs_count: 0,
     dragon_hatches: 0
   },
-  unlockedMazes: { standard: true },
   currentTheme: 'default',
   unlockedSongs: { 'THEME SONG': true },
   unlockedTarotCards: [], // Array of unlocked tarot card IDs
@@ -74,13 +72,11 @@ export const gameStorage = {
         horseInventories: typeof parsed.horseInventories === 'object' && parsed.horseInventories !== null ? parsed.horseInventories : {},
         horseSkills: typeof parsed.horseSkills === 'object' && parsed.horseSkills !== null ? parsed.horseSkills : {},
         horseSkillPoints: typeof parsed.horseSkillPoints === 'object' && parsed.horseSkillPoints !== null ? parsed.horseSkillPoints : {},
-        researchPoints: typeof parsed.researchPoints === 'number' ? parsed.researchPoints : defaultGameState.researchPoints,
         customHorseNames: typeof parsed.customHorseNames === 'object' && parsed.customHorseNames !== null ? parsed.customHorseNames : {},
         horseCareStats: typeof parsed.horseCareStats === 'object' && parsed.horseCareStats !== null ? parsed.horseCareStats : {},
         dayCount: typeof parsed.dayCount === 'number' && parsed.dayCount >= 1 ? parsed.dayCount : defaultGameState.dayCount,
         stableGameTime: typeof parsed.stableGameTime === 'number' ? parsed.stableGameTime : defaultGameState.stableGameTime,
         specialUnlockProgress: typeof parsed.specialUnlockProgress === 'object' && parsed.specialUnlockProgress !== null ? parsed.specialUnlockProgress : defaultGameState.specialUnlockProgress,
-        unlockedMazes: typeof parsed.unlockedMazes === 'object' && parsed.unlockedMazes !== null ? parsed.unlockedMazes : defaultGameState.unlockedMazes,
         currentTheme: typeof parsed.currentTheme === 'string' ? parsed.currentTheme : defaultGameState.currentTheme,
         unlockedSongs: typeof parsed.unlockedSongs === 'object' && parsed.unlockedSongs !== null ? parsed.unlockedSongs : defaultGameState.unlockedSongs,
         nestEgg: parsed.nestEgg !== undefined ? parsed.nestEgg : defaultGameState.nestEgg,
