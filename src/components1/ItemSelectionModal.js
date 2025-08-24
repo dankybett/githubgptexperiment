@@ -136,16 +136,8 @@ const ItemSelectionModal = ({
   };
 
   if (!isOpen) {
-    console.log('🎒 ItemSelectionModal - Modal not open, isOpen:', isOpen);
     return null;
   }
-  
-  console.log('🎒 ItemSelectionModal - Modal opening with:');
-  console.log('  - isOpen:', isOpen);
-  console.log('  - horse:', horse);
-  console.log('  - collectedItems:', collectedItems);
-  console.log('  - dynamicMaxSlots:', dynamicMaxSlots);
-  console.log('  - availableSlots:', availableSlots);
 
   return (
     <AnimatePresence>
