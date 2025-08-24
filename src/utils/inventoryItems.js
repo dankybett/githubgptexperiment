@@ -3,6 +3,7 @@ export const INVENTORY_ITEMS = {
   key: {
     id: 'key',
     name: 'Key',
+    emoji: '🗝️',
     description: 'Opens locked doors and vaults',
     image: '/maze/key.png',
     category: 'tool',

@@ -247,11 +247,11 @@ const TRAPS = [
 ];
 
 const POWERUPS = [
-  { name: 'Speed Boost Potion', emoji: '⚡', rarity: 0.3, effect: 'speed', duration: 5 },
-  { name: 'Invisibility Cloak', emoji: '👻', rarity: 0.2, effect: 'invisibility', duration: 8 },
-  { name: 'Teleport Scroll', emoji: '🌀', rarity: 0.15, effect: 'teleport', duration: 1 },
-  { name: 'Minotaur Stun Bomb', emoji: '💣', rarity: 0.15, effect: 'stun', duration: 6 },
-  { name: 'Treasure Magnet', emoji: '🧲', rarity: 0.25, effect: 'magnet', duration: 4 }
+  { name: 'Speed Boost Potion', emoji: '⚡', rarity: 0.3, effect: 'speed', duration: 5, tileX: 8, tileY: 6 },
+  { name: 'Invisibility Crown', emoji: '👑', rarity: 0.2, effect: 'invisibility', duration: 8, tileX: 8, tileY: 3 },
+  { name: 'Teleport Scroll', emoji: '🌀', rarity: 0.15, effect: 'teleport', duration: 1, tileX: 9, tileY: 2 },
+  { name: 'Minotaur Stun Bomb', emoji: '💣', rarity: 0.15, effect: 'stun', duration: 6, tileX: 9, tileY: 6 },
+  { name: 'Treasure Magnet', emoji: '🧲', rarity: 0.25, effect: 'magnet', duration: 4, tileX: 8, tileY: 5 }
 ];
 
 const MAZE_TYPES = {
@@ -340,7 +340,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const [prevMinotaurPos, setPrevMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
   const [inventory, setInventory] = useState([]);
   const [horseInventory, setHorseInventory] = useState(selectedHorse?.inventory || []);
-  const [collectedItemsThisRun, setCollectedItemsThisRun] = useState([]);
+  
+  const [startingInventory, setStartingInventory] = useState(selectedHorse?.inventory || []); // Track what horse started with
   const [showItemSelection, setShowItemSelection] = useState(false);
   const [isMidRunInventoryManagement, setIsMidRunInventoryManagement] = useState(false);
   // Calculate available keys dynamically from inventory
@@ -351,24 +352,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const [showLostHorseAnnouncement, setShowLostHorseAnnouncement] = useState(false);
   const [showLostHorseFound, setShowLostHorseFound] = useState(false);
   const [foundHorse, setFoundHorse] = useState(null);
-
-
-  // Debug when selectedHorse changes and sync inventories
+  
+  // Initialize inventory from selectedHorse only once when component mounts
+  const initializedRef = useRef(false);
   useEffect(() => {
-    console.log('🐎 Labyrinth - selectedHorse prop changed:', selectedHorse);
-    console.log('🎒 Labyrinth - Horse inventory from prop:', selectedHorse?.inventory);
-    
-    if (selectedHorse?.inventory) {
-      // Sync horseInventory state with the actual horse's inventory
-      setHorseInventory(selectedHorse.inventory);
-      
-      const keyCount = inventoryUtils.getItemCount(selectedHorse.inventory, 'key');
-      console.log('🗝️ Labyrinth - Keys counted in inventory:', keyCount);
-      // Keys now calculated dynamically from inventory
-    } else {
-      // No horse or no inventory
-      setHorseInventory([]);
-      // Keys now calculated dynamically from inventory
+    if (!initializedRef.current && selectedHorse) {
+      setHorseInventory(selectedHorse.inventory || []);
+      initializedRef.current = true;
     }
   }, [selectedHorse]);
 
@@ -399,6 +389,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const [gameState, setGameState] = useState('waiting');
   const [currentRewards, setCurrentRewards] = useState([]);
   const [rewardPositions, setRewardPositions] = useState([]); // Array of {x, y, rewardType}
+  const [powerupPositions, setPowerupPositions] = useState([]); // Array of {x, y, powerupType}
+  const isMovingRef = useRef(false); // Movement lock to prevent multiple moves per frame (use ref to survive re-renders)
+  const collectedPositionsRef = useRef(new Set()); // Track collected reward positions to prevent duplicates
   const [gameSpeed, setGameSpeed] = useState(800);
   const [totalRuns, setTotalRuns] = useState(0);
   const [lastTrap, setLastTrap] = useState(null);
@@ -614,8 +607,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
 
   // Generate maze based on selected type
   const generateMaze = useCallback(() => {
+    // Reset collected positions for new maze
+    collectedPositionsRef.current.clear();
+    
     const newMaze = Array(MAZE_SIZE).fill().map(() => Array(MAZE_SIZE).fill(CELL_WALL));
     const rewardPositionsTemp = []; // Track reward positions and types during generation
+    const powerupPositionsTemp = []; // Track power-up positions and types during generation
     
     function carvePassage(x, y) {
       newMaze[y][x] = CELL_EMPTY;
@@ -680,7 +677,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           } else if (rand < 0.25) {
             newMaze[y][x] = CELL_TRAP;
           } else if (rand < 0.32) {
+            // Select a random power-up type
+            const selectedPowerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
             newMaze[y][x] = CELL_POWERUP;
+            // Store the power-up position and type for rendering
+            powerupPositionsTemp.push({ x, y, powerupType: selectedPowerup });
           } else if (rand < 0.38 && keysPlaced < 2) {
             newMaze[y][x] = CELL_KEY;
             newVaultKeys.push({ x, y, id: Math.random().toString(36).substr(2, 9) });
@@ -744,6 +745,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     
     // Set the reward positions state
     setRewardPositions(rewardPositionsTemp);
+    // Set the power-up positions state  
+    setPowerupPositions(powerupPositionsTemp);
     
     return newMaze;
   }, []);
@@ -939,6 +942,23 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     }
   }, [maze, minotaurPos, getSkillLevel, addFloatingText, flashHorse]);
 
+  // Add item to horse inventory - single persistent inventory system
+  const addItemToInventory = useCallback((item) => {
+    const maxSlots = 4 + getSkillLevel('saddlebags');
+    
+    setHorseInventory(prev => {
+      if (prev.length < maxSlots) {
+        // Space available - add item directly
+        return [...prev, item];
+      } else {
+        // Inventory full - add item temporarily and show management modal
+        setIsMidRunInventoryManagement(true);
+        setShowItemSelection(true);
+        return [...prev, item]; // Add over capacity temporarily
+      }
+    });
+  }, [getSkillLevel, horseInventory]);
+
   // Collect nearby treasures with magnet
   const collectWithMagnet = useCallback(() => {
     const baseMagnetRange = hasPowerup('magnet') ? 2 : 0;
@@ -950,11 +970,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     const { x: hx, y: hy } = horsePos;
     const itemsToCollect = [];
     
-    // First, identify all items to collect
+    // First, identify all items to collect (excluding horse's current position)
     for (let dy = -totalRange; dy <= totalRange; dy++) {
       for (let dx = -totalRange; dx <= totalRange; dx++) {
         const nx = hx + dx;
         const ny = hy + dy;
+        
+        // Skip the horse's current position - that's handled by normal collection
+        if (dx === 0 && dy === 0) continue;
         
         if (nx > 0 && nx < MAZE_SIZE - 1 && ny > 0 && ny < MAZE_SIZE - 1 && 
             maze[ny] && maze[ny][nx] === CELL_REWARD) {
@@ -980,19 +1003,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     const availableSpace = maxSlots - currentCount;
     
     if (itemsToCollect.length <= availableSpace) {
-      // All items fit - add them directly
+      // Add items to persistent inventory (no visual feedback for magnet)
       itemsToCollect.forEach(({ reward, x, y }) => {
-        setHorseInventory(prev => [...prev, reward]);
-        
-        // Add visual feedback
-        setFloatingTexts(prev => [...prev, {
-          id: Date.now() + Math.random(),
-          text: `+${reward.emoji} ${reward.name}`,
-          color: '#10b981',
-          fontSize: '14px',
-          duration: 2000,
-          timestamp: Date.now()
-        }]);
+        addItemToInventory(reward);
         
         // Remove from positions and maze
         setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
@@ -1007,9 +1020,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       const itemsToAdd = itemsToCollect.slice(0, availableSpace);
       const itemsForModal = itemsToCollect.slice(availableSpace);
       
-      // Add what fits directly
+      // Add what fits to persistent inventory
       itemsToAdd.forEach(({ reward, x, y }) => {
-        setHorseInventory(prev => [...prev, reward]);
+        addItemToInventory(reward);
         
         // Remove from positions and maze
         setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
@@ -1022,9 +1035,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       
       // Show modal for remaining items
       if (itemsForModal.length > 0) {
-        setCollectedItemsThisRun(itemsForModal.map(item => item.reward));
-        setIsMidRunInventoryManagement(true);
-        setShowItemSelection(true);
+        // Add the remaining items to persistent inventory (triggers modal)
+        itemsForModal.forEach(({ reward }) => {
+          addItemToInventory(reward);
+        });
         
         // Remove remaining items from maze regardless (they're now in modal)
         itemsForModal.forEach(({ x, y }) => {
@@ -1037,7 +1051,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         });
       }
     }
-  }, [hasPowerup, getSkillLevel, horsePos, maze, horseInventory, setFloatingTexts, rewardPositions]);
+  }, [hasPowerup, getSkillLevel, horsePos, maze, horseInventory, rewardPositions, addItemToInventory]);
 
   // Pathfinding for minotaur
   const findPathToHorse = useCallback((minotaurX, minotaurY, horseX, horseY) => {
@@ -1229,44 +1243,22 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     };
   }, [selectedHorse]);
 
-  // Add item to active inventory or show selection modal if full
-  const addItemToActiveInventory = useCallback((item) => {
-    const maxSlots = 4 + getSkillLevel('saddlebags');
-    const currentCount = horseInventory.length;
-    
-    if (currentCount < maxSlots) {
-      // Add directly to inventory
-      setHorseInventory(prev => [...prev, item]);
-      
-      // Add visual feedback
-      setFloatingTexts(prev => [...prev, {
-        id: Date.now() + Math.random(),
-        text: `+${item.emoji} ${item.name}`,
-        color: '#10b981',
-        fontSize: '14px',
-        duration: 2000,
-        timestamp: Date.now()
-      }]);
-    } else {
-      // Inventory full - show selection modal but continue run
-      setCollectedItemsThisRun([item]); // Set as single item to swap
-      setIsMidRunInventoryManagement(true);
-      setShowItemSelection(true);
-    }
-  }, [horseInventory, getSkillLevel, setFloatingTexts]);
 
   // Horse movement logic
   const moveHorse = useCallback(() => {
     if (gameState !== 'exploring') return;
     if (pendingTrapCheck) {
-      console.log('🚫 moveHorse blocked - trap processing in progress for:', pendingTrapCheck.position);
       return;
     }
+    if (isMovingRef.current) {
+      return; // Prevent multiple moves in the same frame
+    }
+    
+    isMovingRef.current = true;
 
     setHorseMoveCount(prev => prev + 1);
     updatePowerups();
     updateMovingWalls();
-    collectWithMagnet();
     
     // Skip movement if currently teleporting
     if (isTeleporting) return;
@@ -1349,23 +1341,43 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
 
       // Handle cell interactions
       if (cell === CELL_REWARD) {
+        const positionKey = `${nextMove.x},${nextMove.y}`;
+        
+        // Check if we've already collected from this position
+        if (collectedPositionsRef.current.has(positionKey)) {
+          return { x: nextMove.x, y: nextMove.y };
+        }
+        
+        // Check if this reward actually exists at this position to prevent double collection
+        const rewardAtPosition = rewardPositions.find(r => r.x === nextMove.x && r.y === nextMove.y);
+        
+        if (!rewardAtPosition) {
+          // Still update the maze cell to empty since we're on it
+          setMaze(prevMaze => {
+            const newMaze = prevMaze.map(row => [...row]);
+            newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
+            return newMaze;
+          });
+          return { x: nextMove.x, y: nextMove.y };
+        }
+        
         const lucky = getSkillLevel('lucky');
         const treasureHunter = getSkillLevel('treasureHunter');
         const treasureMultiplier = performanceModifiers.treasureBonus;
         
-        // Get the specific reward at this position
-        const rewardAtPosition = rewardPositions.find(r => r.x === nextMove.x && r.y === nextMove.y);
-        const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0]; // Fallback to first reward
-        // Reward handled by addItemToActiveInventory
+        const reward = rewardAtPosition.rewardType;
+        
+        // Mark this position as collected IMMEDIATELY to prevent duplicates
+        collectedPositionsRef.current.add(positionKey);
         
         // Remove this reward from the positions array
         setRewardPositions(prev => prev.filter(r => !(r.x === nextMove.x && r.y === nextMove.y)));
         
-        // Flash effect for treasure collection (no text)
+        // Flash effect for treasure collection
         flashHorse('#fbbf24');
         
-        // Add reward directly to horse inventory if space available
-        addItemToActiveInventory(reward);
+        // Add reward to persistent inventory
+        addItemToInventory(reward);
         
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
@@ -1373,7 +1385,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           return newMaze;
         });
       } else if (cell === CELL_POWERUP) {
-        const powerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+        // Find the specific power-up at this position
+        const powerupAtPosition = powerupPositions.find(p => p.x === nextMove.x && p.y === nextMove.y);
+        const powerup = powerupAtPosition ? powerupAtPosition.powerupType : POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
         
         // Only flash effect for power-up collection - text will be shown by usePowerup()
         flashHorse('#a855f7');
@@ -1387,16 +1401,20 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
           return newMaze;
         });
+        
+        // Remove the collected power-up from positions tracking
+        setPowerupPositions(prev => prev.filter(p => !(p.x === nextMove.x && p.y === nextMove.y)));
       } else if (cell === CELL_KEY) {
         const key = vaultKeys.find(k => k.x === nextMove.x && k.y === nextMove.y);
+        
         if (key && !collectedKeys.includes(key.id)) {
           // Add visual feedback for key collection (only if not already collected)
           addFloatingText('🗝️ Key Found!', '#eab308');
           flashHorse('#eab308');
           
           setCollectedKeys(prev => [...prev, key.id]);
-          // Add key directly to active inventory
-          addItemToActiveInventory(INVENTORY_ITEMS.key);
+          // Add key to persistent inventory
+          addItemToInventory(INVENTORY_ITEMS.key);
           // Keys now calculated dynamically from inventory
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
@@ -1515,69 +1533,30 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
 
       return { x: nextMove.x, y: nextMove.y };
     });
+    
+    // Collect nearby items with magnet AFTER position is updated
+    collectWithMagnet();
+    
+    // Reset movement lock after all movement logic is complete
+    setTimeout(() => {
+      isMovingRef.current = false;
+    }, 0);
   }, [gameState, maze, currentRewards, hasPowerup, updatePowerups, updateMovingWalls, collectWithMagnet, usePowerup, getSkillLevel, minotaurPos, trapHits, isCellPassable, portals, vaultKeys, collectedKeys, isTeleporting, triggerTeleportation, rewardPositions, lostHorse, pendingTrapCheck]);
 
   // Vault interaction functions
   const handleVaultUnlock = useCallback(() => {
     if (!currentVault || !availableKeys) return;
     
-    // Add reward and consume key
-    // Reward handled by addItemToActiveInventory
-    setCollectedKeys(prev => prev.slice(1));
-    // Keys now calculated dynamically from inventory
+    // Remove key from inventory first
+    setHorseInventory(prev => inventoryUtils.removeItem(prev, 'key'));
     
-    // Calculate new inventory after removing key
-    const hasKeyInInventory = horseInventory.some(item => item.id === 'key');
-    let newInventory = [...horseInventory];
+    // Add reward using the persistent inventory system
+    addItemToInventory(currentVault.reward);
     
-    if (hasKeyInInventory) {
-      // Remove key from horse inventory
-      newInventory = inventoryUtils.removeItem(newInventory, 'key');
-      console.log('🗝️ Vault - Key removed from horse inventory');
-    } else {
-      // Remove key from collected items (fallback)
-      setCollectedItemsThisRun(prev => {
-        const keyIndex = prev.findIndex(item => item.id === 'key');
-        if (keyIndex !== -1) {
-          console.log('🗝️ Vault - Key removed from items collected this run');
-          return prev.filter((_, index) => index !== keyIndex);
-        }
-        return prev;
-      });
-    }
-    
-    // Check if we have space after removing key
-    const maxSlots = 4 + getSkillLevel('saddlebags');
-    const hasSpace = newInventory.length < maxSlots;
-    
-    if (hasSpace) {
-      // Add item directly since we have space after key removal
-      newInventory.push(currentVault.reward);
-      setHorseInventory(newInventory);
-      
-      // Add visual feedback
-      setFloatingTexts(prev => [...prev, {
-        id: Date.now() + Math.random(),
-        text: `+${currentVault.reward.emoji} ${currentVault.reward.name}`,
-        color: '#10b981',
-        fontSize: '14px',
-        duration: 2000,
-        timestamp: Date.now()
-      }]);
-      
-      // Close vault modal and show treasure reveal
-      setShowVaultModal(false);
-      setShowTreasureReveal(true);
-    } else {
-      // Still full after removing key - show selection modal
-      setHorseInventory(newInventory);
-      setCollectedItemsThisRun([currentVault.reward]);
-      setIsMidRunInventoryManagement(true);
-      setShowItemSelection(true);
-      // Don't show treasure reveal modal when inventory management is needed
-      setShowVaultModal(false);
-    }
-  }, [currentVault, horseInventory, collectedItemsThisRun, getSkillLevel, setFloatingTexts]);
+    // Close vault modal and show treasure reveal
+    setShowVaultModal(false);
+    setShowTreasureReveal(true);
+  }, [currentVault, availableKeys, addItemToInventory]);
 
   const handleTreasureRevealContinue = useCallback(() => {
     if (!currentVault) return;
@@ -1621,71 +1600,22 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const handleTarotChestUnlock = useCallback(() => {
     if (!currentTarotChest || availableKeys < 2) return;
     
-    // Add reward and consume 2 keys
-    // Reward handled by addItemToActiveInventory
-    // Keys now calculated dynamically from inventory
+    // Remove 2 keys from inventory first
+    setHorseInventory(prev => {
+      let newInventory = prev;
+      for (let i = 0; i < 2; i++) {
+        newInventory = inventoryUtils.removeItem(newInventory, 'key');
+      }
+      return newInventory;
+    });
     
-    // Remove 2 keys from appropriate sources (prioritize inventory first)
-    const hasKeysInInventory = horseInventory.filter(item => item.id === 'key').length;
-    const keysCollectedThisRun = collectedItemsThisRun.filter(item => item.id === 'key').length;
+    // Add reward using the persistent inventory system
+    addItemToInventory(currentTarotChest.reward);
     
-    let keysToRemoveFromInventory = Math.min(2, hasKeysInInventory);
-    let keysToRemoveFromCollected = 2 - keysToRemoveFromInventory;
-    
-    // Calculate new inventory after removing keys
-    let newInventory = [...horseInventory];
-    for (let i = 0; i < keysToRemoveFromInventory; i++) {
-      newInventory = inventoryUtils.removeItem(newInventory, 'key');
-    }
-    
-    // Check if we have space after removing keys
-    const maxSlots = 4 + getSkillLevel('saddlebags');
-    const hasSpace = newInventory.length < maxSlots;
-    
-    if (hasSpace) {
-      // Add item directly since we have space after key removal
-      newInventory.push(currentTarotChest.reward);
-      setHorseInventory(newInventory);
-      
-      // Add visual feedback
-      setFloatingTexts(prev => [...prev, {
-        id: Date.now() + Math.random(),
-        text: `+${currentTarotChest.reward.emoji} ${currentTarotChest.reward.name}`,
-        color: '#10b981',
-        fontSize: '14px',
-        duration: 2000,
-        timestamp: Date.now()
-      }]);
-      
-      // Close tarot chest modal and show tarot reveal
-      setShowTarotChestModal(false);
-      setShowTarotReveal(true);
-    } else {
-      // Still full after removing keys - show selection modal
-      setHorseInventory(newInventory);
-      setCollectedItemsThisRun([currentTarotChest.reward]);
-      setIsMidRunInventoryManagement(true);
-      setShowItemSelection(true);
-      // Don't show tarot reveal modal when inventory management is needed
-      setShowTarotChestModal(false);
-    }
-    
-    // Remove remaining keys from collected items
-    if (keysToRemoveFromCollected > 0) {
-      setCollectedItemsThisRun(prev => {
-        let newItems = [...prev];
-        let removed = 0;
-        for (let i = newItems.length - 1; i >= 0 && removed < keysToRemoveFromCollected; i--) {
-          if (newItems[i].id === 'key') {
-            newItems.splice(i, 1);
-            removed++;
-          }
-        }
-        console.log('🔮 Tarot chest - Removed', removed, 'keys from items collected this run');
-        return newItems;
-      });
-    }
-  }, [currentTarotChest, horseInventory, collectedItemsThisRun, getSkillLevel, setFloatingTexts]);
+    // Close tarot chest modal and show tarot reveal
+    setShowTarotChestModal(false);
+    setShowTarotReveal(true);
+  }, [currentTarotChest, availableKeys, addItemToInventory]);
   
   const handleTarotRevealContinue = useCallback(() => {
     if (!currentTarotChest) return;
@@ -1886,6 +1816,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       return;
     }
     
+    // Golden Apple can only be used during trap-related pause, not during normal exploring
+    if (itemName === 'Golden Apple' && gameState === 'exploring') {
+      console.log('❌ Golden Apple can only be used when trapped, not during normal gameplay');
+      return;
+    }
+    
     // Special case: during trap-related pause, only allow golden apple if available
     if (gameState === 'paused' && canUseGoldenApple && itemName !== 'Golden Apple') {
       console.log('❌ Cannot use items other than Golden Apple during trap pause');
@@ -2020,69 +1956,39 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     return () => clearInterval(cleanupInterval);
   }, []);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
+    // Prevent rapid multiple calls
+    if (gameState === 'exploring') {
+      console.log('🚀 StartGame - Already exploring, ignoring duplicate call');
+      return;
+    }
+    
     console.log('🚀 StartGame - Debug info:');
     console.log('  - gameState:', gameState);
     console.log('  - currentRewards.length:', currentRewards.length);
-    console.log('  - collectedItemsThisRun.length:', collectedItemsThisRun.length);
-    console.log('  - currentRewards:', currentRewards);
-    console.log('  - collectedItemsThisRun:', collectedItemsThisRun);
+    console.log('  - current working inventory:', horseInventory.length, 'items');
     
-    // Check if there are unreturned rewards from previous run
-    if (gameState === 'ended' && (currentRewards.length > 0 || collectedItemsThisRun.length > 0)) {
-      console.log('🚀 StartGame - Found unreturned items, checking what to do...');
+    // Check if we have items in working inventory that need to be saved
+    if (gameState === 'ended' && horseInventory.length > 0) {
+      console.log('🚀 StartGame - Found working inventory, checking if it matches persistent inventory');
       
-      if (collectedItemsThisRun.length > 0) {
-        // Check if we have inventory space to auto-add items and continue
-        const currentInventoryCount = selectedHorse?.inventory?.length || 0;
-        const baseSlotsCount = 4;
-        const saddlebagsLevel = getSkillLevel('saddlebags');
-        const maxSlots = baseSlotsCount + saddlebagsLevel;
-        const availableSlots = maxSlots - currentInventoryCount;
+      const persistentInventoryLength = selectedHorse?.inventory?.length || 0;
+      
+      // If working inventory is different from persistent, we need to save it
+      if (horseInventory.length !== persistentInventoryLength) {
+        console.log('🚀 StartGame - Working inventory differs from persistent, saving changes');
         
-        console.log('🚀 StartGame - Inventory check:');
-        console.log('  - Current inventory:', currentInventoryCount);
-        console.log('  - Max slots:', maxSlots);
-        console.log('  - Available slots:', availableSlots);
-        console.log('  - Items to add:', collectedItemsThisRun.length);
-        
-        if (collectedItemsThisRun.length <= availableSlots) {
-          // We have space - add items to inventory and continue with new run
-          console.log('🚀 StartGame - Auto-adding items and starting new run');
-          
-          // Process items silently without exiting to stable
-          let updatedInventory = [...(selectedHorse.inventory || [])];
-          const dynamicMaxSlots = 4 + (selectedHorse.skills?.saddlebags || 0);
-          
-          collectedItemsThisRun.forEach(item => {
-            const result = inventoryUtils.addItem(updatedInventory, item, dynamicMaxSlots);
-            if (result.success) {
-              updatedInventory = result.inventory;
-            }
-          });
-          
-          // Update horse inventory in parent component
-          if (selectedHorse && onHorseReturn) {
-            const updatedHorse = {
-              ...selectedHorse,
-              inventory: updatedInventory
-            };
-            onHorseReturn(updatedHorse);
-          }
-          
-          // Clear collected items and continue to new run
-          setCollectedItemsThisRun([]);
-          // Items now managed directly in inventory
-        } else {
-          // Inventory full - use existing flow with modal
-          console.log('🚀 StartGame - Inventory full, showing management modal');
-          exitLabyrinth();
-          return;
+        // Auto-save the working inventory to persistent storage
+        if (selectedHorse && onHorseReturn) {
+          const updatedHorse = {
+            ...selectedHorse,
+            inventory: [...horseInventory] // Transfer working inventory to persistent
+          };
+          onHorseReturn(updatedHorse);
         }
-      } else {
-        // If only display rewards from old system, clear them and continue to new game
-        console.log('🚀 StartGame - Only display rewards, clearing and continuing to new game');
-        // Items now managed directly in inventory
+        
+        // Reset for new run
+        setStartingInventory([...horseInventory]);
       }
     }
     
@@ -2091,7 +1997,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     // Regenerate maze if starting a new adventure after a completed/active run
     const shouldRegenerateMaze = 
       gameState === 'ended' || 
-      gameState === 'exploring';
+      gameState === 'exploring' ||
+      gameState === 'paused';
       
     if (shouldRegenerateMaze) {
       console.log('🚀 StartGame - Regenerating maze (new adventure)');
@@ -2109,7 +2016,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       // Continue with normal game start if no lost horse
       startGameAfterAnnouncement();
     }, 100);
-  };
+  }, [gameState, horseInventory, selectedHorse, onHorseReturn]);
   
   const startGameAfterAnnouncement = (keepLostHorse = false) => {
     // Reset positions
@@ -2136,7 +2043,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     setShowTarotChestModal(false);
     setShowTarotReveal(false);
     setCurrentTarotChest(null);
-    setCollectedItemsThisRun([]);
+    // Set starting inventory snapshot for this run
+    setStartingInventory([...horseInventory]);
     // Reset session injury flag for new runs
     setHorseInjuredThisSession(false);
     // Reset trap healing state
@@ -2161,31 +2069,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     console.log('  - horseInjuredThisSession:', horseInjuredThisSession);
     console.log('  - gameState:', gameState);
     
-    const currentInventoryCount = selectedHorse?.inventory?.length || 0;
-    const baseSlotsCount = 4;
-    const saddlebagsLevel = getSkillLevel('saddlebags');
-    const maxSlots = baseSlotsCount + saddlebagsLevel;
-    const availableSlots = maxSlots - currentInventoryCount;
-    
     console.log('🎒 ExitLabyrinth - Inventory check:');
-    console.log('  - Current inventory count:', currentInventoryCount);
-    console.log('  - Base slots:', baseSlotsCount);
-    console.log('  - Saddlebags level:', saddlebagsLevel);
-    console.log('  - Max slots:', maxSlots);
-    console.log('  - Available slots:', availableSlots);
-    console.log('  - Collected items this run:', collectedItemsThisRun.length);
-    console.log('  - Need modal?', collectedItemsThisRun.length > availableSlots);
+    console.log('  - Current working inventory:', horseInventory.length, 'items');
     
-    // If we collected more items than we can carry, show selection modal
-    if (collectedItemsThisRun.length > availableSlots) {
-      console.log('🎒 ExitLabyrinth - Showing item selection modal');
-      setShowItemSelection(true);
-      return;
-    }
-    
-    console.log('🎒 ExitLabyrinth - Adding all items directly');
-    // If we can carry all items, add them directly
-    returnHorseWithItems(collectedItemsThisRun);
+    // With proper mid-run inventory management, horseInventory should never exceed capacity
+    // Simply transfer the current inventory to persistent storage
+    console.log('🎒 ExitLabyrinth - Transferring inventory directly');
+    returnHorseWithItems(horseInventory);
   };
 
 
@@ -2196,24 +2086,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     console.log('  - endReason:', endReason);
     
     if (selectedHorse && onHorseReturn) {
-      // Start with current horseInventory state (which reflects keys used in vaults), removing discarded items
-      let updatedInventory = [...(horseInventory || [])];
-      
-      // Remove discarded items (sort indices in descending order to avoid index shifting)
-      const sortedDiscardedIndices = [...discardedIndices].sort((a, b) => b - a);
-      sortedDiscardedIndices.forEach(index => {
-        if (index >= 0 && index < updatedInventory.length) {
-          updatedInventory.splice(index, 1);
-        }
-      });
-      
-      // Add selected items with dynamic slot calculation
+      // The items to keep should be the complete new inventory (selected from modal)
       const dynamicMaxSlots = 4 + (selectedHorse.skills?.saddlebags || 0);
-      console.log('🎒 ReturnHorseWithItems - Adding items:');
+      console.log('🎒 ReturnHorseWithItems - Setting inventory:');
       console.log('  - Items to keep:', itemsToKeep);
       console.log('  - Dynamic max slots:', dynamicMaxSlots);
-      console.log('  - Starting inventory:', updatedInventory);
       
+      // Use the selected items as the complete new inventory
+      let updatedInventory = [];
       itemsToKeep.forEach((item, index) => {
         console.log(`  - Processing item ${index + 1}:`, item);
         const result = inventoryUtils.addItem(updatedInventory, item, dynamicMaxSlots);
@@ -2323,35 +2203,64 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   };
 
   const handleItemSelectionConfirm = (selectionResult) => {
+    console.log('🎒 ITEM SELECTION DEBUG - Confirm called');
+    console.log('  - isMidRunInventoryManagement:', isMidRunInventoryManagement);
+    console.log('  - selectionResult:', selectionResult);
+    
     setShowItemSelection(false);
     
     if (isMidRunInventoryManagement) {
-      // Mid-run inventory management - update horse inventory properly and continue
+      // Mid-run inventory management - reconstruct the complete inventory from user's choices
+      console.log('🎒 MID-RUN SELECTION DEBUG:');
+      console.log('  - horseInventory before:', horseInventory);
+      console.log('  - startingInventory:', startingInventory);
+      
       if (Array.isArray(selectionResult)) {
+        console.log('  - Setting inventory to array:', selectionResult);
         setHorseInventory(selectionResult);
       } else {
         const { selectedItems, discardedItems } = selectionResult;
-        // Start with current inventory, remove discarded items, add selected new items
-        const currentInventory = [...horseInventory];
-        const filteredInventory = currentInventory.filter((item, index) => 
-          !discardedItems.some(discarded => discarded.originalIndex === index)
-        );
-        const newInventory = [...filteredInventory, ...selectedItems];
-        setHorseInventory(newInventory);
+        console.log('  - selectedItems:', selectedItems);
+        console.log('  - discardedItems:', discardedItems);
+        
+        // FIXED: Reconstruct the complete inventory from user's selections
+        const maxSlots = 4 + getSkillLevel('saddlebags');
+        const originalFirst4 = horseInventory.slice(0, maxSlots);
+        const overflowItems = horseInventory.slice(maxSlots);
+        
+        console.log('  - maxSlots:', maxSlots);
+        console.log('  - originalFirst4 (shown as horse.inventory):', originalFirst4);
+        console.log('  - overflowItems (shown as collectedItems):', overflowItems);
+        console.log('  - selectedItems (what user chose):', selectedItems);
+        console.log('  - discardedItems (indices user discarded):', discardedItems);
+        
+        // Reconstruct the final inventory:
+        // 1. Start with all items that were shown to the user
+        const allItemsShown = [...originalFirst4, ...overflowItems];
+        console.log('  - allItemsShown:', allItemsShown);
+        
+        // 2. Remove items the user discarded (discardedItems contains indices)
+        let finalInventory = allItemsShown.filter((item, index) => {
+          const isDiscarded = discardedItems.includes(index);
+          console.log(`  - Item ${index} (${item.name}): ${isDiscarded ? 'DISCARDED' : 'KEPT'}`);
+          return !isDiscarded;
+        });
+        
+        console.log('  - Final inventory after applying discards:', finalInventory);
+        setHorseInventory(finalInventory);
       }
       setIsMidRunInventoryManagement(false);
-      setCollectedItemsThisRun([]);
       return;
     }
     
-    // End-of-run inventory management - handle both old format (array) and new format (object)
+    // End-of-run inventory management - user selected which items to keep in persistent storage
     if (Array.isArray(selectionResult)) {
       // Old format - just selected items
       returnHorseWithItems(selectionResult);
     } else {
-      // New format - handle discarding and selecting
-      const { selectedItems, discardedItems } = selectionResult;
-      returnHorseWithItems(selectedItems, discardedItems);
+      // New format - user selected which items to keep
+      const { selectedItems } = selectionResult;
+      returnHorseWithItems(selectedItems);
     }
   };
 
@@ -2359,9 +2268,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     setShowItemSelection(false);
     
     if (isMidRunInventoryManagement) {
-      // Mid-run cancellation - just continue without adding the item
+      // Mid-run cancellation - remove ALL overflow items that were temporarily added
+      const maxSlots = 4 + getSkillLevel('saddlebags');
+      
+      if (horseInventory.length > maxSlots) {
+        // Remove all items beyond capacity (handles both single item and batch overflow)
+        setHorseInventory(prev => prev.slice(0, maxSlots));
+      }
       setIsMidRunInventoryManagement(false);
-      setCollectedItemsThisRun([]);
       return;
     }
     
@@ -2569,6 +2483,34 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       return renderSpecialTile('REWARD_GOLDEN_APPLE', x, y);
     }
     
+    // Special handling for CELL_POWERUP to use specific power-up tile
+    if (cell === CELL_POWERUP) {
+      const powerupAtPosition = powerupPositions.find(p => p.x === x && p.y === y);
+      if (powerupAtPosition) {
+        const powerup = powerupAtPosition.powerupType;
+        if (TILES_WITH_TRANSPARENT_BACKGROUND.has(cell)) {
+          return (
+            <LayeredTile 
+              backgroundTile={getRandomEmptyTile(x, y)} 
+              foregroundTile={{ x: powerup.tileX, y: powerup.tileY }} 
+            />
+          );
+        }
+        return <TileSprite tileX={powerup.tileX} tileY={powerup.tileY} />;
+      }
+      // Fallback to generic power-up tile if position not found
+      const fallbackTile = TILE_MAP[CELL_POWERUP];
+      if (TILES_WITH_TRANSPARENT_BACKGROUND.has(cell)) {
+        return (
+          <LayeredTile 
+            backgroundTile={getRandomEmptyTile(x, y)} 
+            foregroundTile={fallbackTile} 
+          />
+        );
+      }
+      return <TileSprite tileX={fallbackTile.x} tileY={fallbackTile.y} />;
+    }
+    
     // Use tileset for all basic cell types
     const tileMapping = TILE_MAP[cell];
     if (tileMapping) {
@@ -2593,6 +2535,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const getInventoryCount = (itemName) => {
     return inventory.filter(item => item.name === itemName).length;
   };
+
+  // For end-of-run, we just transfer whatever is in horseInventory to persistent storage
+  // No need for complex "collected items" calculation
 
   // Helper function to get tile coordinates for inventory items
   const getItemTileCoords = (item) => {
@@ -2686,8 +2631,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         <div className={`${themeUtils.getComponentStyles(currentTheme, 'card')} rounded-xl p-4 shadow-lg mb-3`}>
           <div 
             className={`border-2 border-gray-800 w-full rounded-lg overflow-hidden shadow-inner relative`}
-            style={{ backgroundColor: labyrinthStyles.wall }}
             style={{ 
+              backgroundColor: labyrinthStyles.wall,
               display: 'flex',
               flexDirection: 'column',
               lineHeight: 0,
@@ -2695,7 +2640,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
             }}
           >
             {/* CSS for character flipping and teleportation */}
-            <style jsx>{`
+            <style>{`
               .minotaur-flipped {
                 transform: scaleX(-1);
               }
@@ -2879,7 +2824,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
             {gameState === 'ended' && (
               <div className="text-sm">
                 {endReason === 'trap' && lastTrap && (
-                  <p className="text-red-600">💥 Hit {lastTrap.name} {lastTrap.emoji}!</p>
+                  <p className="text-red-600">💥 Hit Bear Trap 🪤!</p>
                 )}
                 {endReason === 'minotaur' && (
                   <p className="text-red-600">👹 Caught by minotaur!</p>
@@ -2953,24 +2898,26 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
                       const powerBoostAvoidance = activePowerBoost > 0 ? 25 : 0; // 25% bonus from horsepower cereal
                       const totalTrapAvoidance = modifiers.trapAvoidance + powerBoostAvoidance;
                       return (
-                        <span>
-                          Speed: {totalSpeedPercent}%
-                          {activeSpeedBoost > 0 && <span className="text-green-600 font-semibold"> (+{speedBoostPercent}%)</span>}
-                          {' | '}
-                          Trap Avoid: {totalTrapAvoidance}%
-                          {activePowerBoost > 0 && <span className="text-purple-600 font-semibold"> (+{powerBoostAvoidance}%)</span>}
-                        </span>
+                        <div>
+                          <div>
+                            Speed: {totalSpeedPercent}%
+                            {activeSpeedBoost > 0 && <span className="text-green-600 font-semibold"> (+{speedBoostPercent}%)</span>}
+                            {' | '}
+                            Trap Avoid: {totalTrapAvoidance}%
+                            {activePowerBoost > 0 && <span className="text-purple-600 font-semibold"> (+{powerBoostAvoidance}%)</span>}
+                          </div>
+                          {(trapHits > 0 || getSkillLevel('pathfinding') > 0) && (
+                            <div className="text-xs mt-1 space-x-2">
+                              {trapHits > 0 && <span>❤️ Trap Hits: {trapHits}/{getSkillLevel('thickSkin')}</span>}
+                              {getSkillLevel('pathfinding') > 0 && <span>🧭 Smart Movement</span>}
+                            </div>
+                          )}
+                        </div>
                       );
                     })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
-                  {availableKeys >= 0 && (
-                    <span className="text-yellow-700 font-semibold">🗝️ {availableKeys}</span>
-                  )}
-                  {collectedItemsThisRun.length > 0 && (
-                    <span className="text-purple-700 font-semibold">✨ +{collectedItemsThisRun.length}</span>
-                  )}
                   {activeSpeedBoost > 0 && (
                     <span className="text-green-600 font-semibold animate-pulse">⚡ Speed {Math.ceil(activeSpeedBoost/1000)}s</span>
                   )}
@@ -2984,8 +2931,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
               <div className="grid grid-cols-4 gap-1 mt-2 mb-3">
                 {Array.from({ length: 4 + getSkillLevel('saddlebags') }).map((_, index) => {
                   const item = horseInventory?.[index]; // Use horseInventory state instead of selectedHorse.inventory
-                  const canUseItem = (gameState === 'exploring' || gameState === 'paused') && item && item.name !== 'Key'; // Keys are handled separately
-                  const isGoldenAppleUsable = item?.name === 'Golden Apple' && canUseGoldenApple;
+                  const canUseItem = (gameState === 'exploring' || gameState === 'paused') && item && item.name !== 'Key' && item.name !== 'Golden Apple'; // Keys and Golden Apples are handled separately
+                  const isGoldenAppleUsable = item?.name === 'Golden Apple' && canUseGoldenApple && gameState === 'paused'; // Golden Apple only usable when paused due to trap
                   const isSpeedBoostActive = activeSpeedBoost > 0 && item?.name === 'Energy Drink';
                   
                   return (
@@ -3146,19 +3093,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           </div>
         )}
 
-        {/* Mobile-optimized Horse Status */}
-        {(trapHits > 0 || Object.values(horseSkills).some(level => level > 0) || collectedKeys.length > 0) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 shadow-sm">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
-              🐎 Horse Status
-            </h4>
-            <div className="text-sm space-y-1">
-              {trapHits > 0 && <div>❤️ Trap Hits: {trapHits}/{getSkillLevel('thickSkin')}</div>}
-              {collectedKeys.length > 0 && <div>🗝️ Keys Collected: {collectedKeys.length}</div>}
-              {getSkillLevel('pathfinding') > 0 && <div>🧭 Smart Movement Active</div>}
-            </div>
-          </div>
-        )}
 
         {/* Items are now shown directly in the active inventory below */}
       </div>
@@ -3577,8 +3511,18 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       {/* ItemSelectionModal */}
       <ItemSelectionModal
         isOpen={showItemSelection}
-        horse={{ ...selectedHorse, inventory: horseInventory }}
-        collectedItems={collectedItemsThisRun}
+        horse={{ ...selectedHorse, inventory: isMidRunInventoryManagement ? (() => {
+          const maxSlots = 4 + getSkillLevel('saddlebags');
+          return horseInventory.slice(0, maxSlots);
+        })() : [] }}
+        collectedItems={isMidRunInventoryManagement ? (() => {
+          const saddlebagsLevel = getSkillLevel('saddlebags');
+          const maxSlots = 4 + saddlebagsLevel;
+          const overflowItems = horseInventory.slice(maxSlots);
+          
+          
+          return overflowItems;
+        })() : horseInventory}
         onConfirm={handleItemSelectionConfirm}
         onCancel={handleItemSelectionCancel}
       />
