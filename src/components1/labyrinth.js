@@ -2334,7 +2334,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           <img 
             src={selectedHorse?.avatar || "/maze/horse_player.png"} 
             alt="Horse" 
-            className={horseDirection === 'left' ? 'horse-flipped' : ''}
+            className=""
             style={{
               ...baseStyle,
               position: 'absolute',
@@ -2347,8 +2347,10 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
                       teleportStage === 'materializing' ? 'drop-shadow(0 0 12px #8b5cf6) brightness(1.3)' :
                       horseFlash ? `drop-shadow(0 0 8px ${horseFlash})` : 'none',
               transition: teleportStage !== 'none' ? 'opacity 0.3s ease-out, filter 0.3s ease-out' : 'filter 0.1s ease-out',
-              transform: teleportStage === 'dematerializing' ? 'scale(0.9)' : 
-                        teleportStage === 'materializing' ? 'scale(1.1)' : 'scale(1)',
+              transform: `${horseDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)'} ${
+                teleportStage === 'dematerializing' ? 'scale(0.9)' : 
+                teleportStage === 'materializing' ? 'scale(1.1)' : 'scale(1)'
+              }`,
               transitionProperty: teleportStage !== 'none' ? 'opacity, filter, transform' : 'filter'
             }} 
           />
@@ -2392,14 +2394,15 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           <img 
             src={lostHorse.avatar} 
             alt="Lost Horse" 
-            className={lostHorse.direction === 'left' ? 'horse-flipped' : ''}
+            className=""
             style={{
               ...baseStyle,
               position: 'absolute',
               top: 0,
               left: 0,
               opacity: 1,
-              backgroundColor: 'transparent'
+              backgroundColor: 'transparent',
+              transform: lostHorse.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)'
             }}
           />
           {/* Small indicator to show it's a lost horse */}

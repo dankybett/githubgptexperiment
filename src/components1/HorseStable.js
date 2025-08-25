@@ -159,9 +159,20 @@ const HorseStable = ({
   const [showSongUnlockModal, setShowSongUnlockModal] = useState(false);
   const [unlockedSongData, setUnlockedSongData] = useState(null);
   const [showDragonNestModal, setShowDragonNestModal] = useState(false);
+  const [isRaining, setIsRaining] = useState(false); // Weather state
   
   // Dragon egg hatching system (nestEgg comes from props)
   const [showHatchingModal, setShowHatchingModal] = useState(false);
+  
+  // Weather system - randomly determine rain when stable loads
+  useEffect(() => {
+    // 15% chance of rain each time stable loads
+    const rainChance = Math.random();
+    const shouldRain = rainChance < 0.15;
+    console.log('🌧️ Rain debug:', { rainChance, shouldRain });
+    setIsRaining(shouldRain);
+    console.log('🌧️ isRaining state set to:', shouldRain);
+  }, []);
   
   // Pan/drag state - Start at top-left corner
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -176,9 +187,9 @@ const HorseStable = ({
   const [potentialDrag, setPotentialDrag] = useState(false);
   
   // Zoom/pinch state - Start zoomed out for better overview
-  const [zoom, setZoom] = useState(0.7);
+  const [zoom, setZoom] = useState(0.5);
   const [initialDistance, setInitialDistance] = useState(0);
-  const [initialZoom, setInitialZoom] = useState(0.7);
+  const [initialZoom, setInitialZoom] = useState(0.5);
   const [isPinching, setIsPinching] = useState(false);
   
   // Stable dimensions - much larger world to explore
@@ -1515,6 +1526,31 @@ COIN TREASURES & REWARDS
   const stableStyles = themeUtils.getScreenStyles(currentTheme, 'stable');
   const labyrinthStyles = themeUtils.getScreenStyles(currentTheme, 'labyrinth');
   
+  // Rain effect component
+  const RainEffect = () => {
+    console.log('🌧️ RainEffect called - isRaining:', isRaining);
+    if (!isRaining) {
+      console.log('🌧️ Not raining, returning null');
+      return null;
+    }
+    
+    console.log('🌧️ Creating rain drops!');
+    const rainDrops = Array.from({ length: 100 }, (_, i) => (
+      <div
+        key={i}
+        className="rain-drop"
+        style={{
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+          animationDelay: `${Math.random() * 2}s`,
+          animationDuration: `${0.5 + Math.random() * 0.5}s`,
+        }}
+      />
+    ));
+    
+    return <div className="rain-container">{rainDrops}</div>;
+  };
+  
   return (
     <div 
       className={`bg-gradient-to-br ${stableStyles.background}`}
@@ -2524,7 +2560,6 @@ COIN TREASURES & REWARDS
           ))}
 
 
-
           {/* Library Decorative Asset */}
           <motion.div
             style={{
@@ -2644,7 +2679,12 @@ COIN TREASURES & REWARDS
             </div>
           )}
 
+        
         </div>
+        
+        {/* Rain Effect - positioned to cover the stable area */}
+        <RainEffect />
+        
         </div>
         {showSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
@@ -4183,6 +4223,62 @@ COIN TREASURES & REWARDS
           />
         </motion.div>
       </div>
+    )}
+    
+    {/* CSS styles for rain */}
+    {isRaining && (
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .rain-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 1600px !important;
+            height: 1800px !important;
+            pointer-events: none !important;
+            z-index: 15 !important;
+            overflow: visible !important;
+          }
+          
+          .rain-drop {
+            position: absolute !important;
+            width: 2px !important;
+            height: 15px !important;
+            background: rgba(174, 194, 224, 0.8) !important;
+            border-radius: 1px !important;
+            animation: rainfall linear infinite !important;
+          }
+          
+          @keyframes rainfall {
+            0% {
+              transform: translateY(-10px) translateX(0);
+              opacity: 0;
+            }
+            10% {
+              opacity: 1;
+            }
+            90% {
+              opacity: 1;
+            }
+            100% {
+              transform: translateY(1800px) translateX(-20px);
+              opacity: 0;
+            }
+          }
+          
+          .rain-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(100, 130, 160, 0.15);
+            pointer-events: none;
+            z-index: -1;
+          }
+        `
+      }} />
     )}
     </div>
   );
