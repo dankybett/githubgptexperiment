@@ -68,7 +68,6 @@ export default function RandomPicker() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
-  const [recentlyUnlockedSpecialHorse, setRecentlyUnlockedSpecialHorse] = useState(null);
   const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME);
 
   // Apply theme fonts using CSS classes
@@ -98,8 +97,6 @@ export default function RandomPicker() {
   const [stableGameTime, setStableGameTime] = useState(0);
   const [unlockedSongs, setUnlockedSongs] = useState({ 'THEME SONG': true }); // Theme song is unlocked by default
   const [unlockedTarotCards, setUnlockedTarotCards] = useState([]); // Array of unlocked tarot card IDs
-  const [showTarotUnlockModal, setShowTarotUnlockModal] = useState(false);
-  const [newlyUnlockedTarotCards, setNewlyUnlockedTarotCards] = useState([]);
   const [nestEgg, setNestEgg] = useState(null); // Dragon egg in nest: { placedOn: timestamp, daysRemaining: number }
   const [selectedGrazingHorses, setSelectedGrazingHorses] = useState([]); // Array of horse IDs selected for grazing
 
@@ -320,6 +317,9 @@ export default function RandomPicker() {
     setShuffledAvatars(available);
   }, [unlockedHorses]);
 
+
+  // Re-add the state variable for special horse unlocks
+  const [recentlyUnlockedSpecialHorse, setRecentlyUnlockedSpecialHorse] = useState(null);
 
   // Check for special unlocks when entering stable screen or when progress changes
   useEffect(() => {
@@ -2205,6 +2205,8 @@ const specialUnlockCriteria = {
         onSpecialProgressUpdate={updateSpecialProgress}
         unlockedTarotCards={unlockedTarotCards}
         onUnlockTarotCard={unlockTarotCard}
+        recentlyUnlockedSpecialHorseFromApp={recentlyUnlockedSpecialHorse}
+        onClearSpecialHorseUnlock={() => setRecentlyUnlockedSpecialHorse(null)}
       />
     );
   }
@@ -2302,46 +2304,8 @@ const specialUnlockCriteria = {
               return newCareStats;
             });
             
-            // Check for tarot cards in inventory and unlock them
-            if (updatedHorse.inventory) {
-              const tarotCardsInInventory = updatedHorse.inventory.filter(item => 
-                item.category === 'tarot_card' && item.cardId !== undefined
-              );
-              
-              if (tarotCardsInInventory.length > 0) {
-                console.log('🔮 App - Found tarot cards in inventory:', tarotCardsInInventory);
-                
-                const cardsToUnlock = [];
-                
-                // Unlock each tarot card
-                tarotCardsInInventory.forEach(tarotItem => {
-                  if (!unlockedTarotCards.includes(tarotItem.cardId)) {
-                    console.log('🔮 App - Unlocking tarot card:', tarotItem.cardId, tarotItem.name);
-                    unlockTarotCard(tarotItem.cardId);
-                    cardsToUnlock.push(tarotItem);
-                  }
-                });
-                
-                // Show unlock popup if any cards were unlocked
-                if (cardsToUnlock.length > 0) {
-                  setNewlyUnlockedTarotCards(cardsToUnlock);
-                  setShowTarotUnlockModal(true);
-                }
-                
-                // Remove tarot card items from horse inventory (they're now unlocked in collection)
-                const cleanedInventory = updatedHorse.inventory.filter(item => 
-                  !(item.category === 'tarot_card' && item.cardId !== undefined)
-                );
-                
-                // Update the inventory to remove the consumed tarot cards
-                setHorseInventories(prev => ({
-                  ...prev,
-                  [updatedHorse.id]: cleanedInventory
-                }));
-                
-                console.log('🔮 App - Cleaned inventory, removed tarot cards:', cleanedInventory.length, 'items remaining');
-              }
-            }
+            // Note: Tarot card checking and removal is now handled by HorseStable.js
+            // Just save the inventory as-is so HorseStable can process tarot cards
           }
         }}
         onSpecialProgressUpdate={updateSpecialProgress}
@@ -2741,153 +2705,9 @@ const specialUnlockCriteria = {
             onThemeChange={handleThemeChange}
           />
           
-          {/* Tarot Card Unlock Modal */}
-          {showTarotUnlockModal && newlyUnlockedTarotCards.length > 0 && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-gradient-to-br from-purple-900 to-indigo-900 border-4 border-purple-400 rounded-xl p-6 max-w-md shadow-2xl"
-              >
-                <div className="text-center space-y-4">
-                  <div className="text-6xl mb-4">🔮</div>
-                  <h2 className="text-2xl font-bold text-purple-200" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '16px' }}>
-                    Tarot Card{newlyUnlockedTarotCards.length > 1 ? 's' : ''} Found!
-                  </h2>
-                  
-                  {/* Show each unlocked card */}
-                  <div className="space-y-3">
-                    {newlyUnlockedTarotCards.map((tarotCard, index) => {
-                      const cardData = tarotCardUtils.getCardById(tarotCard.cardId);
-                      return (
-                        <div key={index} className="bg-purple-800 bg-opacity-50 rounded-lg p-3">
-                          <div className="flex items-center justify-center mb-2">
-                            {cardData && (
-                              <img 
-                                src={`/Tarot cards/${cardData.fileName}`}
-                                alt={cardData.name}
-                                className="w-16 h-24 object-cover rounded border-2 border-purple-400"
-                              />
-                            )}
-                          </div>
-                          <p className="text-purple-200 font-bold" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
-                            {tarotCard.name}
-                          </p>
-                          {cardData && (
-                            <p className="text-purple-300 text-xs mt-1" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '8px' }}>
-                              {cardData.description}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <p className="text-purple-300 text-xs" style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}>
-                    The fortune teller will be pleased!
-                  </p>
-                  
-                  <button
-                    onClick={() => {
-                      setShowTarotUnlockModal(false);
-                      setNewlyUnlockedTarotCards([]);
-                    }}
-                    className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors"
-                    style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '10px' }}
-                  >
-                    ✨ Continue ✨
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
         </div>
       </div>
       
-      {/* Special Horse Unlock Modal - show when there's a pending unlock */}
-      {recentlyUnlockedSpecialHorse && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          style={{ zIndex: 9999 }}
-          onClick={() => {
-            setRecentlyUnlockedSpecialHorse(null);
-          }}
-        >
-          <motion.div
-            className="text-center p-6 bg-gradient-to-r from-purple-200 via-purple-300 to-purple-200 rounded-2xl shadow-2xl max-w-sm w-full mx-auto relative"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {Array.from({ length: 30 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-2 h-2 rounded-sm"
-                  style={{
-                    backgroundColor: [
-                      "#9333EA",
-                      "#A855F7", 
-                      "#C084FC",
-                      "#DDD6FE",
-                      "#FDE047",
-                    ][i % 5],
-                  }}
-                  initial={{
-                    x: Math.random() * window.innerWidth,
-                    y: -20,
-                    rotate: 0,
-                    opacity: 1,
-                  }}
-                  animate={{
-                    y: window.innerHeight + 20,
-                    x: Math.random() * window.innerWidth,
-                    rotate: Math.random() * 360,
-                    opacity: 0,
-                  }}
-                  transition={{ duration: 3 + Math.random() * 2, delay: Math.random() }}
-                />
-              ))}
-            </div>
-            <div className="relative mb-2 flex justify-center">
-              <MotionFadeInImage
-                src={recentlyUnlockedSpecialHorse.avatar}
-                alt={recentlyUnlockedSpecialHorse.name}
-                className="w-24 h-24 mx-auto object-contain rounded-lg"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-2xl">{recentlyUnlockedSpecialHorse.criteria.icon}</span>
-              <p className="text-lg font-bold text-purple-800">SPECIAL HORSE UNLOCKED!</p>
-            </div>
-            <p className="text-xl font-bold text-purple-900 mb-2">
-              {recentlyUnlockedSpecialHorse.name}
-            </p>
-            <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-3 mb-3">
-              <p className="text-sm font-bold text-purple-800 mb-1">
-                🏆 {recentlyUnlockedSpecialHorse.criteria.name}
-              </p>
-              <p className="text-xs text-purple-700">
-                {recentlyUnlockedSpecialHorse.criteria.description}
-              </p>
-            </div>
-            <p className="text-base text-gray-700 mb-4">
-              Personality: {recentlyUnlockedSpecialHorse.personality}
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setRecentlyUnlockedSpecialHorse(null)}
-              className="px-4 py-2 bg-purple-600 text-purple-100 rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow-lg"
-            >
-              Awesome!
-            </motion.button>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }
