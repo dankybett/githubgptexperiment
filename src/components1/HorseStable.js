@@ -5,6 +5,7 @@ import HorseDetailsModal from "./HorseDetailsModal";
 import ThemedTarotGame from "./ThemedTarotGame";
 import { themeUtils } from "../utils/themes";
 import { tarotCardUtils, TAROT_CARDS } from "../utils/tarotCards";
+import { DreamSystem, DreamBubble, DreamModal, DreamComposer } from "../dreams/dreamSystem";
 
 // TileSprite component for tileset rendering
 const TileSprite = ({ tileX, tileY, className = "" }) => {
@@ -161,6 +162,12 @@ const HorseStable = ({
   const [showSongUnlockModal, setShowSongUnlockModal] = useState(false);
   const [unlockedSongData, setUnlockedSongData] = useState(null);
   const [showDragonNestModal, setShowDragonNestModal] = useState(false);
+  
+  // Dream system state
+  const [activeDream, setActiveDream] = useState(null);
+  const [dreamModalOpen, setDreamModalOpen] = useState(false);
+  const [dreamingHorse, setDreamingHorse] = useState(null);
+  const dreamComposer = useRef(new DreamComposer()).current;
   const [isRaining, setIsRaining] = useState(false); // Weather state
   
   // Dragon egg hatching system (nestEgg comes from props)
@@ -420,6 +427,24 @@ COIN TREASURES & REWARDS
     return indicators;
   };
 
+  // TEMPORARY: Dream testing function - sets all horses to low energy for dream testing
+  const makeHorsesDream = () => {
+    console.log('🐎 Making horses dream!');
+    setStableHorses(prevHorses => {
+      const updatedHorses = prevHorses.map(horse => {
+        const newEnergy = Math.floor(Math.random() * 20) + 5; // Set energy between 5-24 (below 25 threshold)
+        console.log(`🐎 Setting ${horse.name} energy from ${horse.energy} to ${newEnergy}`);
+        return {
+          ...horse,
+          energy: newEnergy,
+          isResting: true, // Make them rest to simulate sleeping
+          restTime: 5000 // Rest for 5 seconds
+        };
+      });
+      console.log('🐎 Updated horses:', updatedHorses.map(h => `${h.name}:${h.energy}`));
+      return updatedHorses;
+    });
+  };
 
   // Remove all the complex logic for now
 
@@ -1688,6 +1713,24 @@ COIN TREASURES & REWARDS
               >
                 Back
               </motion.button>
+              
+              {/* TEMPORARY: Dream testing button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={makeHorsesDream}
+                className="bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-lg shadow-lg"
+                style={{
+                  padding: window.innerWidth < 640 ? '4px 16px' : '8px 20px',
+                  fontSize: window.innerWidth < 640 ? '7px' : '10px',
+                  flex: 'none',
+                  minWidth: window.innerWidth < 640 ? '0' : 'auto',
+                  letterSpacing: window.innerWidth < 640 ? '0.5px' : '1px'
+                }}
+                title="Make all horses sleepy for dream testing"
+              >
+                ✨ Test Dreams
+              </motion.button>
             </div>
         </div>
       </div>
@@ -2616,10 +2659,34 @@ COIN TREASURES & REWARDS
                     💤
                   </motion.div>
                 )}
+                
+                {/* Dream Bubble - shows when horse is sleeping (low energy) */}
+                <DreamBubble
+                  horse={horse}
+                  onDreamClick={(sleepingHorse) => {
+                    const dream = dreamComposer.generateDream(sleepingHorse, stableHorses);
+                    setActiveDream(dream);
+                    setDreamingHorse(sleepingHorse);
+                    setDreamModalOpen(true);
+                  }}
+                />
               </motion.div>
             </motion.div>
           ))}
 
+          {/* Dream System Modal */}
+          {dreamModalOpen && (
+            <DreamModal
+              isOpen={dreamModalOpen}
+              onClose={() => {
+                setDreamModalOpen(false);
+                setActiveDream(null);
+                setDreamingHorse(null);
+              }}
+              dream={activeDream}
+              horse={dreamingHorse}
+            />
+          )}
 
           {/* Library Decorative Asset */}
           <motion.div

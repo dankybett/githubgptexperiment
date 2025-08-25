@@ -1,0 +1,1374 @@
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CUSTOM_DREAM_SETTINGS, TAROT_BACKGROUNDS } from './dreamAssets';
+
+// Tarot card list - corresponds to files in public/Tarot cards/
+const TAROT_CARDS = [
+  '0.thefool.png',
+  '1. themagician.png',
+  '2.thehighpriestess.png',
+  '3.theempress.png',
+  '4.theemperor.png',
+  '5.thehierophant.png',
+  '6.thelovers.png',
+  '7.thechariot.png',
+  '8.strength.png',
+  '9.thehermit.png',
+  '10.wheeloffortune.png',
+  '11.justice.png',
+  '12.thehangedman.png',
+  '13.death.png',
+  '14.temperance.png',
+  '15.thedevil.png',
+  '16.thetower.png',
+  '17.thestar.png',
+  '18.themoon.png',
+  '19.thesun.png',
+  '20.judgement.png',
+  '21.theworld.png'
+];
+
+/**
+ * Modular Dream System for Horses
+ * A component-based approach where dreams are built from interchangeable parts
+ */
+
+// Dream component types
+export const DREAM_SUBJECTS = {
+  // Horses from the game - will be populated from the existing horse assets
+  HORSES: 'horses'
+};
+
+export const DREAM_SETTINGS = {
+  BEACH: 'beach',
+  FOREST: 'forest', 
+  MEADOW: 'meadow',
+  MOUNTAINS: 'mountains',
+  SUNSET: 'sunset'
+};
+
+export const DREAM_ACTIONS = {
+  RUNNING: 'running',
+  GALLOPING: 'galloping',
+  PLAYING: 'playing',
+  FLYING: 'flying',
+  DANCING: 'dancing'
+};
+
+export const DREAM_MOODS = {
+  HAPPY: 'happy',
+  PEACEFUL: 'peaceful',
+  ADVENTUROUS: 'adventurous',
+  MAGICAL: 'magical',
+  NOSTALGIC: 'nostalgic'
+};
+
+// Dream Categories - define the types of dreams
+export const DREAM_CATEGORIES = {
+  RACE: 'race',
+  MINOTAUR: 'minotaur', 
+  TAROT: 'tarot'
+};
+
+// Category-specific configurations
+export const CATEGORY_CONFIGS = {
+  [DREAM_CATEGORIES.RACE]: {
+    name: 'Race Dreams',
+    description: 'Dreams of competition and speed',
+    preferredActions: [DREAM_ACTIONS.RUNNING, DREAM_ACTIONS.GALLOPING],
+    preferredMoods: [DREAM_MOODS.ADVENTUROUS, DREAM_MOODS.HAPPY],
+    animations: {
+      horse_positioning: 'racing_line', // horses positioned in racing formation
+      camera_movement: 'track_follow', // camera follows racing action
+      speed_multiplier: 1.5 // faster animations
+    },
+    backgrounds: ['racetrack'], // race-specific background
+    specialEffects: [] // Removed effects for cleaner race presentation
+  },
+  [DREAM_CATEGORIES.MINOTAUR]: {
+    name: 'Minotaur Dreams',
+    description: 'Dreams of mythology and labyrinthine adventures',
+    preferredActions: [DREAM_ACTIONS.PLAYING, DREAM_ACTIONS.DANCING],
+    preferredMoods: [DREAM_MOODS.MAGICAL, DREAM_MOODS.ADVENTUROUS],
+    animations: {
+      horse_positioning: 'maze_explorer', // horses positioned as if navigating
+      camera_movement: 'labyrinth_pan', // camera moves through maze-like patterns
+      speed_multiplier: 0.8 // slower, more mysterious animations
+    },
+    backgrounds: ['labyrinth'], // minotaur-specific backgrounds
+    specialEffects: ['maze_walls', 'ancient_symbols', 'mythical_glow']
+  },
+  [DREAM_CATEGORIES.TAROT]: {
+    name: 'Tarot Dreams',
+    description: 'Dreams of mysticism and fortune',
+    preferredActions: [DREAM_ACTIONS.DANCING, DREAM_ACTIONS.FLYING],
+    preferredMoods: [DREAM_MOODS.MAGICAL, DREAM_MOODS.NOSTALGIC],
+    animations: {
+      horse_positioning: 'tarot_spread', // horses positioned like tarot cards
+      camera_movement: 'mystic_float', // ethereal floating camera movement
+      speed_multiplier: 0.6 // slow, mystical animations
+    },
+    backgrounds: ['mysticalenergy', 'mirrorland', 'chessboard', 'celestialgarden'], // tarot-specific backgrounds
+    specialEffects: ['floating_cards', 'crystal_sparkles', 'cosmic_swirls']
+  }
+};
+
+// Dream composition generator
+export class DreamComposer {
+  constructor() {
+    this.availableHorses = [];
+    this.availableSettings = [];
+    this.loadAssets();
+  }
+
+  async loadAssets() {
+    // Horse assets will be provided when generating dreams
+    this.availableHorses = [];
+
+    // Use imported dream settings
+    this.availableSettings = CUSTOM_DREAM_SETTINGS;
+    console.log('🎨 Loaded dream settings:', this.availableSettings);
+  }
+
+  // Generate a random dream composition with category
+  generateDream(sleepingHorse = null, allHorses = [], requestedCategory = null) {
+    console.log('🐎 Generating dream for:', sleepingHorse?.name, 'with allHorses:', allHorses.length, 'category:', requestedCategory);
+    
+    // Select dream category
+    const category = requestedCategory || this.getRandomCategory();
+    const categoryConfig = CATEGORY_CONFIGS[category];
+    
+    // Get variants early to use in companion selection
+    const raceVariant = category === DREAM_CATEGORIES.RACE ? this.getRaceVariant() : null;
+    const tarotVariant = category === DREAM_CATEGORIES.TAROT ? this.getTarotVariant() : null;
+    const minotaurVariant = category === DREAM_CATEGORIES.MINOTAUR ? this.getMinotaurVariant() : null;
+    
+    // Use the sleeping horse as the main subject, and optionally add other horses from the stable
+    const subjects = sleepingHorse ? [this.formatHorseForDream(sleepingHorse)] : [];
+    
+    // Add companion horses based on category
+    if (allHorses.length > 1) {
+      const otherHorses = allHorses.filter(h => h.id !== sleepingHorse?.id);
+      let companionCount;
+      
+      // Race dreams always need exactly 3 horses total
+      if (category === DREAM_CATEGORIES.RACE) {
+        companionCount = Math.min(2, otherHorses.length); // Always 2 companions for racing
+      } else if (category === DREAM_CATEGORIES.TAROT) {
+        companionCount = 0; // Tarot dreams use only the dreaming horse
+      } else if (category === DREAM_CATEGORIES.MINOTAUR) {
+        companionCount = 0; // Minotaur dreams use only the dreaming horse
+      } else {
+        companionCount = Math.min(2, Math.floor(Math.random() * 2) + 1); // 1-2 companions for other dreams
+      }
+      
+      const shuffled = otherHorses.sort(() => 0.5 - Math.random());
+      const companions = shuffled.slice(0, companionCount).map(h => this.formatHorseForDream(h));
+      subjects.push(...companions);
+    }
+    
+    // Use category-aware selection for setting, action, and mood
+    const setting = this.getCategorySetting(category);
+    const action = this.getCategoryAction(category);
+    const mood = this.getCategoryMood(category);
+
+    const dream = {
+      id: `dream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      category,
+      categoryConfig,
+      subjects,
+      setting,
+      action,
+      mood,
+      duration: this.getCategoryDuration(category),
+      timestamp: Date.now(),
+      // Add race variant for race dreams
+      raceVariant,
+      // Add tarot variant for tarot dreams
+      tarotVariant,
+      // Add tarot card for tarot dreams
+      tarotCard: category === DREAM_CATEGORIES.TAROT ? this.getRandomTarotCard() : null,
+      // Add minotaur variant for minotaur dreams
+      minotaurVariant
+    };
+    
+    console.log('🐎 Generated categorized dream:', dream);
+    if (dream.category === 'race') {
+      console.log('🏁 Race dream variant:', dream.raceVariant);
+    }
+    if (dream.category === 'tarot') {
+      console.log('🔮 Tarot dream variant:', dream.tarotVariant);
+    }
+    if (dream.category === 'minotaur') {
+      console.log('🐂 Minotaur dream variant:', dream.minotaurVariant);
+    }
+    return dream;
+  }
+
+  // Generate a dream for a specific category
+  generateCategoryDream(category, sleepingHorse = null, allHorses = []) {
+    return this.generateDream(sleepingHorse, allHorses, category);
+  }
+
+  // Get random category
+  getRandomCategory() {
+    const categories = Object.values(DREAM_CATEGORIES);
+    return categories[Math.floor(Math.random() * categories.length)];
+  }
+
+  // Get category-appropriate setting
+  getCategorySetting(category) {
+    const categoryConfig = CATEGORY_CONFIGS[category];
+    
+    // Special handling for tarot dreams - use exclusive backgrounds
+    if (category === DREAM_CATEGORIES.TAROT) {
+      const tarotBackgrounds = TAROT_BACKGROUNDS;
+      const selectedBackground = tarotBackgrounds[Math.floor(Math.random() * tarotBackgrounds.length)];
+      return selectedBackground;
+    }
+    
+    // If category has specific backgrounds, use those
+    if (categoryConfig.backgrounds.length > 0) {
+      const backgroundName = categoryConfig.backgrounds[Math.floor(Math.random() * categoryConfig.backgrounds.length)];
+      
+      // Find the background in our available settings
+      const foundSetting = this.availableSettings.find(setting => setting.name === backgroundName);
+      if (foundSetting) {
+        return foundSetting;
+      }
+    }
+    
+    // Otherwise, fall back to general setting selection
+    return this.getRandomSetting();
+  }
+
+  // Get category-appropriate action
+  getCategoryAction(category) {
+    const categoryConfig = CATEGORY_CONFIGS[category];
+    const preferredActions = categoryConfig.preferredActions;
+    
+    // 70% chance to use preferred actions, 30% chance for any action
+    if (Math.random() < 0.7 && preferredActions.length > 0) {
+      return preferredActions[Math.floor(Math.random() * preferredActions.length)];
+    }
+    
+    return this.getRandomAction();
+  }
+
+  // Get category-appropriate mood
+  getCategoryMood(category) {
+    const categoryConfig = CATEGORY_CONFIGS[category];
+    const preferredMoods = categoryConfig.preferredMoods;
+    
+    // 70% chance to use preferred moods, 30% chance for any mood
+    if (Math.random() < 0.7 && preferredMoods.length > 0) {
+      return preferredMoods[Math.floor(Math.random() * preferredMoods.length)];
+    }
+    
+    return this.getRandomMood();
+  }
+
+  // Get category-appropriate duration
+  getCategoryDuration(category) {
+    const baseRange = [3000, 8000]; // 3-8 seconds base
+    const categoryConfig = CATEGORY_CONFIGS[category];
+    const multiplier = categoryConfig.animations.speed_multiplier;
+    
+    // Adjust duration based on category speed multiplier
+    const adjustedMin = baseRange[0] / multiplier;
+    const adjustedMax = baseRange[1] / multiplier;
+    
+    return Math.floor(Math.random() * (adjustedMax - adjustedMin)) + adjustedMin;
+  }
+
+  // Get race dream variant
+  getRaceVariant() {
+    const variants = [1, 2, 3, 4]; // Race Dream 1, 2, 3, and 4
+    return variants[Math.floor(Math.random() * variants.length)];
+  }
+
+  // Get tarot dream variant
+  getTarotVariant() {
+    return 1; // Only Tarot Dream 1 exists for now
+  }
+
+  // Get minotaur dream variant
+  getMinotaurVariant() {
+    return 1; // Only Minotaur Dream 1 exists for now
+  }
+
+  // Get random tarot card
+  getRandomTarotCard() {
+    const randomCard = TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)];
+    return `/Tarot cards/${randomCard}`;
+  }
+
+  // Format horse data for dream use
+  formatHorseForDream(horse) {
+    return {
+      name: horse.name,
+      path: horse.avatar, // Use the existing avatar path
+      id: horse.id
+    };
+  }
+
+  // This method is no longer used since we get horses from the stable directly
+  getRandomHorses(min = 1, max = 2) {
+    return [];
+  }
+
+  getRandomSetting() {
+    console.log('🎨 Available settings:', this.availableSettings.length, this.availableSettings);
+    if (this.availableSettings.length > 0) {
+      const selectedSetting = this.availableSettings[Math.floor(Math.random() * this.availableSettings.length)];
+      console.log('🎨 Selected custom setting:', selectedSetting);
+      return selectedSetting;
+    }
+    
+    // Fallback to procedural settings if no images are available
+    const settings = Object.values(DREAM_SETTINGS);
+    const fallbackSetting = {
+      name: settings[Math.floor(Math.random() * settings.length)],
+      path: null // Will use CSS background or procedural generation
+    };
+    console.log('🎨 Using fallback setting:', fallbackSetting);
+    return fallbackSetting;
+  }
+
+  getRandomAction() {
+    const actions = Object.values(DREAM_ACTIONS);
+    return actions[Math.floor(Math.random() * actions.length)];
+  }
+
+  getRandomMood() {
+    const moods = Object.values(DREAM_MOODS);
+    return moods[Math.floor(Math.random() * moods.length)];
+  }
+
+  getRandomDuration() {
+    // Dreams last between 3-8 seconds
+    return Math.floor(Math.random() * 5000) + 3000;
+  }
+}
+
+// Dream Bubble Component
+export const DreamBubble = ({ horse, onDreamClick, className = "" }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [dreamActive, setDreamActive] = useState(false);
+
+  useEffect(() => {
+    console.log('🐎 DreamBubble useEffect - horse:', horse?.name, 'energy:', horse?.energy);
+    // Only show dream bubble if horse is sleeping (low energy)
+    if (horse && horse.energy < 25) {
+      console.log('🐎 Horse is tired! Setting up dream bubble timer for', horse.name);
+      const showDelay = Math.random() * 1000 + 500; // Random delay 0.5-1.5 seconds for testing
+      const showTimer = setTimeout(() => {
+        console.log('🐎 Showing dream bubble for', horse.name);
+        setIsVisible(true);
+      }, showDelay);
+      
+      return () => {
+        console.log('🐎 Cleaning up dream bubble timer for', horse.name);
+        clearTimeout(showTimer);
+      };
+    } else {
+      console.log('🐎 Horse not tired or missing, hiding bubble');
+      setIsVisible(false);
+    }
+  }, [horse?.energy, horse?.name]); // More specific dependencies
+
+  useEffect(() => {
+    if (isVisible) {
+      // Dream bubble pulses and occasionally shows dream activity
+      const dreamInterval = setInterval(() => {
+        setDreamActive(prev => !prev);
+      }, 2000 + Math.random() * 2000); // Random pulse every 2-4 seconds
+
+      return () => clearInterval(dreamInterval);
+    }
+  }, [isVisible]);
+
+  if (!isVisible || !horse) {
+    console.log('🐎 DreamBubble not rendering - isVisible:', isVisible, 'horse:', horse?.name);
+    return null;
+  }
+
+  console.log('🐎 DreamBubble RENDERING for', horse.name);
+  return (
+    <motion.div
+      className={`absolute cursor-pointer ${className}`}
+      style={{
+        left: '50%',
+        top: '-50px',
+        transform: 'translateX(-50%)',
+        zIndex: 100, // Higher z-index to ensure visibility
+        pointerEvents: 'auto'
+      }}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 0.9 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onDreamClick && onDreamClick(horse);
+      }}
+    >
+      {/* Dream bubble background */}
+      <motion.div
+        className="relative w-16 h-16 bg-white bg-opacity-95 rounded-full border-3 border-purple-300 shadow-2xl"
+        style={{
+          boxShadow: '0 0 20px rgba(147, 51, 234, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3)'
+        }}
+        animate={{
+          scale: dreamActive ? 1.1 : 1,
+          boxShadow: dreamActive 
+            ? '0 0 20px rgba(147, 197, 253, 0.6)' 
+            : '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}
+        transition={{ duration: 1 }}
+      >
+        {/* Dream content hint */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.div
+            className="text-xs text-blue-600"
+            animate={{ 
+              opacity: dreamActive ? 1 : 0.6,
+              rotate: dreamActive ? 360 : 0 
+            }}
+            transition={{ duration: 2 }}
+          >
+            ✨
+          </motion.div>
+        </div>
+        
+        {/* Smaller bubble tail */}
+        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white bg-opacity-90 rounded-full border border-blue-200"></div>
+        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 translate-x-1 w-2 h-2 bg-white bg-opacity-90 rounded-full border border-blue-200"></div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+
+// Dream Modal Component
+export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
+  const [currentPhase, setCurrentPhaseState] = useState('intro');
+  console.log('🏁 Current phase state:', currentPhase);
+  
+  const setCurrentPhase = (newPhase) => {
+    console.log('🏁 PHASE CHANGE:', currentPhase, '->', newPhase);
+    setCurrentPhaseState(newPhase);
+  };
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [countdownNumber, setCountdownNumber] = useState(3);
+  const dreamComposer = useRef(new DreamComposer()).current;
+  const timeoutsRef = useRef([]);
+  const raceSequenceStarted = useRef(false);
+
+  useEffect(() => {
+    console.log('🏁 useEffect triggered - isOpen:', isOpen, 'dream category:', dream?.category, 'raceStarted:', raceSequenceStarted.current);
+    
+    if (isOpen && dream && dream.category === 'race') {
+      if (raceSequenceStarted.current) {
+        console.log('🏁 Race sequence already started, skipping');
+        return;
+      }
+      console.log('🏁 Starting race sequence useEffect');
+      raceSequenceStarted.current = true;
+      
+      // Clear any existing timeouts
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current = [];
+      
+      // Dream playback sequence
+      setCurrentPhase('intro');
+      setPlaybackProgress(0);
+      setCountdownNumber(3);
+
+      // Race sequence with immediate execution
+      const timeout1 = setTimeout(() => {
+        console.log('🏁 TIMEOUT: Setting phase to countdown');
+        setCurrentPhase('countdown');
+        setCountdownNumber(3);
+      }, 1000);
+      
+      const timeout2 = setTimeout(() => {
+        console.log('🏁 TIMEOUT: Setting countdown to 2');
+        setCountdownNumber(2);
+      }, 2000);
+      
+      const timeout3 = setTimeout(() => {
+        console.log('🏁 TIMEOUT: Setting countdown to 1');
+        setCountdownNumber(1);
+      }, 3000);
+      
+      const timeout4 = setTimeout(() => {
+        console.log('🏁 TIMEOUT: Setting phase to racing');
+        setCurrentPhase('racing');
+      }, 4000);
+      
+      const timeout5 = setTimeout(() => {
+        console.log('🏁 TIMEOUT: Setting phase to finish');
+        setCurrentPhase('finish');
+      }, 8000);
+      
+      const timeout6 = setTimeout(() => {
+        console.log('🏁 TIMEOUT: Setting phase to winner');
+        setCurrentPhase('winner');
+      }, 9000);
+      
+      const timeout7 = setTimeout(() => {
+        onClose();
+      }, 11000);
+      
+      timeoutsRef.current = [timeout1, timeout2, timeout3, timeout4, timeout5, timeout6, timeout7];
+      
+      // Cleanup function
+      return () => {
+        timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+        timeoutsRef.current = [];
+        raceSequenceStarted.current = false;
+      };
+    } else if (isOpen && dream) {
+      // Regular dream phases for other categories
+      setCurrentPhase('intro');
+      setPlaybackProgress(0);
+      
+      const phases = ['intro', 'action', 'climax', 'outro'];
+      const phaseDuration = dream.duration / phases.length;
+      
+      let phaseIndex = 0;
+      const phaseTimer = setInterval(() => {
+        phaseIndex++;
+        if (phaseIndex < phases.length) {
+          setCurrentPhase(phases[phaseIndex]);
+          setPlaybackProgress((phaseIndex / phases.length) * 100);
+        } else {
+          clearInterval(phaseTimer);
+          // Auto close after dream ends
+          setTimeout(() => onClose(), 1000);
+        }
+      }, phaseDuration);
+
+      return () => clearInterval(phaseTimer);
+    }
+    
+    // Reset race sequence flag when modal is closed
+    if (!isOpen) {
+      raceSequenceStarted.current = false;
+    }
+  }, [isOpen, dream?.id, dream?.category]);
+
+
+  if (!isOpen || !dream) return null;
+
+  const getMoodFilter = () => {
+    switch (dream.mood) {
+      case DREAM_MOODS.HAPPY:
+        return 'brightness(1.2) saturate(1.3) contrast(1.1)';
+      case DREAM_MOODS.PEACEFUL:
+        return 'brightness(1.1) saturate(0.8) blur(0.5px)';
+      case DREAM_MOODS.MAGICAL:
+        return 'hue-rotate(30deg) saturate(1.4) brightness(1.2)';
+      case DREAM_MOODS.ADVENTUROUS:
+        return 'contrast(1.2) saturate(1.2) brightness(1.1)';
+      case DREAM_MOODS.NOSTALGIC:
+        return 'sepia(0.3) contrast(0.9) brightness(0.9)';
+      default:
+        return 'none';
+    }
+  };
+
+  const getActionAnimation = () => {
+    const baseAnimation = getBaseActionAnimation();
+    const categoryAnimation = getCategorySpecificAnimation();
+    
+    // Merge base animation with category-specific modifications
+    return {
+      ...baseAnimation,
+      transition: {
+        ...baseAnimation.transition,
+        duration: (baseAnimation.transition?.duration || 1) * (dream.categoryConfig?.animations.speed_multiplier || 1)
+      }
+    };
+  };
+
+  const getBaseActionAnimation = () => {
+    switch (dream.action) {
+      case DREAM_ACTIONS.RUNNING:
+      case DREAM_ACTIONS.GALLOPING:
+        return { 
+          y: ['-5px', '5px', '-5px'],
+          rotate: [0, 1, -1, 0],
+          scale: [1, 1.02, 1],
+          transition: { 
+            duration: dream.action === DREAM_ACTIONS.GALLOPING ? 0.4 : 0.6, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }
+        };
+      case DREAM_ACTIONS.FLYING:
+        return { y: ['-10px', '10px', '-10px'], transition: { duration: 1.5, repeat: Infinity } };
+      case DREAM_ACTIONS.DANCING:
+        return { rotate: [-5, 5, -5], scale: [1, 1.05, 1], transition: { duration: 1, repeat: Infinity } };
+      default:
+        return {};
+    }
+  };
+
+  const getCategorySpecificAnimation = () => {
+    if (!dream.category) return {};
+    
+    switch (dream.category) {
+      case 'race':
+        return getRaceAnimation();
+      case 'minotaur':
+        return {
+          // Mysterious, exploratory movements
+          rotate: [0, 2, -2, 0], // slightly more rotation for maze navigation
+        };
+      case 'tarot':
+        return this.getTarotAnimation();
+      default:
+        return {};
+    }
+  };
+
+  const getRaceHorseAnimation = () => {
+    const isBackwards = dream.raceVariant === 4;
+    
+    return {
+      // Always include galloping motion
+      y: ['-5px', '5px', '-5px'],
+      // Racing movement - start immediately after countdown
+      x: [0, 0, 0, window.innerWidth + 200], // Stay put for 4s, then race
+      // Add flip transform for backwards racing
+      scaleX: isBackwards ? -1 : 1,
+      transition: {
+        y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" },
+        x: { 
+          times: [0, 0.36, 0.45, 1], // Stay at 0 until 4s (4/11), then move
+          duration: 11, // Total dream duration
+          ease: "linear" 
+        },
+        scaleX: { duration: 0 } // No transition for flip
+      }
+    };
+  };
+
+  const getRaceAnimation = () => {
+    if (dream.category !== 'race') return {};
+    
+    console.log('🏁 getRaceAnimation called with phase:', currentPhase);
+    
+    switch (currentPhase) {
+      case 'intro':
+      case 'countdown':
+        // Horses are stationary, just subtle movement
+        console.log('🏁 Applying stationary animation');
+        return {
+          y: ['-2px', '2px', '-2px'],
+          transition: { duration: 1, repeat: Infinity, ease: "easeInOut" }
+        };
+      case 'racing':
+        // Horses race across the screen
+        console.log('🏁 Applying racing animation');
+        return {
+          x: [0, window.innerWidth + 200], // Move from current position to beyond screen width
+          y: ['-5px', '5px', '-5px'], // Galloping motion
+          transition: { 
+            x: { duration: 4, ease: "linear" },
+            y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" }
+          }
+        };
+      case 'finish':
+      case 'winner':
+        // Horses have finished, stay off-screen
+        console.log('🏁 Applying finish animation');
+        return {
+          x: window.innerWidth + 200,
+          y: ['-5px', '5px', '-5px'], // Keep galloping motion
+          transition: { 
+            x: { duration: 0 },
+            y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" }
+          }
+        };
+      default:
+        console.log('🏁 No animation for phase:', currentPhase);
+        return {};
+    }
+  };
+
+  const getCategoryPositioningClass = () => {
+    if (!dream.category) return 'flex items-center justify-center';
+    
+    switch (dream.category) {
+      case 'race':
+        return 'flex items-end justify-center'; // Line them up at bottom like a race start
+      case 'minotaur':
+        return 'flex items-center justify-around'; // Spread them out like exploring a maze
+      case 'tarot':
+        return 'flex items-center justify-center'; // Centered for mystical card-like arrangement
+      default:
+        return 'flex items-center justify-center';
+    }
+  };
+
+  const getCategoryHorsePosition = (index, totalHorses) => {
+    if (!dream.category) {
+      return {
+        containerClass: '',
+        sizeClass: 'w-32 h-32 sm:w-40 sm:h-40 mx-4',
+        style: {},
+        animation: {}
+      };
+    }
+
+    switch (dream.category) {
+      case 'race':
+        // Racing line formation - horses start on left side
+        const raceOffset = index * 15; // Stagger horses slightly
+        const isMainHorse = index === 0; // First horse is the dreaming horse
+        const isRaceVariant2 = dream.raceVariant === 2;
+        
+        // Different sizes based on race variant
+        let sizeClass;
+        if (isMainHorse && dream.raceVariant === 2) {
+          sizeClass = 'w-64 h-64 sm:w-80 sm:h-80'; // Double size for main horse in variant 2
+        } else if (isMainHorse && dream.raceVariant === 3) {
+          sizeClass = 'w-16 h-16 sm:w-20 sm:h-20'; // Half size for main horse in variant 3
+        } else {
+          sizeClass = 'w-32 h-32 sm:w-40 sm:h-40'; // Normal size
+        }
+        
+        // Adjust positioning for Race Dream 3 - tiny main horse goes to front
+        let topPosition, zIndex;
+        if (dream.raceVariant === 3) {
+          if (isMainHorse) {
+            // Main tiny horse goes to the front (bottom)
+            topPosition = '70%';
+            zIndex = 3; // Highest z-index (front)
+          } else {
+            // Other horses move up
+            topPosition = `${40 + (index - 1) * 15}%`;
+            zIndex = index; // Lower z-index (behind tiny horse)
+          }
+        } else {
+          // Normal positioning for variants 1 and 2
+          topPosition = `${40 + index * 15}%`;
+          zIndex = index + 1;
+        }
+
+        return {
+          containerClass: 'absolute',
+          sizeClass,
+          style: {
+            left: '-15%', // Start further off-screen to the left
+            top: topPosition,
+            zIndex
+          },
+          animation: {} // Race animation will be handled in the component
+        };
+      
+      case 'minotaur':
+        // Maze explorer formation - scattered positioning
+        const mazePositions = [
+          { x: '30%', y: '40%' },
+          { x: '70%', y: '60%' },
+          { x: '50%', y: '30%' }
+        ];
+        const mazePos = mazePositions[index % mazePositions.length];
+        return {
+          containerClass: 'absolute',
+          sizeClass: 'w-24 h-24 sm:w-32 sm:h-32',
+          style: {
+            left: mazePos.x,
+            top: mazePos.y,
+            transform: 'translate(-50%, -50%)'
+          },
+          animation: {
+            rotate: [0, 3, -3, 0] // Exploratory looking around movement
+          }
+        };
+      
+      case 'tarot':
+        // Tarot Dream 1: Single horse appears left, trots to just left of center
+        return {
+          containerClass: 'absolute',
+          sizeClass: 'w-32 h-32 sm:w-40 sm:h-40',
+          style: {
+            left: '-20%', // Start off-screen to the left
+            top: '65%',
+            transform: 'translateY(-50%)',
+            zIndex: 10
+          },
+          animation: {} // Animation will be handled separately
+        };
+      
+      default:
+        return {
+          containerClass: '',
+          sizeClass: 'w-32 h-32 sm:w-40 sm:h-40 mx-4',
+          style: {},
+          animation: {}
+        };
+    }
+  };
+
+  const getTarotAnimation = () => {
+    if (dream.category !== 'tarot') return {};
+    
+    // Tarot Dream 1: Trotting animation from left to just left of center
+    // On mobile, horse needs to travel further to get closer to centered card
+    const isMobile = window.innerWidth < 640; // sm breakpoint
+    const targetPosition = isMobile ? window.innerWidth * 0.65 : window.innerWidth * 0.19;
+    
+    return {
+      x: [0, targetPosition], // Move to position based on screen size
+      y: ['-3px', '3px', '-3px'], // Subtle trotting motion
+      transition: {
+        x: { duration: 3, ease: "easeInOut", delay: 1 }, // 1 second delay, then 3 second trot
+        y: { duration: 0.6, repeat: Infinity, ease: "easeInOut" } // Continuous trotting motion
+      }
+    };
+  };
+
+  const getCategorySpecialEffects = () => {
+    if (!dream.category || !dream.categoryConfig) return null;
+
+    const effects = dream.categoryConfig.specialEffects;
+    
+    return (
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
+        {effects.map((effect, index) => (
+          <div key={effect}>
+            {effect === 'speed_lines' && (
+              <motion.div
+                className="absolute inset-0"
+                animate={{
+                  backgroundImage: [
+                    'repeating-linear-gradient(90deg, transparent 0px, transparent 5px, rgba(255,255,255,0.3) 5px, rgba(255,255,255,0.3) 7px)',
+                    'repeating-linear-gradient(90deg, transparent 0px, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 7px)'
+                  ]
+                }}
+                transition={{ duration: 0.3, repeat: Infinity, ease: "linear" }}
+              />
+            )}
+            
+            {effect === 'floating_cards' && (
+              [...Array(3)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-8 h-12 bg-purple-200 bg-opacity-60 rounded-lg border border-purple-400"
+                  style={{
+                    left: `${20 + i * 30}%`,
+                    top: `${10 + i * 15}%`
+                  }}
+                  animate={{
+                    y: ['-10px', '10px', '-10px'],
+                    rotate: [0, 5, -5, 0],
+                    opacity: [0.3, 0.7, 0.3]
+                  }}
+                  transition={{
+                    duration: 3 + i,
+                    repeat: Infinity,
+                    delay: i * 0.5
+                  }}
+                />
+              ))
+            )}
+            
+            {effect === 'crystal_sparkles' && (
+              [...Array(5)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute text-sm"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    color: `hsl(${Math.random() * 360}, 70%, 80%)`
+                  }}
+                  animate={{
+                    scale: [0, 1, 0],
+                    rotate: [0, 360],
+                    opacity: [0, 1, 0]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    delay: i * 0.4
+                  }}
+                >
+                  ✦
+                </motion.div>
+              ))
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+
+  const getParallaxLayers = () => {
+    if (dream.action !== DREAM_ACTIONS.RUNNING && dream.action !== DREAM_ACTIONS.GALLOPING) return null;
+    
+    // Create parallax layers for running scenes
+    return (
+      <>
+        {/* Far background layer - slowest movement */}
+        <motion.div
+          className="absolute inset-0 w-full h-full"
+          animate={{
+            x: ['-10%', '-30%', '-10%']
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          style={{
+            backgroundImage: `linear-gradient(135deg, rgba(135, 206, 235, 0.3) 0%, rgba(255, 192, 203, 0.2) 100%)`,
+            zIndex: 1
+          }}
+        />
+        
+        {/* Mid background layer - medium speed */}
+        <motion.div
+          className="absolute inset-0 w-full h-full"
+          animate={{
+            x: ['-20%', '-60%', '-20%']
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          style={{
+            backgroundImage: `repeating-linear-gradient(90deg, 
+              rgba(34, 197, 94, 0.2) 0px, 
+              rgba(34, 197, 94, 0.2) 80px, 
+              rgba(22, 163, 74, 0.3) 80px, 
+              rgba(22, 163, 74, 0.3) 160px)`,
+            zIndex: 2
+          }}
+        />
+        
+        {/* Foreground layer - fastest movement */}
+        <motion.div
+          className="absolute inset-0 w-full h-full"
+          animate={{
+            x: ['-50%', '-150%', '-50%']
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          style={{
+            backgroundImage: `repeating-linear-gradient(90deg, 
+              rgba(34, 197, 94, 0.4) 0px, 
+              rgba(34, 197, 94, 0.4) 20px, 
+              transparent 20px, 
+              transparent 40px)`,
+            backgroundPosition: '0 80%',
+            zIndex: 3
+          }}
+        />
+        
+        {/* Motion blur effect overlay */}
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at center, 
+              transparent 40%, 
+              rgba(255, 255, 255, 0.1) 70%, 
+              rgba(255, 255, 255, 0.2) 100%)`,
+            zIndex: 4
+          }}
+          animate={{
+            opacity: [0.3, 0.6, 0.3]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </>
+    );
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="relative bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 shadow-2xl max-w-5xl w-full mx-4"
+          style={{ 
+            maxHeight: '96vh', // 20% bigger than 80vh
+            aspectRatio: '16/10',
+            filter: getMoodFilter(),
+            borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%', // Organic cloud-like shape
+            boxShadow: '0 25px 50px -12px rgba(147, 51, 234, 0.3), 0 0 30px rgba(147, 197, 253, 0.4)'
+          }}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ 
+            scale: 1, 
+            opacity: 1,
+            borderRadius: [
+              '60% 40% 30% 70% / 60% 30% 70% 40%',
+              '40% 60% 70% 30% / 40% 70% 30% 60%',
+              '60% 40% 30% 70% / 60% 30% 70% 40%'
+            ]
+          }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          transition={{ 
+            scale: { duration: 0.5 },
+            opacity: { duration: 0.5 },
+            borderRadius: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Floating cloud particles around the dream - skip for race dreams */}
+          {dream.category !== 'race' && [...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-3 h-3 bg-white bg-opacity-40 rounded-full"
+              style={{
+                left: `${10 + Math.random() * 80}%`,
+                top: `${10 + Math.random() * 80}%`,
+                zIndex: -1
+              }}
+              animate={{
+                x: [0, Math.random() * 20 - 10, 0],
+                y: [0, Math.random() * 15 - 7.5, 0],
+                opacity: [0.2, 0.6, 0.2],
+                scale: [0.5, 1, 0.5]
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                delay: i * 0.5,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+          
+          {/* Dream content area */}
+          <div 
+            className="relative w-full h-full overflow-hidden"
+            style={{ borderRadius: 'inherit' }}
+          >
+            {/* Background setting */}
+            {dream.setting.path ? (
+              <motion.img
+                src={dream.setting.path}
+                alt={dream.setting.name}
+                className="absolute inset-0 w-full h-full object-cover"
+                initial={{ scale: 1.1 }}
+                animate={{ scale: currentPhase === 'climax' ? 1.2 : 1.1 }}
+                transition={{ duration: 2 }}
+                style={{ zIndex: 0 }}
+              />
+            ) : (
+              <motion.div
+                className={`absolute inset-0 bg-gradient-to-br ${getSettingGradient(dream.setting.name)}`}
+                initial={{ opacity: 0.8 }}
+                animate={{ opacity: currentPhase === 'climax' ? 1 : 0.8 }}
+                transition={{ duration: 2 }}
+                style={{ zIndex: 0 }}
+              />
+            )}
+
+            {/* Parallax scrolling layers for running scenes - skip for race and tarot dreams */}
+            {dream.category !== 'race' && dream.category !== 'tarot' && getParallaxLayers()}
+
+            {/* Category-specific special effects */}
+            {getCategorySpecialEffects()}
+
+            {/* Race-specific countdown and winner display */}
+            {dream.category === 'race' && (
+              <>
+                {/* Countdown display */}
+                {currentPhase === 'countdown' && (
+                  <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 15 }}>
+                    <motion.div
+                      className="text-8xl font-bold text-white text-shadow-lg"
+                      style={{ 
+                        textShadow: '4px 4px 8px rgba(0,0,0,0.8)',
+                        filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))'
+                      }}
+                      key={currentPhase}
+                      animate={{
+                        scale: [2, 1],
+                        opacity: [0, 1, 1, 0],
+                      }}
+                      transition={{
+                        duration: 3,
+                        times: [0, 0.1, 0.8, 1],
+                        ease: "easeOut"
+                      }}
+                    >
+                      {countdownNumber}
+                    </motion.div>
+                  </div>
+                )}
+
+                {/* Winner display */}
+                {currentPhase === 'winner' && (
+                  <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 15 }}>
+                    <motion.div
+                      className="text-6xl font-bold text-yellow-300"
+                      style={{ 
+                        textShadow: '4px 4px 8px rgba(0,0,0,0.8)',
+                        filter: 'drop-shadow(0 0 30px rgba(255,255,0,0.8))'
+                      }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ 
+                        scale: [0, 1.2, 1],
+                        opacity: [0, 1, 1],
+                        rotate: [0, 5, -5, 0]
+                      }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut"
+                      }}
+                    >
+                      {dream.raceVariant === 2 ? 'Winner!' : dream.raceVariant === 3 ? 'Loser!' : dream.raceVariant === 4 ? '???' : 'Winner?'}
+                    </motion.div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Tarot card for tarot dreams */}
+            {dream.category === 'tarot' && dream.tarotCard && (
+              <div className="absolute" style={{ left: '50%', top: '55%', transform: 'translate(-50%, -50%)', zIndex: 15 }}>
+                <motion.img
+                  src={dream.tarotCard}
+                  alt="Tarot Card"
+                  className="w-48 h-80 sm:w-64 sm:h-104 object-contain"
+                  style={{
+                    filter: 'drop-shadow(0 0 20px rgba(147, 51, 234, 0.8))',
+                  }}
+                  initial={{ opacity: 0, scale: 0.5, y: -20 }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    y: ['-10px', '10px', '-10px'], // Floating motion
+                    rotate: [0, 2, -2, 0] // Gentle sway
+                  }}
+                  transition={{
+                    opacity: { duration: 1, delay: 2 }, // Appear after 2 seconds
+                    scale: { duration: 1, delay: 2 },
+                    y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                    rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+                  }}
+                  onError={(e) => {
+                    console.error('🔮 Failed to load tarot card:', dream.tarotCard, e);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Subjects (horses) */}
+            <div className={`absolute inset-0 ${getCategoryPositioningClass()}`} style={{ zIndex: 10 }}>
+              {dream.subjects.map((subject, index) => {
+                console.log('🐎 Rendering dream horse:', subject.name, 'path:', subject.path);
+                const horsePosition = getCategoryHorsePosition(index, dream.subjects.length);
+                return (
+                  <motion.div
+                    key={`${subject.name}_${index}`}
+                    className={horsePosition.containerClass}
+                    style={horsePosition.style}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.5, duration: 1 }}
+                  >
+                    <motion.img
+                      src={subject.path}
+                      alt={subject.name}
+                      className={`${horsePosition.sizeClass} object-contain`}
+                      animate={
+                        dream.category === 'race' ? getRaceHorseAnimation() : 
+                        dream.category === 'tarot' ? getTarotAnimation() : 
+                        getActionAnimation()
+                      }
+                      onError={(e) => {
+                        console.error('🐎 Failed to load horse image:', subject.path, e);
+                      }}
+                      onLoad={() => {
+                        console.log('🐎 Successfully loaded horse image:', subject.path);
+                      }}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Mood effects overlay - skip for race dreams */}
+            {dream.category !== 'race' && dream.mood === DREAM_MOODS.MAGICAL && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.3, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <div className="w-full h-full bg-gradient-to-r from-transparent via-yellow-200 to-transparent opacity-30"></div>
+              </motion.div>
+            )}
+
+            {/* Sparkles for happy dreams - skip for race dreams */}
+            {dream.category !== 'race' && dream.mood === DREAM_MOODS.HAPPY && (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute text-2xl text-yellow-400"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`
+                    }}
+                    animate={{
+                      scale: [0, 1, 0],
+                      rotate: [0, 180, 360]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: i * 0.4
+                    }}
+                  >
+                    ✨
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* Progress bar */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="bg-white bg-opacity-30 rounded-full h-2">
+                <motion.div
+                  className="bg-white h-full rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${playbackProgress}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-30 hover:bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center transition-all text-lg"
+              onClick={onClose}
+            >
+              ×
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+// Helper function for setting gradients
+const getSettingGradient = (settingName) => {
+  switch (settingName) {
+    case DREAM_SETTINGS.BEACH:
+      return 'from-blue-400 via-blue-300 to-yellow-200';
+    case DREAM_SETTINGS.FOREST:
+      return 'from-green-600 via-green-400 to-green-200';
+    case DREAM_SETTINGS.MEADOW:
+      return 'from-green-300 via-green-200 to-yellow-100';
+    case DREAM_SETTINGS.MOUNTAINS:
+      return 'from-gray-600 via-gray-400 to-blue-200';
+    case DREAM_SETTINGS.SUNSET:
+      return 'from-orange-500 via-pink-400 to-purple-300';
+    default:
+      return 'from-blue-200 via-purple-200 to-pink-200';
+  }
+};
+
+// Main Dream System Component  
+export const DreamSystem = forwardRef(({ horses, onDreamGenerated }, ref) => {
+  const [activeDream, setActiveDream] = useState(null);
+  const [dreamModalOpen, setDreamModalOpen] = useState(false);
+  const [dreamingHorse, setDreamingHorse] = useState(null);
+  const dreamComposer = useRef(new DreamComposer()).current;
+
+  const handleDreamBubbleClick = (horse) => {
+    const dream = dreamComposer.generateDream(horse, horses);
+    setActiveDream(dream);
+    setDreamingHorse(horse);
+    setDreamModalOpen(true);
+    
+    if (onDreamGenerated) {
+      onDreamGenerated(dream, horse);
+    }
+  };
+
+  // Method to generate a specific category dream (can be called externally)
+  const generateCategoryDream = (category, horse = null) => {
+    const targetHorse = horse || horses.find(h => h.energy < 25);
+    if (!targetHorse) return null;
+    
+    const dream = dreamComposer.generateCategoryDream(category, targetHorse, horses);
+    setActiveDream(dream);
+    setDreamingHorse(targetHorse);
+    setDreamModalOpen(true);
+    
+    if (onDreamGenerated) {
+      onDreamGenerated(dream, targetHorse);
+    }
+    
+    return dream;
+  };
+
+  // Expose methods to parent components via ref
+  useImperativeHandle(ref, () => ({
+    generateCategoryDream,
+    generateRandomDream: (horse) => handleDreamBubbleClick(horse),
+    getCurrentDream: () => activeDream,
+    closeDream: handleCloseDream
+  }));
+
+  const handleCloseDream = () => {
+    setDreamModalOpen(false);
+    setActiveDream(null);
+    setDreamingHorse(null);
+  };
+
+  return (
+    <>
+      {/* Dream bubbles for sleeping horses */}
+      {horses && horses.map((horse, index) => (
+        horse.energy < 25 && (
+          <DreamBubble
+            key={`dream_bubble_${horse.id || index}`}
+            horse={horse}
+            onDreamClick={handleDreamBubbleClick}
+            className="dream-bubble"
+          />
+        )
+      ))}
+
+      {/* Dream modal */}
+      <DreamModal
+        isOpen={dreamModalOpen}
+        onClose={handleCloseDream}
+        dream={activeDream}
+        horse={dreamingHorse}
+      />
+    </>
+  );
+});
+
+DreamSystem.displayName = 'DreamSystem';
+
+export default DreamSystem;
