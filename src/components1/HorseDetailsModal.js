@@ -310,6 +310,21 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                           <div className="text-xs opacity-75">{careCosts.heal} <img src="/horsecoins.png" alt="coins" className="inline w-3 h-3" /></div>
                         </button>
                       )}
+                      
+                      {/* Rest button - force horse to sleep */}
+                      <button
+                        onClick={() => !horse.isSleeping && onCareAction(horse.id, 'rest')}
+                        disabled={horse.isSleeping}
+                        className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
+                          !horse.isSleeping
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={horse.isSleeping ? `${horse.name} is already sleeping` : 'Put horse to sleep'}
+                      >
+                        <div className="text-lg mb-1">😴</div>
+                        <div>Rest</div>
+                      </button>
                     </div>
                     
                     {/* Injury Warning */}

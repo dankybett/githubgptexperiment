@@ -361,7 +361,8 @@ COIN TREASURES & REWARDS
     groom: 5,
     apple: 3,
     carrot: 2,
-    heal: 15 // Medical care for injured horses
+    heal: 15, // Medical care for injured horses
+    rest: 0 // Free rest action
   };
 
   // Get resource status color based on level
@@ -540,6 +541,9 @@ COIN TREASURES & REWARDS
       case 'heal':
         feedbackMessage = `HEALED ${horseName}`;
         break;
+      case 'rest':
+        feedbackMessage = `PUT ${horseName} TO SLEEP`;
+        break;
     }
     setCareActionFeedback({ type: 'success', message: feedbackMessage });
     setTimeout(() => setCareActionFeedback(null), 2000);
@@ -588,6 +592,14 @@ COIN TREASURES & REWARDS
             updates.isInjured = false; // Heal the injury!
             updates.isBeingHealed = true;
             updates.careAnimationEnd = now + 4000; // Longer healing animation
+            break;
+          case 'rest':
+            const sleepDuration = (30 + Math.random() * 30) * 1000; // 30-60 seconds
+            updates.isSleeping = true;
+            updates.sleepTime = sleepDuration;
+            updates.isResting = false; // Stop regular resting when sleeping
+            updates.restTime = 0;
+            console.log(`😴 Manual sleep: ${horse.name} put to sleep for ${sleepDuration/1000}s`);
             break;
           default:
             return horse;

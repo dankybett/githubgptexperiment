@@ -340,6 +340,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const [prevMinotaurPos, setPrevMinotaurPos] = useState({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
   const [inventory, setInventory] = useState([]);
   const [horseInventory, setHorseInventory] = useState(selectedHorse?.inventory || []);
+  const [horseEnergy, setHorseEnergy] = useState(selectedHorse?.energy || 100); // Track energy in labyrinth
   
   const [startingInventory, setStartingInventory] = useState(selectedHorse?.inventory || []); // Track what horse started with
   const [showItemSelection, setShowItemSelection] = useState(false);
@@ -353,11 +354,12 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const [showLostHorseFound, setShowLostHorseFound] = useState(false);
   const [foundHorse, setFoundHorse] = useState(null);
   
-  // Initialize inventory from selectedHorse only once when component mounts
+  // Initialize inventory and energy from selectedHorse only once when component mounts
   const initializedRef = useRef(false);
   useEffect(() => {
     if (!initializedRef.current && selectedHorse) {
       setHorseInventory(selectedHorse.inventory || []);
+      setHorseEnergy(selectedHorse.energy || 100);
       initializedRef.current = true;
     }
   }, [selectedHorse]);
@@ -1232,16 +1234,16 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   const getHorsePerformanceModifiers = useCallback(() => {
     if (!selectedHorse) return { speed: 1, trapAvoidance: 0, treasureBonus: 1, energy: 1 };
     
-    const avgCondition = (selectedHorse.happiness + selectedHorse.health + selectedHorse.energy) / 300;
+    const avgCondition = (selectedHorse.happiness + selectedHorse.health + horseEnergy) / 300;
     const cleanlinessBonus = selectedHorse.cleanliness / 100;
     
     return {
       speed: 0.5 + (avgCondition * 0.7), // 0.5x to 1.2x speed based on condition
       trapAvoidance: Math.floor(avgCondition * 25), // 0-25% trap avoidance
       treasureBonus: 0.8 + (cleanlinessBonus * 0.4), // 0.8x to 1.2x treasure find rate
-      energy: 0.6 + (selectedHorse.energy / 100 * 0.6) // 0.6x to 1.2x energy efficiency
+      energy: 0.6 + (horseEnergy / 100 * 0.6) // 0.6x to 1.2x energy efficiency
     };
-  }, [selectedHorse]);
+  }, [selectedHorse, horseEnergy]);
 
 
   // Horse movement logic
@@ -2019,6 +2021,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   }, [gameState, horseInventory, selectedHorse, onHorseReturn]);
   
   const startGameAfterAnnouncement = (keepLostHorse = false) => {
+    // Reduce energy for each run (10-15 energy per run)
+    const energyReduction = 10 + Math.random() * 5; // 10-15 energy
+    setHorseEnergy(prev => Math.max(0, prev - energyReduction));
+    console.log(`⚡ Labyrinth run started - Horse energy reduced by ${energyReduction.toFixed(1)}%`);
+    
     // Reset positions
     setHorsePos({ x: 1, y: 1 });
     setMinotaurPos({ x: MAZE_SIZE - 2, y: MAZE_SIZE - 2 });
@@ -2164,7 +2171,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         ...selectedHorse,
         inventory: updatedInventory,
         health: Math.max(0, selectedHorse.health - healthReduction),
-        energy: Math.max(0, selectedHorse.energy - energyReduction),
+        energy: Math.max(0, horseEnergy), // Use the updated energy from labyrinth
         happiness: Math.max(0, Math.min(100, selectedHorse.happiness + happinessChange)),
         isInjured: isInjured || selectedHorse.isInjured || false, // Keep existing injury status or add new one
         cleanliness: Math.max(0, selectedHorse.cleanliness - (fatigueFromRun * 0.3)), // Gets dirty from adventure
@@ -2177,7 +2184,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       
       console.log('🎒 Labyrinth - Returning horse with updated stats:');
       console.log('  - Health change:', -healthReduction);
-      console.log('  - Energy change:', -energyReduction);
+      console.log('  - Energy: started at', selectedHorse.energy, '%, returning with', Math.round(horseEnergy), '%');
       console.log('  - Happiness change:', happinessChange);
       console.log('  - Injury sustained:', isInjured ? 'YES' : 'No');
       console.log('  - Final inventory:', updatedInventory);
@@ -2903,6 +2910,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
                       return (
                         <div>
                           <div>
+                            Energy: {Math.round(horseEnergy)}%
+                            {' | '}
                             Speed: {totalSpeedPercent}%
                             {activeSpeedBoost > 0 && <span className="text-green-600 font-semibold"> (+{speedBoostPercent}%)</span>}
                             {' | '}
