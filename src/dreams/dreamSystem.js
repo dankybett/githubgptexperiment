@@ -67,7 +67,10 @@ export const DREAM_MOODS = {
 export const DREAM_CATEGORIES = {
   RACE: 'race',
   MINOTAUR: 'minotaur', 
-  TAROT: 'tarot'
+  TAROT: 'tarot',
+  SCARECROW: 'scarecrow',
+  HORSE_SPECIFIC: 'horse_specific',
+  FLOATING: 'floating'
 };
 
 // Category-specific configurations
@@ -110,6 +113,45 @@ export const CATEGORY_CONFIGS = {
     },
     backgrounds: ['mysticalenergy', 'mirrorland', 'chessboard', 'celestialgarden'], // tarot-specific backgrounds
     specialEffects: ['floating_cards', 'crystal_sparkles', 'cosmic_swirls']
+  },
+  [DREAM_CATEGORIES.SCARECROW]: {
+    name: 'Scarecrow Dreams',
+    description: 'Dreams of pastoral guardians and countryside mystique',
+    preferredActions: [DREAM_ACTIONS.RUNNING, DREAM_ACTIONS.GALLOPING],
+    preferredMoods: [DREAM_MOODS.ADVENTUROUS, DREAM_MOODS.MAGICAL],
+    animations: {
+      horse_positioning: 'circling_scene', // horses circle around scarecrow
+      camera_movement: 'static_watch', // camera observes the circling
+      speed_multiplier: 1.0 // normal speed for circling
+    },
+    backgrounds: ['cornfield'], // scarecrow-specific backgrounds
+    specialEffects: []
+  },
+  [DREAM_CATEGORIES.HORSE_SPECIFIC]: {
+    name: 'Horse Specific Dreams',
+    description: 'Dreams unique to specific horse characters',
+    preferredActions: [DREAM_ACTIONS.PLAYING],
+    preferredMoods: [DREAM_MOODS.NOSTALGIC, DREAM_MOODS.HAPPY],
+    animations: {
+      horse_positioning: 'center_stage', // single horse in center
+      camera_movement: 'static', // stationary camera
+      speed_multiplier: 0.8 // slower, contemplative animations
+    },
+    backgrounds: ['office', 'street'], // variant-specific backgrounds
+    specialEffects: []
+  },
+  [DREAM_CATEGORIES.FLOATING]: {
+    name: 'Floating Dreams',
+    description: 'Dreams of weightless, airborne adventures',
+    preferredActions: [DREAM_ACTIONS.FLYING],
+    preferredMoods: [DREAM_MOODS.MAGICAL, DREAM_MOODS.PEACEFUL],
+    animations: {
+      horse_positioning: 'floating_formation', // horses positioned at different heights
+      camera_movement: 'gentle_drift', // slow, dreamy camera movement
+      speed_multiplier: 0.7 // slow, floating animations
+    },
+    backgrounds: ['horseballoons', 'toyland', 'spaghetti'], // floating-specific backgrounds
+    specialEffects: ['floating_particles', 'gentle_breeze']
   }
 };
 
@@ -142,6 +184,9 @@ export class DreamComposer {
     const raceVariant = category === DREAM_CATEGORIES.RACE ? this.getRaceVariant() : null;
     const tarotVariant = category === DREAM_CATEGORIES.TAROT ? this.getTarotVariant() : null;
     const minotaurVariant = category === DREAM_CATEGORIES.MINOTAUR ? this.getMinotaurVariant() : null;
+    const scarecrowVariant = category === DREAM_CATEGORIES.SCARECROW ? this.getScarecrowVariant() : null;
+    const horseSpecificVariant = category === DREAM_CATEGORIES.HORSE_SPECIFIC ? this.getHorseSpecificVariant() : null;
+    const floatingVariant = category === DREAM_CATEGORIES.FLOATING ? this.getFloatingVariant() : null;
     
     // Use the sleeping horse as the main subject, and optionally add other horses from the stable
     const subjects = sleepingHorse ? [this.formatHorseForDream(sleepingHorse)] : [];
@@ -157,7 +202,17 @@ export class DreamComposer {
       } else if (category === DREAM_CATEGORIES.TAROT) {
         companionCount = 0; // Tarot dreams use only the dreaming horse
       } else if (category === DREAM_CATEGORIES.MINOTAUR) {
-        companionCount = 0; // Minotaur dreams use only the dreaming horse
+        if (minotaurVariant === 3) {
+          companionCount = Math.min(2, otherHorses.length); // Variant 3 uses 2 companions for circling
+        } else {
+          companionCount = 0; // Variants 1 and 2 use only the dreaming horse
+        }
+      } else if (category === DREAM_CATEGORIES.SCARECROW) {
+        companionCount = Math.min(2, otherHorses.length); // Scarecrow dreams always use 2 companions for circling
+      } else if (category === DREAM_CATEGORIES.HORSE_SPECIFIC) {
+        companionCount = 0; // Horse specific dreams feature only the specific character horse
+      } else if (category === DREAM_CATEGORIES.FLOATING) {
+        companionCount = Math.min(3, Math.floor(Math.random() * 3) + 2); // 2-4 companions for floating dreams
       } else {
         companionCount = Math.min(2, Math.floor(Math.random() * 2) + 1); // 1-2 companions for other dreams
       }
@@ -168,7 +223,7 @@ export class DreamComposer {
     }
     
     // Use category-aware selection for setting, action, and mood
-    const setting = this.getCategorySetting(category);
+    const setting = this.getCategorySetting(category, minotaurVariant, horseSpecificVariant);
     const action = this.getCategoryAction(category);
     const mood = this.getCategoryMood(category);
 
@@ -189,7 +244,13 @@ export class DreamComposer {
       // Add tarot card for tarot dreams
       tarotCard: category === DREAM_CATEGORIES.TAROT ? this.getRandomTarotCard() : null,
       // Add minotaur variant for minotaur dreams
-      minotaurVariant
+      minotaurVariant,
+      // Add scarecrow variant for scarecrow dreams
+      scarecrowVariant,
+      // Add horse specific variant for horse specific dreams
+      horseSpecificVariant,
+      // Add floating variant for floating dreams
+      floatingVariant
     };
     
     console.log('🐎 Generated categorized dream:', dream);
@@ -214,14 +275,46 @@ export class DreamComposer {
   }
 
   // Get category-appropriate setting
-  getCategorySetting(category) {
+  getCategorySetting(category, minotaurVariant = null, horseSpecificVariant = null) {
     const categoryConfig = CATEGORY_CONFIGS[category];
+    
+    // Special handling for minotaur variant 3 - use spookywoods background
+    if (category === DREAM_CATEGORIES.MINOTAUR && minotaurVariant === 3) {
+      const spookyWoodsBackground = this.availableSettings.find(setting => setting.name === 'spookywoods');
+      if (spookyWoodsBackground) {
+        return spookyWoodsBackground;
+      }
+      // Fallback to creating a manual background reference if not found in availableSettings
+      return {
+        name: 'spookywoods',
+        path: '/spookywoods.png'
+      };
+    }
     
     // Special handling for tarot dreams - use exclusive backgrounds
     if (category === DREAM_CATEGORIES.TAROT) {
       const tarotBackgrounds = TAROT_BACKGROUNDS;
       const selectedBackground = tarotBackgrounds[Math.floor(Math.random() * tarotBackgrounds.length)];
       return selectedBackground;
+    }
+    
+    // Special handling for horse specific dreams - variant-specific backgrounds
+    if (category === DREAM_CATEGORIES.HORSE_SPECIFIC) {
+      let backgroundName;
+      if (horseSpecificVariant === 1) {
+        backgroundName = 'office'; // Business horse dream
+      } else if (horseSpecificVariant === 2) {
+        backgroundName = 'street'; // Traffic dream
+      } else if (horseSpecificVariant === 3) {
+        backgroundName = 'mooncheeseplain'; // Alien reunion dream
+      } else {
+        backgroundName = 'office'; // Default fallback
+      }
+      
+      const foundSetting = this.availableSettings.find(setting => setting.name === backgroundName);
+      if (foundSetting) {
+        return foundSetting;
+      }
     }
     
     // If category has specific backgrounds, use those
@@ -291,7 +384,24 @@ export class DreamComposer {
 
   // Get minotaur dream variant
   getMinotaurVariant() {
-    return 1; // Only Minotaur Dream 1 exists for now
+    const variants = [1, 2, 3]; // Minotaur Dream 1, 2, and 3
+    return variants[Math.floor(Math.random() * variants.length)];
+  }
+
+  // Get scarecrow dream variant
+  getScarecrowVariant() {
+    return 1; // Only Scarecrow Dream 1 exists for now
+  }
+
+  // Get horse specific dream variant
+  getHorseSpecificVariant() {
+    const variants = [1, 2, 3]; // Business Horse Dream 1, Traffic Dream 2, and Alien Reunion Dream 3
+    return variants[Math.floor(Math.random() * variants.length)];
+  }
+
+  // Get floating dream variant
+  getFloatingVariant() {
+    return 1; // Only Floating Dream 1 exists for now
   }
 
   // Get random tarot card
@@ -396,7 +506,7 @@ export const DreamBubble = ({ horse, onDreamClick, className = "" }) => {
       className={`absolute cursor-pointer ${className}`}
       style={{
         left: '50%',
-        top: '-50px',
+        top: '-35px',
         transform: 'translateX(-50%)',
         zIndex: 100, // Higher z-index to ensure visibility
         pointerEvents: 'auto'
@@ -410,38 +520,22 @@ export const DreamBubble = ({ horse, onDreamClick, className = "" }) => {
         onDreamClick && onDreamClick(horse);
       }}
     >
-      {/* Dream bubble background */}
-      <motion.div
-        className="relative w-16 h-16 bg-white bg-opacity-95 rounded-full border-3 border-purple-300 shadow-2xl"
-        style={{
-          boxShadow: '0 0 20px rgba(147, 51, 234, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3)'
-        }}
+      {/* Dream bubble image */}
+      <motion.img
+        src="/stable/dreambubble.png"
+        alt="Dream Bubble"
+        className="w-20 h-20 object-contain"
         animate={{
           scale: dreamActive ? 1.1 : 1,
-          boxShadow: dreamActive 
-            ? '0 0 20px rgba(147, 197, 253, 0.6)' 
-            : '0 4px 6px rgba(0, 0, 0, 0.1)'
+          filter: dreamActive 
+            ? 'drop-shadow(0 0 20px rgba(147, 197, 253, 0.6))' 
+            : 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
         }}
         transition={{ duration: 1 }}
-      >
-        {/* Dream content hint */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <motion.div
-            className="text-xs text-blue-600"
-            animate={{ 
-              opacity: dreamActive ? 1 : 0.6,
-              rotate: dreamActive ? 360 : 0 
-            }}
-            transition={{ duration: 2 }}
-          >
-            ✨
-          </motion.div>
-        </div>
-        
-        {/* Smaller bubble tail */}
-        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white bg-opacity-90 rounded-full border border-blue-200"></div>
-        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 translate-x-1 w-2 h-2 bg-white bg-opacity-90 rounded-full border border-blue-200"></div>
-      </motion.div>
+        style={{
+          filter: 'drop-shadow(0 0 20px rgba(147, 51, 234, 0.4)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))'
+        }}
+      />
     </motion.div>
   );
 };
@@ -703,6 +797,8 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
         return 'flex items-end justify-center'; // Same as race positioning for chase scene
       case 'tarot':
         return 'flex items-center justify-center'; // Centered for mystical card-like arrangement
+      case 'floating':
+        return 'flex items-center justify-center'; // Centered for floating formation
       default:
         return 'flex items-center justify-center';
     }
@@ -765,14 +861,35 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
         };
       
       case 'minotaur':
-        // Chase scene formation - same as race start positioning, lowered by 15%
+        // Chase scene formation - different based on variant
         const chaseOffset = index * 15; // Stagger horses slightly
+        let minotaurSizeClass, minotaurTopPosition;
+        
+        if (dream.minotaurVariant === 3) {
+          // Minotaur Dream 3: Normal size horses circling stationary minotaur
+          minotaurSizeClass = 'w-32 h-32 sm:w-40 sm:h-40';
+          minotaurTopPosition = '50%'; // Center position for circling
+        } else if (dream.minotaurVariant === 2) {
+          // Minotaur Dream 2: Horse is double size and chasing
+          minotaurSizeClass = 'w-64 h-64 sm:w-80 sm:h-80'; // Double size
+          minotaurTopPosition = `${45 + index * 15}%`; // Higher position for larger horse, separated from minotaur
+        } else {
+          // Minotaur Dream 1: Normal size horse being chased
+          minotaurSizeClass = 'w-32 h-32 sm:w-40 sm:h-40';
+          minotaurTopPosition = `${65 + index * 15}%`; // Lower position
+        }
+        
         return {
           containerClass: 'absolute',
-          sizeClass: 'w-32 h-32 sm:w-40 sm:h-40',
-          style: {
-            left: '-15%', // Start off-screen to the left
-            top: `${55 + index * 15}%`, // Lowered by 15% (40% + 15% = 55%)
+          sizeClass: minotaurSizeClass,
+          style: dream.minotaurVariant === 3 ? {
+            left: '50%', // Center position for circling
+            top: minotaurTopPosition,
+            transform: 'translate(-50%, -50%)', // Center the horse
+            zIndex: index + 1
+          } : {
+            left: dream.minotaurVariant === 2 ? '-25%' : '-15%', // Variant 2: horse starts further back
+            top: minotaurTopPosition,
             zIndex: index + 1
           },
           animation: {} // Chase animation will be handled separately
@@ -788,6 +905,30 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
             top: '65%',
             transform: 'translateY(-50%)',
             zIndex: 10
+          },
+          animation: {} // Animation will be handled separately
+        };
+      
+      case 'floating':
+        // Floating Dream 1: Horses positioned at different heights for floating formation
+        const floatingPositions = [
+          { left: '20%', top: '30%' },  // Top left
+          { left: '60%', top: '20%' },  // Top right  
+          { left: '80%', top: '50%' },  // Middle right
+          { left: '40%', top: '70%' },  // Bottom center
+          { left: '10%', top: '60%' }   // Middle left
+        ];
+        
+        const position = floatingPositions[index] || { left: '50%', top: '50%' };
+        
+        return {
+          containerClass: 'absolute',
+          sizeClass: 'w-28 h-28 sm:w-36 sm:h-36', // Slightly smaller for floating effect
+          style: {
+            left: position.left,
+            top: position.top,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 10 + index
           },
           animation: {} // Animation will be handled separately
         };
@@ -823,13 +964,190 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
   const getMinotaurAnimation = () => {
     if (dream.category !== 'minotaur') return {};
     
-    // Minotaur Dream 1: Fast chase scene - horse races across screen in a loop
+    if (dream.minotaurVariant === 3) {
+      // Minotaur Dream 3: Horses circle around stationary minotaur - return empty for horses, they use circling animation
+      return {};
+    } else if (dream.minotaurVariant === 2) {
+      // Minotaur Dream 2: Horse chases minotaur (horse is double size and behind)
+      return {
+        x: [-300, window.innerWidth + 100], // Start much further back, chase the minotaur
+        y: ['-5px', '5px', '-5px'], // Galloping motion
+        transition: {
+          x: { duration: 4.2, ease: "linear", repeat: Infinity, repeatDelay: 0 }, // Slightly slower than minotaur being chased
+          y: { duration: 0.3, repeat: Infinity, ease: "easeInOut" } // Fast galloping motion
+        }
+      };
+    } else {
+      // Minotaur Dream 1: Horse being chased by minotaur
+      return {
+        x: [-200, window.innerWidth + 200], // Start from off-screen left, race to off-screen right
+        y: ['-5px', '5px', '-5px'], // Galloping motion
+        transition: {
+          x: { duration: 4, ease: "linear", repeat: Infinity, repeatDelay: 0 }, // Continuous looping
+          y: { duration: 0.3, repeat: Infinity, ease: "easeInOut" } // Fast galloping motion
+        }
+      };
+    }
+  };
+
+  const getFloatingAnimation = (index) => {
+    if (dream.category !== 'floating') return {};
+    
+    // Test mode: use specific pattern if testPatternIndex is set
+    const patternIndex = dream.testMode ? dream.testPatternIndex : index;
+    
+    // Each horse has unique floating patterns for variety
+    const floatingPatterns = [
+      // Pattern 0: Gentle up-down with slight drift
+      {
+        y: ['-20px', '20px', '-20px'],
+        x: ['-5px', '5px', '-5px'],
+        rotate: [0, 2, -2, 0],
+        transition: {
+          y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+          x: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 5, repeat: Infinity, ease: "easeInOut" }
+        }
+      },
+      // Pattern 1: Figure-8 floating motion
+      {
+        y: ['-15px', '0px', '15px', '0px', '-15px'],
+        x: ['-10px', '10px', '-10px', '10px', '-10px'],
+        rotate: [0, 3, 0, -3, 0],
+        transition: {
+          y: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          x: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+        }
+      },
+      // Pattern 2: Circular floating motion
+      {
+        y: ['-10px', '-5px', '10px', '5px', '-10px'],
+        x: ['0px', '8px', '0px', '-8px', '0px'],
+        scale: [1, 1.05, 1, 0.95, 1],
+        transition: {
+          y: { duration: 3.5, repeat: Infinity, ease: "easeInOut" },
+          x: { duration: 3.5, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+        }
+      },
+      // Pattern 3: Lazy drift with rotation
+      {
+        y: ['-25px', '15px', '-25px'],
+        x: ['-8px', '0px', '8px', '0px', '-8px'],
+        rotate: [0, 5, 0, -5, 0],
+        transition: {
+          y: { duration: 4.5, repeat: Infinity, ease: "easeInOut" },
+          x: { duration: 6, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+        }
+      },
+      // Pattern 4: Bouncy floating
+      {
+        y: ['-18px', '18px', '-18px'],
+        scale: [0.95, 1.1, 0.95],
+        rotate: [0, 1, -1, 0],
+        transition: {
+          y: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+        }
+      }
+    ];
+    
+    // Use pattern based on patternIndex, cycling through available patterns
+    const pattern = floatingPatterns[patternIndex % floatingPatterns.length];
+    return pattern;
+  };
+
+  const getCirclingAnimation = (index, totalHorses) => {
+    // Elliptical orbit parameters for 3D perspective effect - larger to avoid minotaur overlap
+    const isMobile = window.innerWidth < 640;
+    const radiusX = isMobile ? 140 : 200; // Horizontal radius (wider) - increased from 100/140
+    const radiusY = isMobile ? 70 : 100;   // Vertical radius (compressed for perspective) - increased from 40/60
+    
+    // Fixed positions: 3 horses at 0°, 120°, 240° (equal spacing)
+    const startAngle = index * 120; // 0°, 120°, 240°
+    
+    const animationDuration = 8; // Complete orbit in 8 seconds
+    const points = 60; // Smooth animation with many keyframes
+    
+    // Calculate elliptical path points
+    const pathPoints = [];
+    const scaleValues = [];
+    const flipValues = [];
+    
+    for (let i = 0; i < points; i++) {
+      const progress = i / points;
+      const angle = startAngle + (progress * 360); // Current angle in degrees
+      const radians = (angle * Math.PI) / 180;
+      
+      // Elliptical position
+      const x = Math.cos(radians) * radiusX;
+      const y = Math.sin(radians) * radiusY;
+      
+      // Perspective scaling based on y-position
+      // Front (bottom) = larger scale, Back (top) = smaller scale
+      const perspectiveScale = 0.7 + (0.6 * ((y + radiusY) / (radiusY * 2))); // Scale from 0.7 to 1.3
+      
+      // Sprite flipping based on movement direction
+      // Calculate tangent direction to determine if moving left or right
+      const nextAngle = angle + 6; // Look ahead 6 degrees
+      const nextRadians = (nextAngle * Math.PI) / 180;
+      const nextX = Math.cos(nextRadians) * radiusX;
+      
+      // If next X position is less than current, horse is moving left (flip sprite)
+      const shouldFlip = nextX < x;
+      
+      pathPoints.push({ x, y });
+      scaleValues.push(perspectiveScale);
+      flipValues.push(shouldFlip ? -1 : 1);
+    }
+    
     return {
-      x: [-200, window.innerWidth + 200], // Start from off-screen left, race to off-screen right
-      y: ['-5px', '5px', '-5px'], // Galloping motion
+      // Elliptical orbit path
+      x: pathPoints.map(p => p.x),
+      y: pathPoints.map(p => p.y),
+      
+      // Perspective scaling (smaller when behind, larger when in front)
+      scale: scaleValues,
+      
+      // Sprite flipping based on movement direction
+      scaleX: flipValues.map(flip => flip * scaleValues[flipValues.indexOf(flip)]),
+      
+      // Walking bounce (subtle vertical bob)
+      scaleY: [1, 1.03, 1, 0.97, 1],
+      
       transition: {
-        x: { duration: 4, ease: "linear", repeat: Infinity, repeatDelay: 0 }, // Continuous looping
-        y: { duration: 0.3, repeat: Infinity, ease: "easeInOut" } // Fast galloping motion
+        x: { 
+          duration: animationDuration, 
+          ease: "linear", 
+          repeat: Infinity,
+          times: Array.from({length: points}, (_, i) => i / (points - 1))
+        },
+        y: { 
+          duration: animationDuration, 
+          ease: "linear", 
+          repeat: Infinity,
+          times: Array.from({length: points}, (_, i) => i / (points - 1))
+        },
+        scale: { 
+          duration: animationDuration, 
+          ease: "linear", 
+          repeat: Infinity,
+          times: Array.from({length: points}, (_, i) => i / (points - 1))
+        },
+        scaleX: { 
+          duration: animationDuration, 
+          ease: "linear", 
+          repeat: Infinity,
+          times: Array.from({length: points}, (_, i) => i / (points - 1))
+        },
+        scaleY: { 
+          duration: 1.2, 
+          ease: "easeInOut", 
+          repeat: Infinity // Walking bounce independent of orbit
+        }
       }
     };
   };
@@ -841,6 +1159,71 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
     
     return (
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
+        {/* Special dust clouds for Minotaur Variant 3 */}
+        {dream.category === 'minotaur' && dream.minotaurVariant === 3 && (
+          <div className="absolute inset-0">
+            {/* Dust clouds around the circling path */}
+            {[...Array(8)].map((_, i) => {
+              const angle = (i * 360) / 8;
+              const radius = 140; // Slightly larger than horse circle
+              const x = 50 + (Math.cos((angle * Math.PI) / 180) * radius * 0.3); // Convert to percentage
+              const y = 50 + (Math.sin((angle * Math.PI) / 180) * radius * 0.3); // Convert to percentage
+              
+              return (
+                <motion.div
+                  key={`dust-${i}`}
+                  className="absolute w-6 h-6 bg-amber-100 bg-opacity-40 rounded-full"
+                  style={{
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  animate={{
+                    scale: [0.5, 1.2, 0.5],
+                    opacity: [0.2, 0.6, 0.2],
+                    x: [0, Math.random() * 20 - 10, 0],
+                    y: [0, Math.random() * 20 - 10, 0]
+                  }}
+                  transition={{
+                    duration: 2 + Math.random() * 2,
+                    repeat: Infinity,
+                    delay: i * 0.3,
+                    ease: "easeInOut"
+                  }}
+                />
+              );
+            })}
+            
+            {/* Central mystical aura around minotaur */}
+            <motion.div
+              className="absolute"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '200px',
+                height: '200px'
+              }}
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.1, 0.3, 0.1]
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <div 
+                className="w-full h-full rounded-full"
+                style={{
+                  background: 'radial-gradient(circle, rgba(139, 69, 19, 0.3) 0%, rgba(160, 82, 45, 0.2) 50%, transparent 70%)'
+                }}
+              />
+            </motion.div>
+          </div>
+        )}
+        
         {effects.map((effect, index) => (
           <div key={effect}>
             {effect === 'speed_lines' && (
@@ -911,94 +1294,6 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
   };
 
 
-  const getParallaxLayers = () => {
-    if (dream.action !== DREAM_ACTIONS.RUNNING && dream.action !== DREAM_ACTIONS.GALLOPING) return null;
-    
-    // Create parallax layers for running scenes
-    return (
-      <>
-        {/* Far background layer - slowest movement */}
-        <motion.div
-          className="absolute inset-0 w-full h-full"
-          animate={{
-            x: ['-10%', '-30%', '-10%']
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{
-            backgroundImage: `linear-gradient(135deg, rgba(135, 206, 235, 0.3) 0%, rgba(255, 192, 203, 0.2) 100%)`,
-            zIndex: 1
-          }}
-        />
-        
-        {/* Mid background layer - medium speed */}
-        <motion.div
-          className="absolute inset-0 w-full h-full"
-          animate={{
-            x: ['-20%', '-60%', '-20%']
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{
-            backgroundImage: `repeating-linear-gradient(90deg, 
-              rgba(34, 197, 94, 0.2) 0px, 
-              rgba(34, 197, 94, 0.2) 80px, 
-              rgba(22, 163, 74, 0.3) 80px, 
-              rgba(22, 163, 74, 0.3) 160px)`,
-            zIndex: 2
-          }}
-        />
-        
-        {/* Foreground layer - fastest movement */}
-        <motion.div
-          className="absolute inset-0 w-full h-full"
-          animate={{
-            x: ['-50%', '-150%', '-50%']
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{
-            backgroundImage: `repeating-linear-gradient(90deg, 
-              rgba(34, 197, 94, 0.4) 0px, 
-              rgba(34, 197, 94, 0.4) 20px, 
-              transparent 20px, 
-              transparent 40px)`,
-            backgroundPosition: '0 80%',
-            zIndex: 3
-          }}
-        />
-        
-        {/* Motion blur effect overlay */}
-        <motion.div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse at center, 
-              transparent 40%, 
-              rgba(255, 255, 255, 0.1) 70%, 
-              rgba(255, 255, 255, 0.2) 100%)`,
-            zIndex: 4
-          }}
-          animate={{
-            opacity: [0.3, 0.6, 0.3]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-      </>
-    );
-  };
 
   return (
     <AnimatePresence>
@@ -1087,8 +1382,6 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
               />
             )}
 
-            {/* Parallax scrolling layers for running scenes - skip for race and tarot dreams */}
-            {dream.category !== 'race' && dream.category !== 'tarot' && getParallaxLayers()}
 
             {/* Category-specific special effects */}
             {getCategorySpecialEffects()}
@@ -1180,66 +1473,366 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
 
             {/* Subjects (horses) */}
             <div className={`absolute inset-0 ${getCategoryPositioningClass()}`} style={{ zIndex: 10 }}>
-              {dream.subjects.map((subject, index) => {
-                console.log('🐎 Rendering dream horse:', subject.name, 'path:', subject.path);
-                const horsePosition = getCategoryHorsePosition(index, dream.subjects.length);
-                return (
+              {(dream.category === 'minotaur' && dream.minotaurVariant === 3) || dream.category === 'scarecrow' ? (
+                // Special rendering for circling dreams (minotaur variant 3 and scarecrow)
+                dream.subjects.map((subject, index) => {
+                  console.log('🐎 Rendering circling horse:', subject.name, 'at position:', index);
+                  const circlingAnimation = getCirclingAnimation(index, dream.subjects.length);
+                  
+                  return (
+                    <motion.div
+                      key={`${subject.name}_${index}`}
+                      className="absolute"
+                      style={{
+                        left: '50%',
+                        top: '65%',
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.3, duration: 1 }}
+                    >
+                      <motion.img
+                        src={subject.path}
+                        alt={subject.name}
+                        className="w-32 h-32 sm:w-40 sm:h-40 object-contain"
+                        animate={circlingAnimation}
+                        style={{
+                          // Simple: all circling horses stay behind the minotaur
+                          zIndex: 3
+                        }}
+                        onError={(e) => {
+                          console.error('🐎 Failed to load horse image:', subject.path, e);
+                        }}
+                        onLoad={() => {
+                          console.log('🐎 Successfully loaded horse image:', subject.path);
+                        }}
+                      />
+                    </motion.div>
+                  );
+                })
+              ) : dream.category === 'horse_specific' ? (
+                // Special rendering for horse specific dreams
+                dream.horseSpecificVariant === 1 ? (
+                  // Variant 1: Business Horse
                   <motion.div
-                    key={`${subject.name}_${index}`}
-                    className={horsePosition.containerClass}
-                    style={horsePosition.style}
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.5, duration: 1 }}
+                    key="business_horse"
+                    className="absolute"
+                    style={{
+                      left: '40%',
+                      top: '45%',
+                      transform: 'translate(-50%, -50%)',
+                      zIndex: 10
+                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1 }}
                   >
                     <motion.img
-                      src={subject.path}
-                      alt={subject.name}
-                      className={`${horsePosition.sizeClass} object-contain`}
-                      animate={
-                        dream.category === 'race' ? getRaceHorseAnimation() : 
-                        dream.category === 'tarot' ? getTarotAnimation() : 
-                        dream.category === 'minotaur' ? getMinotaurAnimation() :
-                        getActionAnimation()
-                      }
+                      src="/horses/businesshorse.png"
+                      alt="Business Horse"
+                      className="w-80 h-80 sm:w-107 sm:h-107 object-contain"
+                      animate={{
+                        // Subtle idle animation
+                        y: ['-2px', '2px', '-2px'],
+                        rotate: [0, 1, -1, 0],
+                        transition: {
+                          y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                          rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+                        }
+                      }}
                       onError={(e) => {
-                        console.error('🐎 Failed to load horse image:', subject.path, e);
+                        console.error('🐎 Failed to load business horse image:', e);
                       }}
                       onLoad={() => {
-                        console.log('🐎 Successfully loaded horse image:', subject.path);
+                        console.log('🐎 Successfully loaded business horse image');
                       }}
                     />
                   </motion.div>
-                );
-              })}
+                ) : dream.horseSpecificVariant === 2 ? (
+                  // Variant 2: Traffic Dream with horsecar and motohorse
+                  <>
+                    {/* HorseCar */}
+                    <motion.div
+                      key="horsecar"
+                      className="absolute"
+                      style={{
+                        left: '0%', // Start at screen edge (moved even further right)
+                        top: '60%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 8
+                      }}
+                      initial={{ opacity: 0 }}
+                      animate={{ 
+                        opacity: 1,
+                        x: [0, window.innerWidth * 0.3, window.innerWidth * 0.3, window.innerWidth + 200], // Drive to center, stop, then continue
+                      }}
+                      transition={{
+                        opacity: { duration: 0.5 },
+                        x: { 
+                          times: [0, 0.3, 0.7, 1], // 30% to center, 40% pause, 30% continue
+                          duration: 8, 
+                          ease: "linear" 
+                        }
+                      }}
+                    >
+                      <motion.img
+                        src="/horses/horsecar.png"
+                        alt="Horse Car"
+                        className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
+                        animate={{
+                          // Subtle engine idle vibration
+                          y: ['-1px', '1px', '-1px'],
+                        }}
+                        transition={{
+                          y: { duration: 0.3, repeat: Infinity, ease: "easeInOut" }
+                        }}
+                      />
+                    </motion.div>
+
+                    {/* MotoHorse */}
+                    <motion.div
+                      key="motohorse"
+                      className="absolute"
+                      style={{
+                        left: '-5%', // Start further back (moved even further right)
+                        top: '60%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 7
+                      }}
+                      initial={{ opacity: 0 }}
+                      animate={{ 
+                        opacity: 1,
+                        x: [0, window.innerWidth * 0.15], // Drive up behind horsecar
+                      }}
+                      transition={{
+                        opacity: { duration: 0.5, delay: 1 }, // Appear 1 second later
+                        x: { 
+                          duration: 3, 
+                          delay: 1.5, // Start moving 1.5 seconds after appearing
+                          ease: "easeOut" 
+                        }
+                      }}
+                    >
+                      <motion.img
+                        src="/horses/motohorse.png"
+                        alt="Moto Horse"
+                        className="w-40 h-40 sm:w-48 sm:h-48 object-contain"
+                        animate={{
+                          // Engine vibration
+                          y: ['-1px', '1px', '-1px'],
+                        }}
+                        transition={{
+                          y: { duration: 0.2, repeat: Infinity, ease: "easeInOut" }
+                        }}
+                      />
+                    </motion.div>
+                  </>
+                ) : (
+                  // Variant 3: Alien Reunion Dream with horse5.png aliens
+                  <>
+                    {/* Main alien (horse5) jumping from left */}
+                    <motion.div
+                      key="main_alien"
+                      className="absolute"
+                      style={{
+                        left: '-10%',
+                        top: '60%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 10
+                      }}
+                      initial={{ opacity: 0 }}
+                      animate={{ 
+                        opacity: 1,
+                        x: [0, window.innerWidth * 0.4], // Jump to center-left and stop
+                      }}
+                      transition={{
+                        opacity: { duration: 0.5 },
+                        x: { 
+                          duration: 2,
+                          ease: "easeOut"
+                        }
+                      }}
+                    >
+                      <motion.img
+                        src="/horses/horse5.png"
+                        alt="Alien Horse"
+                        className="w-40 h-40 sm:w-48 sm:h-48 object-contain"
+                        animate={{
+                          // Excited bouncing motion
+                          y: ['-10px', '5px', '-10px'],
+                          scale: [1, 1.05, 1],
+                        }}
+                        transition={{
+                          y: { duration: 0.6, repeat: Infinity, ease: "easeInOut" },
+                          scale: { duration: 1, repeat: Infinity, ease: "easeInOut" }
+                        }}
+                      />
+                    </motion.div>
+
+                    {/* Group of 6 aliens rushing from right */}
+                    {[...Array(6)].map((_, i) => (
+                      <motion.div
+                        key={`alien_${i}`}
+                        className="absolute"
+                        style={{
+                          left: `${70 + i * 5}%`, // Start much closer to screen, tightly grouped
+                          top: `${55 + (i % 2) * 6}%`, // Only 2 rows instead of 3, smaller vertical spread
+                          transform: 'translateY(-50%)',
+                          zIndex: 8 // All crowd aliens have the same z-index
+                        }}
+                        initial={{ opacity: 0 }}
+                        animate={{ 
+                          opacity: 1,
+                          x: [0, -window.innerWidth * 0.5], // All rush the same distance toward center
+                        }}
+                        transition={{
+                          opacity: { duration: 0.3, delay: 1.5 + i * 0.1 },
+                          x: { 
+                            duration: 1.5,
+                            delay: 1.5 + i * 0.1,
+                            ease: "easeInOut"
+                          }
+                        }}
+                      >
+                        <motion.img
+                          src="/horses/horse5.png"
+                          alt={`Alien Horse ${i}`}
+                          className="w-38 h-38 sm:w-46 sm:h-46 object-contain"
+                          animate={{
+                            // Running motion
+                            y: ['-3px', '3px', '-3px'],
+                            scaleX: [-1, -1, -1], // Flipped to face left (toward main alien)
+                            scale: [1, 1, 1], // Ensure consistent scale
+                          }}
+                          transition={{
+                            y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" },
+                            scaleX: { duration: 0 }
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </>
+                )
+              ) : (
+                // Regular rendering for all other dream types
+                dream.subjects.map((subject, index) => {
+                  console.log('🐎 Rendering dream horse:', subject.name, 'path:', subject.path);
+                  const horsePosition = getCategoryHorsePosition(index, dream.subjects.length);
+                  return (
+                    <motion.div
+                      key={`${subject.name}_${index}`}
+                      className={horsePosition.containerClass}
+                      style={horsePosition.style}
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0 }}
+                    >
+                      <motion.img
+                        src={subject.path}
+                        alt={subject.name}
+                        className={`${horsePosition.sizeClass} object-contain`}
+                        animate={
+                          dream.category === 'race' ? getRaceHorseAnimation() : 
+                          dream.category === 'tarot' ? getTarotAnimation() : 
+                          dream.category === 'minotaur' ? getMinotaurAnimation() :
+                          dream.category === 'floating' ? getFloatingAnimation(index) :
+                          getActionAnimation()
+                        }
+                        onError={(e) => {
+                          console.error('🐎 Failed to load horse image:', subject.path, e);
+                        }}
+                        onLoad={() => {
+                          console.log('🐎 Successfully loaded horse image:', subject.path);
+                        }}
+                      />
+                    </motion.div>
+                  );
+                })
+              )}
             </div>
 
-            {/* Minotaur chasing in minotaur dreams */}
+            {/* Minotaur in minotaur dreams */}
             {dream.category === 'minotaur' && (
-              <div className="absolute inset-0" style={{ zIndex: 9 }}>
+              <div className="absolute inset-0" style={{ zIndex: dream.minotaurVariant === 3 ? 6 : dream.minotaurVariant === 2 ? 8 : 9 }}>
                 <motion.div
                   className="absolute"
                   style={{
-                    left: '-25%', // Start further back than the horse
-                    top: '60%', // Lowered by 15% (45% + 15% = 60%)
-                    zIndex: 9
+                    left: dream.minotaurVariant === 3 ? '50%' : dream.minotaurVariant === 2 ? '-10%' : '-25%', // Variant 3: center, others as before
+                    top: dream.minotaurVariant === 3 ? '65%' : dream.minotaurVariant === 2 ? '60%' : '60%',
+                    transform: dream.minotaurVariant === 3 ? 'translate(-50%, -50%)' : 'none', // Center for variant 3
+                    zIndex: dream.minotaurVariant === 2 ? 8 : 9
                   }}
-                  initial={{ opacity: 0 }}
+                  initial={{ opacity: 1 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5, duration: 1 }}
                 >
                   <motion.img
                     src="/maze/minotaur.png"
                     alt="Minotaur"
                     className="w-40 h-40 sm:w-48 sm:h-48 object-contain"
-                    animate={{
-                      x: [-250, window.innerWidth + 150], // Start further back, chase across screen
-                      y: ['-3px', '3px', '-3px'], // Running motion
-                      transition: {
-                        x: { duration: 4.5, ease: "linear", repeat: Infinity, repeatDelay: 0 }, // Continuous looping, slightly slower than horse
-                        y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" } // Running motion
+                    animate={
+                      dream.minotaurVariant === 3 ? {
+                        // Variant 3: Stationary minotaur with enhanced presence and idle animation
+                        y: ['-3px', '3px', '-3px'], // Deeper breathing motion
+                        rotate: [0, 3, -3, 0], // More pronounced head movement  
+                        scale: [1, 1.02, 1, 0.98, 1], // Subtle size pulsing for intimidation
+                        // Add shoulder sway for more dynamic presence
+                        skewX: [0, 1, 0, -1, 0],
+                        // Slight color tinting to emphasize the minotaur's power
+                        filter: [
+                          'hue-rotate(0deg) saturate(1) brightness(1)',
+                          'hue-rotate(5deg) saturate(1.1) brightness(1.05)',
+                          'hue-rotate(0deg) saturate(1) brightness(1)',
+                          'hue-rotate(-5deg) saturate(1.1) brightness(0.95)',
+                          'hue-rotate(0deg) saturate(1) brightness(1)'
+                        ],
+                        transition: {
+                          y: { 
+                            duration: 2.5, 
+                            repeat: Infinity, 
+                            ease: "easeInOut" 
+                          },
+                          rotate: { 
+                            duration: 4, 
+                            repeat: Infinity, 
+                            ease: "easeInOut" 
+                          },
+                          scale: { 
+                            duration: 3, 
+                            repeat: Infinity, 
+                            ease: "easeInOut",
+                            delay: 0.5 
+                          },
+                          skewX: { 
+                            duration: 5, 
+                            repeat: Infinity, 
+                            ease: "easeInOut",
+                            delay: 1 
+                          },
+                          filter: {
+                            duration: 6,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }
+                        }
+                      } : dream.minotaurVariant === 2 ? {
+                        // Variant 2: Minotaur being chased (runs faster)
+                        x: [-100, window.innerWidth + 200], // Starts much closer to screen, ahead of horse
+                        y: ['-3px', '3px', '-3px'], // Running motion
+                        transition: {
+                          x: { duration: 3.8, ease: "linear", repeat: Infinity, repeatDelay: 0 }, // Slightly faster than chasing horse
+                          y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" } // Running motion
+                        }
+                      } : {
+                        // Variant 1: Minotaur chasing (slower)
+                        x: [-250, window.innerWidth + 150], // Start further back, chase across screen
+                        y: ['-3px', '3px', '-3px'], // Running motion
+                        transition: {
+                          x: { duration: 4.5, ease: "linear", repeat: Infinity, repeatDelay: 0 }, // Continuous looping, slightly slower than horse
+                          y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" } // Running motion
+                        }
                       }
-                    }}
+                    }
                     onError={(e) => {
                       console.error('🐎 Failed to load minotaur image:', e);
                     }}
@@ -1248,6 +1841,183 @@ export const DreamModal = ({ isOpen, onClose, dream, horse }) => {
                     }}
                   />
                 </motion.div>
+              </div>
+            )}
+
+            {/* Scarecrow in scarecrow dreams */}
+            {dream.category === 'scarecrow' && (
+              <div className="absolute inset-0" style={{ zIndex: 6 }}>
+                <motion.div
+                  className="absolute"
+                  style={{
+                    left: '50%',
+                    top: '70%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 6
+                  }}
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <motion.img
+                    src="/stable/scarecrow.png"
+                    alt="Scarecrow"
+                    className="w-44 h-44 sm:w-52 sm:h-52 object-contain"
+                    animate={{
+                      // Scarecrow idle animation - gentle swaying in the breeze
+                      rotate: [0, 2, -2, 0], // Gentle swaying
+                      y: ['-2px', '2px', '-2px'], // Subtle vertical movement
+                      scale: [1, 1.01, 1], // Very subtle breathing
+                      transition: {
+                        rotate: { 
+                          duration: 4, 
+                          repeat: Infinity, 
+                          ease: "easeInOut" 
+                        },
+                        y: { 
+                          duration: 3, 
+                          repeat: Infinity, 
+                          ease: "easeInOut" 
+                        },
+                        scale: { 
+                          duration: 5, 
+                          repeat: Infinity, 
+                          ease: "easeInOut",
+                          delay: 0.5 
+                        }
+                      }
+                    }}
+                    onError={(e) => {
+                      console.error('🐎 Failed to load scarecrow image:', e);
+                    }}
+                    onLoad={() => {
+                      console.log('🐎 Successfully loaded scarecrow image');
+                    }}
+                  />
+                </motion.div>
+              </div>
+            )}
+
+            {/* Text overlay for horse specific dreams */}
+            {dream.category === 'horse_specific' && dream.horseSpecificVariant === 1 && (
+              <div className="absolute inset-0 flex items-start justify-center pt-48" style={{ zIndex: 15 }}>
+                <motion.div
+                  className="bg-black bg-opacity-70 px-8 py-4 rounded-lg"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 2, duration: 1 }}
+                >
+                  <motion.p
+                    className="text-white text-xl sm:text-2xl font-semibold text-center"
+                    style={{ 
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                      fontFamily: 'serif'
+                    }}
+                    animate={{
+                      opacity: [1, 0.8, 1],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    "I had the weirdest dream I was a race horse..."
+                  </motion.p>
+                </motion.div>
+              </div>
+            )}
+            
+            {/* BEEP BEEP text for traffic dream */}
+            {dream.category === 'horse_specific' && dream.horseSpecificVariant === 2 && (
+              <motion.div
+                className="absolute"
+                style={{
+                  left: '15%', // Position over motohorse
+                  top: '45%',
+                  zIndex: 20
+                }}
+                initial={{ opacity: 0, y: 0 }}
+                animate={{ 
+                  opacity: [0, 0, 1, 1, 0], // Stay invisible, then appear, then fade
+                  y: [0, 0, -60] // Float upward
+                }}
+                transition={{
+                  opacity: { 
+                    times: [0, 0.6, 0.65, 0.85, 1], // Wait 60% of time, then appear and fade
+                    duration: 8 
+                  },
+                  y: { 
+                    times: [0, 0.6, 1], // Start floating at 60% of time
+                    duration: 8,
+                    ease: "easeOut" 
+                  }
+                }}
+              >
+                <motion.div
+                  className="text-3xl sm:text-4xl font-bold text-yellow-400"
+                  style={{ 
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.8)',
+                    filter: 'drop-shadow(0 0 10px rgba(255,255,0,0.6))'
+                  }}
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [-2, 2, -2]
+                  }}
+                  transition={{
+                    scale: { duration: 0.5, repeat: 3 }, // Pulse 3 times while visible
+                    rotate: { duration: 0.3, repeat: 6 } // Wobble while visible
+                  }}
+                >
+                  BEEP BEEP
+                </motion.div>
+              </motion.div>
+            )}
+            
+            {/* Heart emojis for alien reunion dream */}
+            {dream.category === 'horse_specific' && dream.horseSpecificVariant === 3 && (
+              <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
+                {[...Array(8)].map((_, i) => (
+                  <motion.div
+                    key={`heart_${i}`}
+                    className="absolute text-4xl"
+                    style={{
+                      left: `${45 + Math.random() * 20}%`, // Around the center where aliens meet
+                      top: `${65 + Math.random() * 10}%`,
+                    }}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ 
+                      opacity: [0, 0, 1, 1, 0], // Wait for aliens to meet, then appear
+                      scale: [0, 0, 1.2, 1, 0.8],
+                      y: [0, 0, -80, -120], // Float upward
+                      rotate: [0, 0, Math.random() * 30 - 15] // Slight random rotation
+                    }}
+                    transition={{
+                      opacity: { 
+                        times: [0, 0.6, 0.65, 0.85, 1], // Wait 60% of time for aliens to meet
+                        duration: 8,
+                        delay: i * 0.2 // Stagger the hearts
+                      },
+                      scale: { 
+                        times: [0, 0.6, 0.7, 0.8, 1],
+                        duration: 8,
+                        delay: i * 0.2
+                      },
+                      y: { 
+                        times: [0, 0.6, 0.8, 1],
+                        duration: 8,
+                        delay: i * 0.2,
+                        ease: "easeOut" 
+                      },
+                      rotate: {
+                        times: [0, 0.6, 1],
+                        duration: 8,
+                        delay: i * 0.2
+                      }
+                    }}
+                  >
+                    💖
+                  </motion.div>
+                ))}
               </div>
             )}
 
@@ -1369,12 +2139,41 @@ export const DreamSystem = forwardRef(({ horses, onDreamGenerated }, ref) => {
     return dream;
   };
 
+  // Test mode for floating animations
+  const generateFloatingTestDream = (patternIndex) => {
+    const targetHorse = horses.find(h => h.energy < 25) || horses[0];
+    if (!targetHorse) return null;
+    
+    // Create a test dream with specific pattern
+    const testDream = {
+      id: `test_dream_${Date.now()}`,
+      category: DREAM_CATEGORIES.FLOATING,
+      categoryConfig: CATEGORY_CONFIGS[DREAM_CATEGORIES.FLOATING],
+      subjects: [dreamComposer.formatHorseForDream(targetHorse)], // Single horse for testing
+      setting: dreamComposer.getCategorySetting(DREAM_CATEGORIES.FLOATING),
+      action: DREAM_ACTIONS.FLYING,
+      mood: DREAM_MOODS.MAGICAL,
+      duration: 10000, // Longer duration for testing
+      timestamp: Date.now(),
+      floatingVariant: 1,
+      testMode: true,
+      testPatternIndex: patternIndex // Force specific pattern
+    };
+    
+    setActiveDream(testDream);
+    setDreamingHorse(targetHorse);
+    setDreamModalOpen(true);
+    
+    return testDream;
+  };
+
   // Expose methods to parent components via ref
   useImperativeHandle(ref, () => ({
     generateCategoryDream,
     generateRandomDream: (horse) => handleDreamBubbleClick(horse),
     getCurrentDream: () => activeDream,
-    closeDream: handleCloseDream
+    closeDream: handleCloseDream,
+    testFloatingAnimation: generateFloatingTestDream
   }));
 
   const handleCloseDream = () => {

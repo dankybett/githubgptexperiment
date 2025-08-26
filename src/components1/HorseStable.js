@@ -1731,6 +1731,7 @@ COIN TREASURES & REWARDS
               >
                 ✨ Test Dreams
               </motion.button>
+              
             </div>
         </div>
       </div>
@@ -2687,6 +2688,7 @@ COIN TREASURES & REWARDS
               horse={dreamingHorse}
             />
           )}
+
 
           {/* Library Decorative Asset */}
           <motion.div

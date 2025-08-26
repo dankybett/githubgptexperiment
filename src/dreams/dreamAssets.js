@@ -18,6 +18,11 @@ import racetrack from './assets/settings/racetrack.png';
 import mirrorland from './assets/settings/mirrorland.png';
 import mysticalenergy from './assets/settings/mysticalenergy.png';
 import labyrinth from './assets/settings/labyrinth.png';
+import spookywoods from './assets/settings/spookywoods.png';
+import cornfield from './assets/settings/cornfield.png';
+import office from './assets/settings/office.png';
+import street from './assets/settings/street.png';
+import spaghetti from './assets/settings/spaghetti.png';
 import { path } from 'framer-motion/client';
 
 
@@ -72,6 +77,26 @@ export const CUSTOM_DREAM_SETTINGS = [
   {
     name: 'labyrinth',
     path: labyrinth
+  },
+  {
+    name: 'spookywoods',
+    path: spookywoods
+  },
+  {
+    name: 'cornfield',
+    path: cornfield
+  },
+  {
+    name: 'office',
+    path: office
+  },
+  {
+    name: 'street',
+    path: street
+  },
+  {
+    name: 'spaghetti',
+    path: spaghetti
   }
   // mirrorland and mysticalenergy moved to tarot-only backgrounds
 ];

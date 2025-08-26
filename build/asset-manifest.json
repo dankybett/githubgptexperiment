@@ -1,13 +1,32 @@
 {
   "files": {
-    "main.css": "/static/css/main.209693cc.css",
-    "main.js": "/static/js/main.07d6429f.js",
+    "main.css": "/static/css/main.c953ef0f.css",
+    "main.js": "/static/js/main.cb241831.js",
+    "static/media/office.png": "/static/media/office.6a44be7e23ce0d814288.png",
+    "static/media/candyland.png": "/static/media/candyland.d4d72f3894816ec876d5.png",
+    "static/media/chessboard.png": "/static/media/chessboard.99ce2203a65f49d784c2.png",
+    "static/media/thewoods.png": "/static/media/thewoods.0b374ad5a4ebc6744769.png",
+    "static/media/beach.png": "/static/media/beach.22cddfae64841a516cb8.png",
+    "static/media/cornfield.png": "/static/media/cornfield.dd9126d2a7911ecf5be8.png",
+    "static/media/mirrorland.png": "/static/media/mirrorland.7d05d268800ce4df1c36.png",
+    "static/media/mountains.png": "/static/media/mountains.36a099bd41f46389472d.png",
+    "static/media/horseballoons.png": "/static/media/horseballoons.15b6e22c44e15bf8a847.png",
+    "static/media/labyrinth.png": "/static/media/labyrinth.0be1d8026434abcc129c.png",
+    "static/media/racetrack.png": "/static/media/racetrack.8ff2ad70ddf9625108c6.png",
+    "static/media/mechanicalhorses.png": "/static/media/mechanicalhorses.754808cb5099cf1e4686.png",
+    "static/media/celestialgarden.png": "/static/media/celestialgarden.794463568ab2aaad6c26.png",
+    "static/media/toyland.png": "/static/media/toyland.e41bf1ed00329def7191.png",
+    "static/media/mysticalenergy.png": "/static/media/mysticalenergy.f1ccae6acd9edd3d1401.png",
+    "static/media/mooncheeseplain.png": "/static/media/mooncheeseplain.0740f9d77f1ba4a7cf80.png",
+    "static/media/spookywoods.png": "/static/media/spookywoods.9a648d441f1f107a15c9.png",
+    "static/media/underthesea.png": "/static/media/underthesea.57721ac20c2fe8a7f7ca.png",
+    "static/media/insidemouth.png": "/static/media/insidemouth.c5f8f0bac31777eaf007.png",
     "index.html": "/index.html",
-    "main.209693cc.css.map": "/static/css/main.209693cc.css.map",
-    "main.07d6429f.js.map": "/static/js/main.07d6429f.js.map"
+    "main.c953ef0f.css.map": "/static/css/main.c953ef0f.css.map",
+    "main.cb241831.js.map": "/static/js/main.cb241831.js.map"
   },
   "entrypoints": [
-    "static/css/main.209693cc.css",
-    "static/js/main.07d6429f.js"
+    "static/css/main.c953ef0f.css",
+    "static/js/main.cb241831.js"
   ]
 }
