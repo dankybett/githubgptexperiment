@@ -825,6 +825,8 @@ COIN TREASURES & REWARDS
       direction: Math.random() * 360,
       restTime: 0,
       isResting: false,
+      isSleeping: false,
+      sleepTime: 0,
       lastMoveTime: Date.now(),
       inventory, // Use global inventory or fallback
       // Individual care stats - use saved values or defaults
@@ -1502,6 +1504,44 @@ COIN TREASURES & REWARDS
           const healthModifier = horse.health / 100; // 0-1 multiplier
           const happinessModifier = horse.happiness / 100; // 0-1 multiplier
           
+          // Check if horse needs to sleep (energy < 25)
+          if (horse.energy < 25 && !horse.isSleeping) {
+            const sleepDuration = (30 + Math.random() * 30) * 1000; // 30-60 seconds
+            console.log(`😴 ${horse.name} falling asleep! Energy: ${horse.energy}, Sleep duration: ${sleepDuration/1000}s`);
+            return {
+              ...horse,
+              ...careAnimationUpdates,
+              isSleeping: true,
+              sleepTime: sleepDuration,
+              isResting: false, // Stop regular resting when sleeping
+              restTime: 0,
+              lastMoveTime: now,
+            };
+          }
+
+          // If horse is sleeping, decrease sleep time
+          if (horse.isSleeping) {
+            const newSleepTime = horse.sleepTime - (deltaTime * 1000); // Convert deltaTime to milliseconds
+            console.log(`😴 ${horse.name} sleeping... ${(newSleepTime/1000).toFixed(1)}s left`);
+            if (newSleepTime <= 0) {
+              // Wake up and recover energy
+              const energyRecovery = Math.floor((100 - horse.energy) * 0.5); // 50% of missing energy
+              const newEnergy = Math.min(100, horse.energy + energyRecovery);
+              console.log(`💤 ${horse.name} waking up! Energy: ${horse.energy} -> ${newEnergy} (recovered ${energyRecovery})`);
+              return {
+                ...horse,
+                ...careAnimationUpdates,
+                isSleeping: false,
+                sleepTime: 0,
+                energy: newEnergy,
+                targetX: Math.random() * 80 + 10,
+                targetY: Math.random() * 70 + 15,
+                lastMoveTime: now,
+              };
+            }
+            return { ...horse, ...careAnimationUpdates, sleepTime: newSleepTime, lastMoveTime: now };
+          }
+
           // Tired/sick horses rest more frequently and for longer
           const restChance = horse.energy < 30 ? 0.7 : horse.energy < 60 ? 0.4 : 0.3;
           const restDuration = horse.energy < 30 ? (6 + Math.random() * 6) : (2 + Math.random() * 4);
@@ -2321,11 +2361,17 @@ COIN TREASURES & REWARDS
               <motion.div
                 className="relative"
                 animate={
-                  horse.isResting
+                  horse.isSleeping
+                    ? { 
+                        scale: [1, 1.02, 1], 
+                        rotate: [0, 1, -1, 0], 
+                        y: [0, -1, 0]
+                      } // Gentle sleeping breathing animation
+                    : horse.isResting
                     ? { scale: [1, 1.02, 1], rotate: [0, 1, -1, 0] }
                     : horse.isInjured
                     ? { y: [0, -0.5, 0], rotate: [0, 0.5, -0.5, 0] } // Injured horses barely move
-                    : isPlaying && !horse.isInjured // Dancing to music (only if not injured)
+                    : isPlaying && !horse.isInjured && !horse.isSleeping // Dancing to music (only if not injured or sleeping)
                     ? { 
                         y: [0, -8, -4, -8, 0], // Enhanced bouncing pattern
                         rotate: [0, 5, -5, 3, 0], // Head bobbing side to side
@@ -2338,11 +2384,13 @@ COIN TREASURES & REWARDS
                     : { y: [0, -2, 0], rotate: [0, 2, -2, 0] } // Normal animation
                 }
                 transition={{
-                  duration: horse.isResting 
+                  duration: horse.isSleeping
+                    ? 3 // Gentle sleeping breathing rhythm
+                    : horse.isResting 
                     ? 3 
                     : horse.isInjured
                     ? 4 // Injured horses move very slowly
-                    : isPlaying && !horse.isInjured
+                    : isPlaying && !horse.isInjured && !horse.isSleeping
                     ? 1.2 // Rhythmic tempo for dancing
                     : horse.energy < 30 
                     ? 2 
@@ -2566,7 +2614,7 @@ COIN TREASURES & REWARDS
                 )}
                 
                 {/* Musical notes for dancing horses */}
-                {isPlaying && !horse.isResting && (
+                {isPlaying && !horse.isResting && !horse.isSleeping && (
                   <div className="absolute inset-0 pointer-events-none">
                     {Array.from({ length: 2 }).map((_, i) => (
                       <motion.div
@@ -2651,7 +2699,7 @@ COIN TREASURES & REWARDS
                     {horse.name.toUpperCase()}
                   </motion.div>
                 )}
-                {horse.isResting && (
+                {horse.isResting && !horse.isSleeping && (
                   <motion.div
                     className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xl"
                     initial={{ opacity: 0, y: 10 }}

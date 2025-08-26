@@ -199,13 +199,21 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
           />
           <button
             onClick={() => {
-              console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
-              console.log('📦 Modal - Horse inventory:', horse?.inventory);
-              onSendToLabyrinth();
+              if (!horse.isSleeping) {
+                console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
+                console.log('📦 Modal - Horse inventory:', horse?.inventory);
+                onSendToLabyrinth();
+              }
             }}
-            className="px-2 py-2 rounded text-xs font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700"
+            disabled={horse.isSleeping}
+            className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
+              horse.isSleeping 
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+            title={horse.isSleeping ? `${horse.name} is sleeping` : 'Send to Labyrinth'}
           >
-            Send to Labyrinth
+            {horse.isSleeping ? `${horse.name} is sleeping` : 'Send to Labyrinth'}
           </button>
         </div>
 
@@ -241,13 +249,14 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                     <h3 className="text-sm font-semibold mb-3 text-center">Care Actions</h3>
                     <div className="grid grid-cols-4 gap-2">
                       <button
-                        onClick={() => onCareAction(horse.id, 'groom')}
-                        disabled={coins < careCosts.groom}
+                        onClick={() => !horse.isSleeping && onCareAction(horse.id, 'groom')}
+                        disabled={coins < careCosts.groom || horse.isSleeping}
                         className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                          coins >= careCosts.groom
+                          (coins >= careCosts.groom && !horse.isSleeping)
                             ? 'bg-purple-600 text-white hover:bg-purple-700'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
+                        title={horse.isSleeping ? `${horse.name} is sleeping` : 'Groom horse'}
                       >
                         <div className="text-lg mb-1">🧼</div>
                         <div>Groom</div>
@@ -255,13 +264,14 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                       </button>
                       
                       <button
-                        onClick={() => onCareAction(horse.id, 'apple')}
-                        disabled={coins < careCosts.apple}
+                        onClick={() => !horse.isSleeping && onCareAction(horse.id, 'apple')}
+                        disabled={coins < careCosts.apple || horse.isSleeping}
                         className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                          coins >= careCosts.apple
+                          (coins >= careCosts.apple && !horse.isSleeping)
                             ? 'bg-red-600 text-white hover:bg-red-700'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
+                        title={horse.isSleeping ? `${horse.name} is sleeping` : 'Feed apple'}
                       >
                         <div className="text-lg mb-1">🍎</div>
                         <div>Apple</div>
@@ -269,13 +279,14 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                       </button>
                       
                       <button
-                        onClick={() => onCareAction(horse.id, 'carrot')}
-                        disabled={coins < careCosts.carrot}
+                        onClick={() => !horse.isSleeping && onCareAction(horse.id, 'carrot')}
+                        disabled={coins < careCosts.carrot || horse.isSleeping}
                         className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                          coins >= careCosts.carrot
+                          (coins >= careCosts.carrot && !horse.isSleeping)
                             ? 'bg-orange-600 text-white hover:bg-orange-700'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
+                        title={horse.isSleeping ? `${horse.name} is sleeping` : 'Feed carrot'}
                       >
                         <div className="text-lg mb-1">🥕</div>
                         <div>Carrot</div>
@@ -285,13 +296,14 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                       {/* Heal button - always show, but only enabled if horse is injured */}
                       {careCosts.heal && (
                         <button
-                          onClick={() => onCareAction(horse.id, 'heal')}
-                          disabled={coins < careCosts.heal || (!horse.isInjured && horse.health >= 50)}
+                          onClick={() => !horse.isSleeping && onCareAction(horse.id, 'heal')}
+                          disabled={coins < careCosts.heal || (!horse.isInjured && horse.health >= 50) || horse.isSleeping}
                           className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-                            (coins >= careCosts.heal && (horse.isInjured || horse.health < 50))
+                            (coins >= careCosts.heal && (horse.isInjured || horse.health < 50) && !horse.isSleeping)
                               ? 'bg-green-600 text-white hover:bg-green-700'
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
+                          title={horse.isSleeping ? `${horse.name} is sleeping` : 'Heal injuries'}
                         >
                           <div className="text-lg mb-1">🏥</div>
                           <div>Heal</div>
