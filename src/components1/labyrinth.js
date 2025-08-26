@@ -1840,8 +1840,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     
     switch (itemName) {
       case 'Energy Drink':
-        // Give speed boost for 10 seconds
+        // Give speed boost for 10 seconds + restore 10% energy
         setActiveSpeedBoost(10000);
+        setHorseEnergy(prev => Math.min(100, prev + 10)); // Restore 10% energy
         setFloatingTexts(prev => [...prev, {
           id: Date.now() + Math.random(),
           text: '⚡ Speed Boost Active!',
@@ -1849,6 +1850,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           fontSize: '16px',
           duration: 3000,
           timestamp: Date.now()
+        }, {
+          id: Date.now() + Math.random() + 1,
+          text: '🔋 +10% Energy Restored!',
+          color: '#3b82f6',
+          fontSize: '14px',
+          duration: 2500,
+          timestamp: Date.now() + 100
         }]);
         break;
         

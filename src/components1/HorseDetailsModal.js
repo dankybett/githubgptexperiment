@@ -615,16 +615,23 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
                                   {/* Feed button for Golden Apple, Energy Drink, and Horse Power Cereal */}
                                   {(item.name === 'Golden Apple' || item.name === 'Energy Drink' || item.name === 'Horse Power Cereal') && onFeedItem && (
                                     <button
-                                      onClick={() => onFeedItem(horse.id, index, item)}
-                                      className={`flex-1 px-2 py-1 text-white rounded text-xs transition-colors ${
-                                        item.name === 'Golden Apple' 
-                                          ? 'bg-yellow-600 hover:bg-yellow-700'
-                                          : item.name === 'Energy Drink'
-                                          ? 'bg-cyan-600 hover:bg-cyan-700'
-                                          : 'bg-orange-600 hover:bg-orange-700'
+                                      onClick={() => !horse.isSleeping && onFeedItem(horse.id, index, item)}
+                                      disabled={horse.isSleeping}
+                                      className={`flex-1 px-2 py-1 rounded text-xs transition-colors ${
+                                        horse.isSleeping
+                                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                                          : `text-white ${
+                                              item.name === 'Golden Apple' 
+                                                ? 'bg-yellow-600 hover:bg-yellow-700'
+                                                : item.name === 'Energy Drink'
+                                                ? 'bg-cyan-600 hover:bg-cyan-700'
+                                                : 'bg-orange-600 hover:bg-orange-700'
+                                            }`
                                       }`}
                                       title={
-                                        item.name === 'Golden Apple'
+                                        horse.isSleeping
+                                          ? `${horse.name} is sleeping`
+                                          : item.name === 'Golden Apple'
                                           ? "Feed to boost all care stats significantly"
                                           : item.name === 'Energy Drink'
                                           ? "Feed to boost energy significantly"
