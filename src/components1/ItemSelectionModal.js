@@ -158,7 +158,7 @@ const ItemSelectionModal = ({
           {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              🎒 Inventory Full!
+              Inventory Full!
             </h2>
             <div className="flex items-center justify-center gap-2 mb-2">
               <img 
@@ -194,7 +194,7 @@ const ItemSelectionModal = ({
           {currentInventoryCount > 0 && (
             <div className="mb-6">
               <h3 className="font-semibold text-gray-700 mb-2">
-                📦 Current Inventory ({currentInventoryCount}/{dynamicMaxSlots}) - Click to discard:
+                Current Inventory ({currentInventoryCount}/{dynamicMaxSlots}) - Click to discard:
               </h3>
               <div className="grid grid-cols-4 gap-2">
                 {Array.from({ length: dynamicMaxSlots }).map((_, index) => {
@@ -259,7 +259,7 @@ const ItemSelectionModal = ({
                           </div>
                           {isDiscarded && (
                             <div className="text-center mt-1">
-                              <span className="text-red-500 text-sm">🗑️</span>
+                              <span className="text-red-500 text-sm">Discard</span>
                             </div>
                           )}
                         </>
@@ -281,7 +281,7 @@ const ItemSelectionModal = ({
           {/* Items to Select */}
           <div className="mb-6">
             <h3 className="font-semibold text-gray-700 mb-3">
-              ✨ Items Found in Labyrinth (select {availableSlots}):
+              Items Found in Labyrinth (select {availableSlots}):
             </h3>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
               {collectedItems.map((item, index) => {
@@ -343,7 +343,7 @@ const ItemSelectionModal = ({
                     </div>
                     {isSelected && (
                       <div className="text-center mt-1">
-                        <span className="text-blue-500 text-sm">✓</span>
+                        <span className="text-blue-500 text-sm">Selected</span>
                       </div>
                     )}
                     {item.quantity > 1 && (

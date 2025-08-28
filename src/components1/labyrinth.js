@@ -3251,7 +3251,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
                           <div key={skillKey} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span>{skill.emoji}</span>
                                 <span className="font-medium text-sm">{skill.name}</span>
                                 <span className="text-xs text-gray-500">
                                   ({currentLevel}/{skill.maxLevel})

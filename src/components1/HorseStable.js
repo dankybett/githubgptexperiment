@@ -1417,7 +1417,7 @@ COIN TREASURES & REWARDS
               }
               
               setShowHatchingModal(true);
-              setNewDayNotification(`Day ${newDay} - Dragon egg has hatched! 🐉`);
+              setNewDayNotification(`Day ${newDay} - Dragon egg has hatched!`);
             } else {
               // Update countdown
               if (onUpdateNestEgg) {
@@ -2850,39 +2850,6 @@ COIN TREASURES & REWARDS
             </motion.div>
           )}
 
-          {/* New Day Notification Modal */}
-          {newDayNotification && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <motion.div
-                className="bg-amber-100 border-4 border-amber-600 rounded-lg p-8 w-96 shadow-2xl text-center"
-                initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
-                animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                style={{
-                  fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
-                  fontSize: '12px',
-                  letterSpacing: '1px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '16px' }}>🌅 ✨</div>
-                
-                <div className="text-amber-900 mb-4 leading-relaxed">
-                  {newDayNotification}
-                </div>
-                
-                <div className="text-amber-700 text-xs mb-6 opacity-80">
-                  <span className="inline-flex items-center gap-1"><img src="/horsecoins.png" alt="coins" className="w-3 h-3" /> Daily Income Received!</span>
-                </div>
-                
-                <button
-                  onClick={() => setNewDayNotification(null)}
-                  className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-bold"
-                  style={{ fontSize: '12px' }}
-                >
-                  Continue
-                </button>
-              </motion.div>
-            </div>
-          )}
 
         
         </div>
@@ -4584,6 +4551,39 @@ COIN TREASURES & REWARDS
           >
             Awesome!
           </motion.button>
+        </motion.div>
+      </div>
+    )}
+    
+    {/* New Day Notification Modal - Outside transformed container */}
+    {newDayNotification && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+        <motion.div
+          className="bg-amber-100 border-4 border-amber-600 rounded-lg p-8 w-96 shadow-2xl text-center"
+          initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          style={{
+            fontFamily: '"Press Start 2P", "Courier New", "Monaco", "Menlo", monospace',
+            fontSize: '12px',
+            letterSpacing: '1px'
+          }}
+        >
+          
+          <div className="text-amber-900 mb-4 leading-relaxed">
+            {newDayNotification}
+          </div>
+          
+          <div className="text-amber-700 text-xs mb-6 opacity-80">
+            <span className="inline-flex items-center gap-1"><img src="/horsecoins.png" alt="coins" className="w-3 h-3" /> Daily Income Received!</span>
+          </div>
+          
+          <button
+            onClick={() => setNewDayNotification(null)}
+            className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-bold"
+            style={{ fontSize: '12px' }}
+          >
+            Continue
+          </button>
         </motion.div>
       </div>
     )}
