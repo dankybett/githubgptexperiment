@@ -6,6 +6,7 @@ import ThemedTarotGame from "./ThemedTarotGame";
 import { themeUtils } from "../utils/themes";
 import { tarotCardUtils, TAROT_CARDS } from "../utils/tarotCards";
 import { DreamSystem, DreamBubble, DreamModal, DreamComposer } from "../dreams/dreamSystem";
+import { INVENTORY_ITEMS, inventoryUtils } from "../utils/inventoryItems";
 
 // TileSprite component for tileset rendering
 const TileSprite = ({ tileX, tileY, className = "" }) => {
@@ -1300,8 +1301,8 @@ COIN TREASURES & REWARDS
           const maxSlots = 4 + (horseSkills[horse.id]?.saddlebags || 0);
           
           if (currentInventory.length < maxSlots) {
-            // Add key to inventory
-            const keyItem = { id: 'key', name: 'Key', description: 'Opens locked doors and vaults', image: '/maze/key.png', category: 'tool', stackable: false, quantity: 1 };
+            // Add key to inventory using standard definition
+            const keyItem = { ...INVENTORY_ITEMS.key, quantity: 1 };
             
             if (onAddItemToHorseInventory) {
               onAddItemToHorseInventory(horse.id, keyItem);
