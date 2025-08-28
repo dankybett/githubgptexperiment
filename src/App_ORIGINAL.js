@@ -1418,7 +1418,7 @@ const horsePersonalities = [
             className="mb-4"
           >
             <img 
-              src={horseAvatars[Math.floor(Math.random() * horseAvatars.length)]}
+              src={shuffledAvatars[Math.floor(Math.random() * shuffledAvatars.length)]}
               alt="Random Horse"
               className="w-48 h-48 object-contain rounded-lg shadow-lg"
               style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}

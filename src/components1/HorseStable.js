@@ -173,6 +173,11 @@ const HorseStable = ({
   // Dragon egg hatching system (nestEgg comes from props)
   const [showHatchingModal, setShowHatchingModal] = useState(false);
   
+  // Filter to only unlocked horses for random selection
+  const unlockedHorseAvatars = useMemo(() => {
+    return horseAvatars.filter((_, index) => unlockedHorses[index]);
+  }, [horseAvatars, unlockedHorses]);
+  
   // Weather system - randomly determine rain when stable loads
   useEffect(() => {
     // 15% chance of rain each time stable loads
@@ -1639,7 +1644,7 @@ COIN TREASURES & REWARDS
             className="mb-4 flex justify-center"
           >
             <img 
-              src={horseAvatars[Math.floor(Math.random() * horseAvatars.length)]}
+              src={unlockedHorseAvatars[Math.floor(Math.random() * unlockedHorseAvatars.length)]}
               alt="Loading Horse"
               className="w-24 h-24 object-contain rounded-lg shadow-lg"
               style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
