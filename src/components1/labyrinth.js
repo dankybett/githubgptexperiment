@@ -289,7 +289,7 @@ const SKILL_TREE = {
     name: 'Magic',
     color: 'purple',
     skills: {
-      powerupMagnet: { name: 'Power-up Magnet', emoji: '🔮', maxLevel: 3, cost: (level) => level * 3, description: 'Attract power-ups from distance' },
+      powerupMagnet: { name: 'Item Magnet', emoji: '🔮', maxLevel: 3, cost: (level) => level * 3, description: 'Attract items from distance' },
       enhancement: { name: 'Enhancement', emoji: '✨', maxLevel: 5, cost: (level) => level * 2, description: 'Power-up effects last longer' },
       teleportMastery: { name: 'Teleport Mastery', emoji: '🌟', maxLevel: 3, cost: (level) => level * 4, description: 'Control teleport destination' },
       timeResistance: { name: 'Time Resistance', emoji: '⏰', maxLevel: 3, cost: (level) => level * 4, description: 'Resist temporal effects' }
@@ -999,18 +999,33 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         // Skip the horse's current position - that's handled by normal collection
         if (dx === 0 && dy === 0) continue;
         
-        if (nx > 0 && nx < MAZE_SIZE - 1 && ny > 0 && ny < MAZE_SIZE - 1 && 
-            maze[ny] && maze[ny][nx] === CELL_REWARD) {
+        if (nx > 0 && nx < MAZE_SIZE - 1 && ny > 0 && ny < MAZE_SIZE - 1 && maze[ny]) {
+          const cell = maze[ny][nx];
           
-          // Get the specific reward at this position for magnet collection
-          const rewardAtPosition = rewardPositions.find(r => r.x === nx && r.y === ny);
-          const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0];
-          
-          itemsToCollect.push({
-            reward,
-            x: nx,
-            y: ny
-          });
+          if (cell === CELL_REWARD) {
+            // Get the specific reward at this position for magnet collection
+            const rewardAtPosition = rewardPositions.find(r => r.x === nx && r.y === ny);
+            const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0];
+            
+            itemsToCollect.push({
+              reward,
+              x: nx,
+              y: ny,
+              type: 'reward'
+            });
+          } else if (cell === CELL_KEY) {
+            // Get the key at this position
+            const key = vaultKeys.find(k => k.x === nx && k.y === ny);
+            if (key && !collectedKeys.includes(key.id)) {
+              itemsToCollect.push({
+                reward: INVENTORY_ITEMS.key,
+                x: nx,
+                y: ny,
+                type: 'key',
+                keyId: key.id
+              });
+            }
+          }
         }
       }
     }
@@ -1023,37 +1038,66 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     const availableSpace = maxSlots - currentCount;
     
     if (itemsToCollect.length <= availableSpace) {
-      // Add items to persistent inventory (no visual feedback for magnet)
-      itemsToCollect.forEach(({ reward, x, y }) => {
+      // Add items to persistent inventory with visual feedback for magnet
+      itemsToCollect.forEach(({ reward, x, y, type, keyId }) => {
         if (reward.inventoryItem) {
           addItemToInventory(reward.inventoryItem);
         } else {
           addItemToInventory(reward);
         }
         
-        // Remove from positions and maze
-        setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+        // Visual feedback for magnet collection
+        const itemName = reward.inventoryItem ? reward.inventoryItem.name : reward.name;
+        addFloatingText(`🧲 ${itemName} collected!`, '#3b82f6');
+        
+        // Handle different item types
+        if (type === 'key') {
+          // Add to collected keys
+          setCollectedKeys(prev => [...prev, keyId]);
+        } else {
+          // Remove reward from positions
+          setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+        }
+        
+        // Remove from maze
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
           newMaze[y][x] = CELL_EMPTY;
           return newMaze;
         });
       });
+      
+      // Flash effect to show magnet activation
+      if (itemsToCollect.length > 0) {
+        flashHorse('#3b82f6');
+      }
     } else {
       // Not all items fit - show selection modal
       const itemsToAdd = itemsToCollect.slice(0, availableSpace);
       const itemsForModal = itemsToCollect.slice(availableSpace);
       
       // Add what fits to persistent inventory
-      itemsToAdd.forEach(({ reward, x, y }) => {
+      itemsToAdd.forEach(({ reward, x, y, type, keyId }) => {
         if (reward.inventoryItem) {
           addItemToInventory(reward.inventoryItem);
         } else {
           addItemToInventory(reward);
         }
         
-        // Remove from positions and maze
-        setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+        // Visual feedback for magnet collection
+        const itemName = reward.inventoryItem ? reward.inventoryItem.name : reward.name;
+        addFloatingText(`🧲 ${itemName} collected!`, '#3b82f6');
+        
+        // Handle different item types
+        if (type === 'key') {
+          // Add to collected keys
+          setCollectedKeys(prev => [...prev, keyId]);
+        } else {
+          // Remove reward from positions
+          setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+        }
+        
+        // Remove from maze
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
           newMaze[y][x] = CELL_EMPTY;
@@ -1061,20 +1105,32 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         });
       });
       
+      // Flash effect to show magnet activation
+      if (itemsToCollect.length > 0) {
+        flashHorse('#3b82f6');
+      }
+      
       // Show modal for remaining items
       if (itemsForModal.length > 0) {
         // Add the remaining items to persistent inventory (triggers modal)
-        itemsForModal.forEach(({ reward }) => {
+        itemsForModal.forEach(({ reward, type, keyId }) => {
           if (reward.inventoryItem) {
             addItemToInventory(reward.inventoryItem);
           } else {
             addItemToInventory(reward);
           }
+          
+          // Handle keys in modal items
+          if (type === 'key') {
+            setCollectedKeys(prev => [...prev, keyId]);
+          }
         });
         
         // Remove remaining items from maze regardless (they're now in modal)
-        itemsForModal.forEach(({ x, y }) => {
-          setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+        itemsForModal.forEach(({ x, y, type }) => {
+          if (type !== 'key') {
+            setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+          }
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
             newMaze[y][x] = CELL_EMPTY;
