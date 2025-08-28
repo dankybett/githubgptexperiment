@@ -104,6 +104,7 @@ const TILE_MAP = {
   REWARD_GOLDEN_APPLE: { x: 7, y: 0 },   // Golden Apple tile
   REWARD_ENERGY_DRINK: { x: 9, y: 4 },   // Energy Drink tile
   REWARD_HORSE_POWER_CEREAL: { x: 9, y: 5 },     // Horse Power Cereal tile
+  TELEPORT_SCROLL: { x: 9, y: 2 },       // Teleport Scroll tile
   
   // Legendary reward tiles
   LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },   // Ancient Treasure tile
@@ -208,6 +209,7 @@ const SPECIAL_TILES_WITH_TRANSPARENT_BACKGROUND = new Set([
   'REWARD_GOLDEN_APPLE',
   'REWARD_ENERGY_DRINK', 
   'REWARD_HORSE_POWER_CEREAL',
+  'TELEPORT_SCROLL',
   // Legendary reward tiles
   'LEGENDARY_ANCIENT_TREASURE',
   'LEGENDARY_DRAGON_EGG',
@@ -249,7 +251,6 @@ const TRAPS = [
 const POWERUPS = [
   { name: 'Speed Boost Potion', emoji: '⚡', rarity: 0.3, effect: 'speed', duration: 5, tileX: 8, tileY: 6 },
   { name: 'Invisibility Crown', emoji: '👑', rarity: 0.2, effect: 'invisibility', duration: 8, tileX: 8, tileY: 3 },
-  { name: 'Teleport Scroll', emoji: '🌀', rarity: 0.15, effect: 'teleport', duration: 1, tileX: 9, tileY: 2 },
   { name: 'Minotaur Stun Bomb', emoji: '💣', rarity: 0.15, effect: 'stun', duration: 6, tileX: 9, tileY: 6 },
   { name: 'Treasure Magnet', emoji: '🧲', rarity: 0.25, effect: 'magnet', duration: 4, tileX: 8, tileY: 5 }
 ];
@@ -271,8 +272,7 @@ const SKILL_TREE = {
     color: 'green',
     skills: {
       trapSense: { name: 'Trap Sense', emoji: '👁️', maxLevel: 5, cost: (level) => level * 2, description: 'Chance to avoid traps' },
-      thickSkin: { name: 'Thick Skin', emoji: '🛡️', maxLevel: 3, cost: (level) => level * 3, description: 'Survive one extra trap hit' },
-      lucky: { name: 'Lucky', emoji: '🍀', maxLevel: 5, cost: (level) => level * 2, description: 'Better reward quality' }
+      thickSkin: { name: 'Thick Skin', emoji: '🛡️', maxLevel: 3, cost: (level) => level * 3, description: 'Survive one extra trap hit' }
     }
   },
   mobility: {
@@ -308,9 +308,7 @@ const SKILL_TREE = {
     name: 'Inventory',
     color: 'amber',
     skills: {
-      saddlebags: { name: 'Saddlebags', emoji: '👜', maxLevel: 2, cost: (level) => level * 8, description: '+1 inventory slot per level' },
-      organization: { name: 'Organization', emoji: '📦', maxLevel: 3, cost: (level) => level * 6, description: 'Better item stacking and management' },
-      treasureHunter: { name: 'Treasure Hunter', emoji: '🔍', maxLevel: 3, cost: (level) => level * 4, description: 'Find higher quality items' }
+      saddlebags: { name: 'Saddlebags', emoji: '👜', maxLevel: 2, cost: (level) => level * 8, description: '+1 inventory slot per level' }
     }
   }
 };
@@ -551,11 +549,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
   // Skill system (now per-horse)
   const [skillPoints, setSkillPoints] = useState(0);
   const [horseSkills, setHorseSkills] = useState({
-    trapSense: 0, thickSkin: 0, lucky: 0,
+    trapSense: 0, thickSkin: 0,
     swiftness: 0, pathfinding: 1, swimming: 0, climbing: 0,
     powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
     sneaking: 0, distraction: 0, ghostForm: 0,
-    saddlebags: 0, organization: 0, treasureHunter: 0
+    saddlebags: 0
   });
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [trapHits, setTrapHits] = useState(0);
@@ -670,12 +668,23 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           const rand = Math.random();
           
           // Standard maze features
-          if (rand < 0.15) {
+          if (rand < 0.12) {
             // Select a random reward type
             const selectedReward = REWARDS[Math.floor(Math.random() * REWARDS.length)];
             newMaze[y][x] = CELL_REWARD;
             // Store the reward position and type for rendering
             rewardPositionsTemp.push({ x, y, rewardType: selectedReward });
+          } else if (rand < 0.15) {
+            // Teleport scroll as collectible item
+            const teleportScrollReward = { 
+              name: 'Teleport Scroll', 
+              emoji: '🌀', 
+              rarity: 0.15, 
+              tileKey: 'TELEPORT_SCROLL',
+              inventoryItem: INVENTORY_ITEMS.teleport_scroll
+            };
+            newMaze[y][x] = CELL_REWARD;
+            rewardPositionsTemp.push({ x, y, rewardType: teleportScrollReward });
           } else if (rand < 0.25) {
             newMaze[y][x] = CELL_TRAP;
           } else if (rand < 0.32) {
@@ -763,11 +772,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     if (selectedHorse) {
       // Load horse's existing skills or initialize to defaults
       const horseExistingSkills = selectedHorse.skills || {
-        trapSense: 0, thickSkin: 0, lucky: 0,
+        trapSense: 0, thickSkin: 0,
         swiftness: 0, pathfinding: 1, swimming: 0, climbing: 0,
         powerupMagnet: 0, enhancement: 0, teleportMastery: 0, timeResistance: 0,
         sneaking: 0, distraction: 0, ghostForm: 0,
-        saddlebags: 0, organization: 0, treasureHunter: 0
+        saddlebags: 0
       };
       
       setHorseSkills(horseExistingSkills);
@@ -845,6 +854,42 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     }, 300);
   }, []);
   
+  // Teleport scroll usage function
+  const useTeleportScroll = useCallback(() => {
+    const emptyCells = [];
+    for (let y = 1; y < MAZE_SIZE - 1; y++) {
+      for (let x = 1; x < MAZE_SIZE - 1; x++) {
+        if (maze[y] && maze[y][x] !== CELL_WALL && (x !== minotaurPos.x || y !== minotaurPos.y)) {
+          emptyCells.push({ x, y });
+        }
+      }
+    }
+    if (emptyCells.length > 0) {
+      const teleportMastery = getSkillLevel('teleportMastery');
+      let newPos;
+      
+      if (teleportMastery > 0 && Math.random() < teleportMastery * 0.3) {
+        const sortedCells = emptyCells.sort((a, b) => {
+          const distA = Math.abs(a.x - minotaurPos.x) + Math.abs(a.y - minotaurPos.y);
+          const distB = Math.abs(b.x - minotaurPos.x) + Math.abs(b.y - minotaurPos.y);
+          return distB - distA;
+        });
+        newPos = sortedCells[0];
+      } else {
+        newPos = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      }
+      
+      // Visual feedback
+      addFloatingText('TELEPORT!', '#8b5cf6');
+      flashHorse('#8b5cf6');
+      
+      triggerTeleportation(newPos.x, newPos.y);
+      
+      // Remove teleport scroll from inventory
+      setHorseInventory(prev => inventoryUtils.removeItem(prev, 'teleport_scroll'));
+    }
+  }, [maze, minotaurPos, getSkillLevel, addFloatingText, flashHorse, triggerTeleportation]);
+  
   const canUpgradeSkill = useCallback((categoryKey, skillKey) => {
     const skill = SKILL_TREE[categoryKey].skills[skillKey];
     const currentLevel = getSkillLevel(skillKey);
@@ -902,33 +947,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     }
     
     switch (powerup.effect) {
-      case 'teleport':
-        const emptyCells = [];
-        for (let y = 1; y < MAZE_SIZE - 1; y++) {
-          for (let x = 1; x < MAZE_SIZE - 1; x++) {
-            if (maze[y] && maze[y][x] !== CELL_WALL && (x !== minotaurPos.x || y !== minotaurPos.y)) {
-              emptyCells.push({ x, y });
-            }
-          }
-        }
-        if (emptyCells.length > 0) {
-          const teleportMastery = getSkillLevel('teleportMastery');
-          let newPos;
-          
-          if (teleportMastery > 0 && Math.random() < teleportMastery * 0.3) {
-            const sortedCells = emptyCells.sort((a, b) => {
-              const distA = Math.abs(a.x - minotaurPos.x) + Math.abs(a.y - minotaurPos.y);
-              const distB = Math.abs(b.x - minotaurPos.x) + Math.abs(b.y - minotaurPos.y);
-              return distB - distA;
-            });
-            newPos = sortedCells[0];
-          } else {
-            newPos = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-          }
-          triggerTeleportation(newPos.x, newPos.y);
-        }
-        break;
-      
       case 'invisibility':
         setMinotaurLostTrack(powerup.duration);
         break;
@@ -1007,7 +1025,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     if (itemsToCollect.length <= availableSpace) {
       // Add items to persistent inventory (no visual feedback for magnet)
       itemsToCollect.forEach(({ reward, x, y }) => {
-        addItemToInventory(reward);
+        if (reward.inventoryItem) {
+          addItemToInventory(reward.inventoryItem);
+        } else {
+          addItemToInventory(reward);
+        }
         
         // Remove from positions and maze
         setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
@@ -1024,7 +1046,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       
       // Add what fits to persistent inventory
       itemsToAdd.forEach(({ reward, x, y }) => {
-        addItemToInventory(reward);
+        if (reward.inventoryItem) {
+          addItemToInventory(reward.inventoryItem);
+        } else {
+          addItemToInventory(reward);
+        }
         
         // Remove from positions and maze
         setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
@@ -1039,7 +1065,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       if (itemsForModal.length > 0) {
         // Add the remaining items to persistent inventory (triggers modal)
         itemsForModal.forEach(({ reward }) => {
-          addItemToInventory(reward);
+          if (reward.inventoryItem) {
+            addItemToInventory(reward.inventoryItem);
+          } else {
+            addItemToInventory(reward);
+          }
         });
         
         // Remove remaining items from maze regardless (they're now in modal)
@@ -1363,8 +1393,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           return { x: nextMove.x, y: nextMove.y };
         }
         
-        const lucky = getSkillLevel('lucky');
-        const treasureHunter = getSkillLevel('treasureHunter');
         const treasureMultiplier = performanceModifiers.treasureBonus;
         
         const reward = rewardAtPosition.rewardType;
@@ -1379,7 +1407,13 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         flashHorse('#fbbf24');
         
         // Add reward to persistent inventory
-        addItemToInventory(reward);
+        if (reward.inventoryItem) {
+          // Special handling for inventory items like teleport scrolls
+          addItemToInventory(reward.inventoryItem);
+        } else {
+          // Regular rewards (golden apples, energy drinks, etc.)
+          addItemToInventory(reward);
+        }
         
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
@@ -1913,6 +1947,11 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           timestamp: Date.now()
         }]);
         break;
+        
+      case 'Teleport Scroll':
+        console.log('🌀 Using teleport scroll');
+        useTeleportScroll();
+        return; // Return early since useTeleportScroll handles inventory removal
         
       default:
         console.log('🤷 Unknown item type:', itemName);
@@ -2578,7 +2617,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     if (item.id === 'key' || item.name === 'Key') return TILE_MAP[CELL_KEY];
     if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP[CELL_VAULT];
     if (item.id === 'tarot_card' || item.name === 'Tarot Card') return TILE_MAP[CELL_TAROT_CHEST];
-    // Note: powerups are not included since they're consumed immediately, never stored in inventory
+    if (item.id === 'teleport_scroll' || item.name === 'Teleport Scroll') return TILE_MAP.TELEPORT_SCROLL;
     
     // Fallback to null if no tile mapping exists
     return null;

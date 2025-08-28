@@ -32,6 +32,7 @@ const TILE_MAP = {
   KEY: { x: 8, y: 0 },                  
   POWERUP: { x: 6, y: 0 },              
   VAULT: { x: 3, y: 1 },
+  TELEPORT_SCROLL: { x: 9, y: 2 },
   
   // Legendary reward tiles
   LEGENDARY_ANCIENT_TREASURE: { x: 8, y: 3 },
@@ -71,6 +72,7 @@ const getItemTileCoords = (item) => {
   if (item.id === 'key' || item.name === 'Key') return TILE_MAP.KEY;
   if (item.id === 'powerup' || item.name === 'Power-up') return TILE_MAP.POWERUP;
   if (item.id === 'vault_treasure' || item.name === 'Vault Treasure') return TILE_MAP.VAULT;
+  if (item.id === 'teleport_scroll' || item.name === 'Teleport Scroll') return TILE_MAP.TELEPORT_SCROLL;
   
   // Fallback to null if no tile mapping exists
   return null;

@@ -48,6 +48,16 @@ export const INVENTORY_ITEMS = {
     image: '/maze/treasure.png',
     category: 'treasure',
     stackable: false
+  },
+  teleport_scroll: {
+    id: 'teleport_scroll',
+    name: 'Teleport Scroll',
+    emoji: '🌀',
+    description: 'Instantly teleport to a safe location when used',
+    image: '/maze/powerup.png',
+    category: 'consumable',
+    stackable: false,
+    sellValue: 50
   }
 };
 
