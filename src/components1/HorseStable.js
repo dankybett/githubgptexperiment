@@ -648,13 +648,13 @@ COIN TREASURES & REWARDS
   };
 
   // Calculate viewport bounds for panning - constrain to stable edges only
-  const getViewportBounds = () => {
+  const getViewportBounds = (zoomLevel = zoom) => {
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight - 80; // Account for header height
+    const viewportHeight = window.visualViewport?.height || window.innerHeight - 80; // Account for header height and mobile viewport
     
-    // Calculate how much the stable extends beyond the viewport at current zoom
-    const scaledStableWidth = STABLE_WIDTH * zoom;
-    const scaledStableHeight = STABLE_HEIGHT * zoom;
+    // Calculate how much the stable extends beyond the viewport at specified zoom
+    const scaledStableWidth = STABLE_WIDTH * zoomLevel;
+    const scaledStableHeight = STABLE_HEIGHT * zoomLevel;
     
     // Maximum pan distance = (scaled stable size - viewport size) / 2
     // This ensures we never pan beyond the stable boundaries
@@ -662,6 +662,15 @@ COIN TREASURES & REWARDS
     const maxPanY = Math.max(0, (scaledStableHeight - viewportHeight) / 2);
     
     return { maxPanX, maxPanY };
+  };
+
+  // Helper function to constrain pan offset to boundaries
+  const constrainToBounds = (panOffset, zoomLevel = zoom) => {
+    const { maxPanX, maxPanY } = getViewportBounds(zoomLevel);
+    return {
+      x: Math.max(-maxPanX, Math.min(maxPanX, panOffset.x)),
+      y: Math.max(-maxPanY, Math.min(maxPanY, panOffset.y))
+    };
   };
 
   // Pan/drag handlers with delay for horse clicks
@@ -717,6 +726,8 @@ COIN TREASURES & REWARDS
       const scale = currentDistance / initialDistance;
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, initialZoom * scale));
       setZoom(newZoom);
+      // Immediately re-constrain pan offset to new zoom boundaries
+      setPanOffset(current => constrainToBounds(current, newZoom));
       return;
     }
 
@@ -759,12 +770,8 @@ COIN TREASURES & REWARDS
     }
     setLastMoveTime(currentTime);
     
-    // Apply bounds
-    const { maxPanX, maxPanY } = getViewportBounds();
-    const boundedPanX = Math.max(-maxPanX, Math.min(maxPanX, newPanX));
-    const boundedPanY = Math.max(-maxPanY, Math.min(maxPanY, newPanY));
-    
-    setPanOffset({ x: boundedPanX, y: boundedPanY });
+    // Apply bounds using helper function
+    setPanOffset(constrainToBounds({ x: newPanX, y: newPanY }));
   };
 
   const handlePanEnd = () => {
@@ -785,6 +792,8 @@ COIN TREASURES & REWARDS
     const zoomFactor = delta > 0 ? 0.9 : 1.1; // Zoom out or in
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * zoomFactor));
     setZoom(newZoom);
+    // Immediately re-constrain pan offset to new zoom boundaries
+    setPanOffset(current => constrainToBounds(current, newZoom));
   };
 
   const applyMomentum = () => {
@@ -804,10 +813,10 @@ COIN TREASURES & REWARDS
         
         // Apply momentum to pan offset with much gentler scaling
         setPanOffset(currentPan => {
-          const { maxPanX, maxPanY } = getViewportBounds();
-          const newPanX = Math.max(-maxPanX, Math.min(maxPanX, currentPan.x + newVelX * velocityScale * 16));
-          const newPanY = Math.max(-maxPanY, Math.min(maxPanY, currentPan.y + newVelY * velocityScale * 16));
-          return { x: newPanX, y: newPanY };
+          const newPanX = currentPan.x + newVelX * velocityScale * 16;
+          const newPanY = currentPan.y + newVelY * velocityScale * 16;
+          // Use helper function to ensure boundaries are correct for current zoom
+          return constrainToBounds({ x: newPanX, y: newPanY });
         });
         
         // Continue animation
