@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { INVENTORY_ITEMS, inventoryUtils } from "../utils/inventoryItems";
+import { itemCollectionService } from "../utils/itemCollectionService";
 import ItemSelectionModal from "./ItemSelectionModal";
 import { themeUtils } from "../utils/themes";
 import { tarotCardUtils, TAROT_CARDS } from "../utils/tarotCards";
@@ -388,10 +389,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
 
   const [gameState, setGameState] = useState('waiting');
   const [currentRewards, setCurrentRewards] = useState([]);
-  const [rewardPositions, setRewardPositions] = useState([]); // Array of {x, y, rewardType}
-  const [powerupPositions, setPowerupPositions] = useState([]); // Array of {x, y, powerupType}
+  const [rewardPositions, setRewardPositions] = useState([]); // Array of {x, y, rewardType} - for compatibility
+  const [powerupPositions, setPowerupPositions] = useState([]); // Array of {x, y, powerupType} - for compatibility
   const isMovingRef = useRef(false); // Movement lock to prevent multiple moves per frame (use ref to survive re-renders)
-  const collectedPositionsRef = useRef(new Set()); // Track collected reward positions to prevent duplicates
   const [gameSpeed, setGameSpeed] = useState(800);
   const [totalRuns, setTotalRuns] = useState(0);
   const [lastTrap, setLastTrap] = useState(null);
@@ -607,8 +607,8 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
 
   // Generate maze based on selected type
   const generateMaze = useCallback(() => {
-    // Reset collected positions for new maze
-    collectedPositionsRef.current.clear();
+    // Reset collection service for new maze
+    itemCollectionService.reset();
     
     const newMaze = Array(MAZE_SIZE).fill().map(() => Array(MAZE_SIZE).fill(CELL_WALL));
     const rewardPositionsTemp = []; // Track reward positions and types during generation
@@ -754,10 +754,14 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
       }
     }
     
-    // Set the reward positions state
+    // Set the reward positions state and initialize collection service
     setRewardPositions(rewardPositionsTemp);
-    // Set the power-up positions state  
     setPowerupPositions(powerupPositionsTemp);
+    
+    // Initialize collection service with position data
+    itemCollectionService.setRewardPositions(rewardPositionsTemp);
+    itemCollectionService.setPowerupPositions(powerupPositionsTemp);
+    itemCollectionService.setKeyPositions(newVaultKeys);
     
     return newMaze;
   }, []);
@@ -988,158 +992,57 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     if (totalRange === 0) return;
     
     const { x: hx, y: hy } = horsePos;
-    const itemsToCollect = [];
     
-    // First, identify all items to collect (excluding horse's current position)
-    for (let dy = -totalRange; dy <= totalRange; dy++) {
-      for (let dx = -totalRange; dx <= totalRange; dx++) {
-        const nx = hx + dx;
-        const ny = hy + dy;
-        
-        // Skip the horse's current position - that's handled by normal collection
-        if (dx === 0 && dy === 0) continue;
-        
-        if (nx > 0 && nx < MAZE_SIZE - 1 && ny > 0 && ny < MAZE_SIZE - 1 && maze[ny]) {
-          const cell = maze[ny][nx];
-          
-          if (cell === CELL_REWARD) {
-            // Get the specific reward at this position for magnet collection
-            const rewardAtPosition = rewardPositions.find(r => r.x === nx && r.y === ny);
-            const reward = rewardAtPosition ? rewardAtPosition.rewardType : REWARDS[0];
-            
-            itemsToCollect.push({
-              reward,
-              x: nx,
-              y: ny,
-              type: 'reward'
-            });
-          } else if (cell === CELL_KEY) {
-            // Get the key at this position
-            const key = vaultKeys.find(k => k.x === nx && k.y === ny);
-            if (key && !collectedKeys.includes(key.id)) {
-              itemsToCollect.push({
-                reward: INVENTORY_ITEMS.key,
-                x: nx,
-                y: ny,
-                type: 'key',
-                keyId: key.id
-              });
-            }
-          }
-        }
-      }
-    }
+    // Use collection service to get items in range (excluding horse position)
+    const itemsInRange = itemCollectionService.getItemsInRange(hx, hy, totalRange);
     
-    if (itemsToCollect.length === 0) return;
+    if (itemsInRange.length === 0) return;
     
-    // Handle batch collection with inventory management
+    // Use centralized collection service for batch magnet collection
     const maxSlots = 4 + getSkillLevel('saddlebags');
-    const currentCount = horseInventory.length;
-    const availableSpace = maxSlots - currentCount;
+    const positions = itemsInRange.map(item => ({ x: item.x, y: item.y }));
     
-    if (itemsToCollect.length <= availableSpace) {
-      // Add items to persistent inventory with visual feedback for magnet
-      itemsToCollect.forEach(({ reward, x, y, type, keyId }) => {
-        if (reward.inventoryItem) {
-          addItemToInventory(reward.inventoryItem);
-        } else {
-          addItemToInventory(reward);
-        }
+    const collectionResults = itemCollectionService.collectMultipleItems(positions, {
+      inventory: horseInventory,
+      maxSlots,
+      collectedKeys
+    });
+    
+    // Process all collections (successful and inventory full)
+    const itemsToProcess = collectionResults.filter(result => 
+      result.success || result.reason === 'inventory_full'
+    );
+    
+    if (itemsToProcess.length > 0) {
+      // Add items to inventory and provide visual feedback
+      itemsToProcess.forEach(result => {
+        addItemToInventory(result.item);
         
         // Visual feedback for magnet collection
-        const itemName = reward.inventoryItem ? reward.inventoryItem.name : reward.name;
+        const itemName = result.item.name;
         addFloatingText(`🧲 ${itemName} collected!`, '#3b82f6');
         
-        // Handle different item types
-        if (type === 'key') {
-          // Add to collected keys
-          setCollectedKeys(prev => [...prev, keyId]);
-        } else {
-          // Remove reward from positions
-          setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
+        // Handle keys
+        if (result.itemType === 'key') {
+          setCollectedKeys(prev => [...prev, result.keyId]);
         }
         
         // Remove from maze
         setMaze(prevMaze => {
           const newMaze = prevMaze.map(row => [...row]);
-          newMaze[y][x] = CELL_EMPTY;
+          newMaze[result.position.y][result.position.x] = CELL_EMPTY;
           return newMaze;
         });
       });
       
-      // Flash effect to show magnet activation
-      if (itemsToCollect.length > 0) {
-        flashHorse('#3b82f6');
-      }
-    } else {
-      // Not all items fit - show selection modal
-      const itemsToAdd = itemsToCollect.slice(0, availableSpace);
-      const itemsForModal = itemsToCollect.slice(availableSpace);
-      
-      // Add what fits to persistent inventory
-      itemsToAdd.forEach(({ reward, x, y, type, keyId }) => {
-        if (reward.inventoryItem) {
-          addItemToInventory(reward.inventoryItem);
-        } else {
-          addItemToInventory(reward);
-        }
-        
-        // Visual feedback for magnet collection
-        const itemName = reward.inventoryItem ? reward.inventoryItem.name : reward.name;
-        addFloatingText(`🧲 ${itemName} collected!`, '#3b82f6');
-        
-        // Handle different item types
-        if (type === 'key') {
-          // Add to collected keys
-          setCollectedKeys(prev => [...prev, keyId]);
-        } else {
-          // Remove reward from positions
-          setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
-        }
-        
-        // Remove from maze
-        setMaze(prevMaze => {
-          const newMaze = prevMaze.map(row => [...row]);
-          newMaze[y][x] = CELL_EMPTY;
-          return newMaze;
-        });
-      });
+      // Update compatibility arrays
+      setRewardPositions(itemCollectionService.getRewardPositions());
+      setPowerupPositions(itemCollectionService.getPowerupPositions());
       
       // Flash effect to show magnet activation
-      if (itemsToCollect.length > 0) {
-        flashHorse('#3b82f6');
-      }
-      
-      // Show modal for remaining items
-      if (itemsForModal.length > 0) {
-        // Add the remaining items to persistent inventory (triggers modal)
-        itemsForModal.forEach(({ reward, type, keyId }) => {
-          if (reward.inventoryItem) {
-            addItemToInventory(reward.inventoryItem);
-          } else {
-            addItemToInventory(reward);
-          }
-          
-          // Handle keys in modal items
-          if (type === 'key') {
-            setCollectedKeys(prev => [...prev, keyId]);
-          }
-        });
-        
-        // Remove remaining items from maze regardless (they're now in modal)
-        itemsForModal.forEach(({ x, y, type }) => {
-          if (type !== 'key') {
-            setRewardPositions(prev => prev.filter(r => !(r.x === x && r.y === y)));
-          }
-          setMaze(prevMaze => {
-            const newMaze = prevMaze.map(row => [...row]);
-            newMaze[y][x] = CELL_EMPTY;
-            return newMaze;
-          });
-        });
-      }
+      flashHorse('#3b82f6');
     }
-  }, [hasPowerup, getSkillLevel, horsePos, maze, horseInventory, rewardPositions, addItemToInventory]);
+  }, [hasPowerup, getSkillLevel, horsePos, maze, horseInventory, addItemToInventory]);
 
   // Pathfinding for minotaur
   const findPathToHorse = useCallback((minotaurX, minotaurY, horseX, horseY) => {
@@ -1429,53 +1332,54 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
 
       // Handle cell interactions
       if (cell === CELL_REWARD) {
-        const positionKey = `${nextMove.x},${nextMove.y}`;
+        // Use centralized collection service
+        const maxSlots = 4 + getSkillLevel('saddlebags');
+        const collectionResult = itemCollectionService.collectItem(nextMove.x, nextMove.y, {
+          inventory: horseInventory,
+          maxSlots,
+          collectedKeys
+        });
         
-        // Check if we've already collected from this position
-        if (collectedPositionsRef.current.has(positionKey)) {
-          return { x: nextMove.x, y: nextMove.y };
-        }
-        
-        // Check if this reward actually exists at this position to prevent double collection
-        const rewardAtPosition = rewardPositions.find(r => r.x === nextMove.x && r.y === nextMove.y);
-        
-        if (!rewardAtPosition) {
-          // Still update the maze cell to empty since we're on it
+        if (collectionResult.success) {
+          // Flash effect for treasure collection
+          flashHorse('#fbbf24');
+          
+          // Add item to inventory
+          addItemToInventory(collectionResult.item);
+          
+          // Update compatibility arrays
+          setRewardPositions(itemCollectionService.getRewardPositions());
+          
+          // Clear maze cell
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
             newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
             return newMaze;
           });
-          return { x: nextMove.x, y: nextMove.y };
+        } else if (collectionResult.reason === 'inventory_full') {
+          // Inventory full - add item anyway to trigger modal, clear maze
+          flashHorse('#fbbf24');
+          
+          // This will trigger the inventory management modal
+          addItemToInventory(collectionResult.item);
+          
+          // Update compatibility arrays
+          setRewardPositions(itemCollectionService.getRewardPositions());
+          
+          // Clear maze cell
+          setMaze(prevMaze => {
+            const newMaze = prevMaze.map(row => [...row]);
+            newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
+            return newMaze;
+          });
+        } else if (collectionResult.reason === 'already_collected') {
+          // Already collected, just clear the cell and continue
+          setMaze(prevMaze => {
+            const newMaze = prevMaze.map(row => [...row]);
+            newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
+            return newMaze;
+          });
         }
-        
-        const treasureMultiplier = performanceModifiers.treasureBonus;
-        
-        const reward = rewardAtPosition.rewardType;
-        
-        // Mark this position as collected IMMEDIATELY to prevent duplicates
-        collectedPositionsRef.current.add(positionKey);
-        
-        // Remove this reward from the positions array
-        setRewardPositions(prev => prev.filter(r => !(r.x === nextMove.x && r.y === nextMove.y)));
-        
-        // Flash effect for treasure collection
-        flashHorse('#fbbf24');
-        
-        // Add reward to persistent inventory
-        if (reward.inventoryItem) {
-          // Special handling for inventory items like teleport scrolls
-          addItemToInventory(reward.inventoryItem);
-        } else {
-          // Regular rewards (golden apples, energy drinks, etc.)
-          addItemToInventory(reward);
-        }
-        
-        setMaze(prevMaze => {
-          const newMaze = prevMaze.map(row => [...row]);
-          newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
-          return newMaze;
-        });
       } else if (cell === CELL_POWERUP) {
         // Find the specific power-up at this position
         const powerupAtPosition = powerupPositions.find(p => p.x === nextMove.x && p.y === nextMove.y);
@@ -1497,17 +1401,43 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
         // Remove the collected power-up from positions tracking
         setPowerupPositions(prev => prev.filter(p => !(p.x === nextMove.x && p.y === nextMove.y)));
       } else if (cell === CELL_KEY) {
-        const key = vaultKeys.find(k => k.x === nextMove.x && k.y === nextMove.y);
+        // Use centralized collection service for keys
+        const maxSlots = 4 + getSkillLevel('saddlebags');
+        const collectionResult = itemCollectionService.collectItem(nextMove.x, nextMove.y, {
+          inventory: horseInventory,
+          maxSlots,
+          collectedKeys
+        });
         
-        if (key && !collectedKeys.includes(key.id)) {
-          // Add visual feedback for key collection (only if not already collected)
+        if (collectionResult.success) {
+          // Add visual feedback for key collection
           addFloatingText('🗝️ Key Found!', '#eab308');
           flashHorse('#eab308');
           
-          setCollectedKeys(prev => [...prev, key.id]);
-          // Add key to persistent inventory
-          addItemToInventory(INVENTORY_ITEMS.key);
-          // Keys now calculated dynamically from inventory
+          // Add key ID to collected keys
+          setCollectedKeys(prev => [...prev, collectionResult.keyId]);
+          
+          // Add key to inventory
+          addItemToInventory(collectionResult.item);
+          
+          // Clear maze cell
+          setMaze(prevMaze => {
+            const newMaze = prevMaze.map(row => [...row]);
+            newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
+            return newMaze;
+          });
+        } else if (collectionResult.reason === 'inventory_full') {
+          // Inventory full - add item anyway to trigger modal, clear maze
+          addFloatingText('🗝️ Key Found!', '#eab308');
+          flashHorse('#eab308');
+          
+          // Add key ID to collected keys
+          setCollectedKeys(prev => [...prev, collectionResult.keyId]);
+          
+          // This will trigger the inventory management modal
+          addItemToInventory(collectionResult.item);
+          
+          // Clear maze cell
           setMaze(prevMaze => {
             const newMaze = prevMaze.map(row => [...row]);
             newMaze[nextMove.y][nextMove.x] = CELL_EMPTY;
@@ -1633,7 +1563,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     setTimeout(() => {
       isMovingRef.current = false;
     }, 0);
-  }, [gameState, maze, currentRewards, hasPowerup, updatePowerups, updateMovingWalls, collectWithMagnet, usePowerup, getSkillLevel, minotaurPos, trapHits, isCellPassable, portals, vaultKeys, collectedKeys, isTeleporting, triggerTeleportation, rewardPositions, lostHorse, pendingTrapCheck]);
+  }, [gameState, maze, currentRewards, hasPowerup, updatePowerups, updateMovingWalls, collectWithMagnet, usePowerup, getSkillLevel, minotaurPos, trapHits, isCellPassable, portals, vaultKeys, collectedKeys, isTeleporting, triggerTeleportation, lostHorse, pendingTrapCheck]);
 
   // Vault interaction functions
   const handleVaultUnlock = useCallback(() => {
@@ -2588,9 +2518,9 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
     
     // Special handling for CELL_REWARD to use specific reward tile
     if (cell === CELL_REWARD) {
-      const rewardAtPosition = rewardPositions.find(r => r.x === x && r.y === y);
-      if (rewardAtPosition) {
-        return renderSpecialTile(rewardAtPosition.rewardType.tileKey, x, y);
+      const itemData = itemCollectionService.getItemAtPosition(x, y);
+      if (itemData && itemData.type === 'reward') {
+        return renderSpecialTile(itemData.data.rewardType.tileKey, x, y);
       }
       // Fallback to generic reward tile if position not found
       return renderSpecialTile('REWARD_GOLDEN_APPLE', x, y);
@@ -2720,7 +2650,7 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
               }}
             >
               <img src="/horsecoins.png" alt="coins" className="w-4 h-4" />
-              <span>{coins}</span>
+              <span>{isNaN(coins) ? 0 : coins}</span>
             </div>
             {onBack && (
               <button
@@ -3633,7 +3563,6 @@ function HorseMazeGame({ onBack, selectedHorse, onHorseReturn, coins, onUpdateCo
           const saddlebagsLevel = getSkillLevel('saddlebags');
           const maxSlots = 4 + saddlebagsLevel;
           const overflowItems = horseInventory.slice(maxSlots);
-          
           
           return overflowItems;
         })() : horseInventory}

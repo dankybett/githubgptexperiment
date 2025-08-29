@@ -62,6 +62,20 @@ export default function RandomPicker() {
 
   // Currency and betting state
   const [coins, setCoins] = useState(1000);
+  
+  // Safe coin setter that prevents NaN
+  const setSafeCoins = (value) => {
+    if (typeof value === 'function') {
+      setCoins(prev => {
+        const result = value(prev);
+        const safeResult = Number(result);
+        return isNaN(safeResult) ? (Number(prev) || 0) : Math.max(0, safeResult);
+      });
+    } else {
+      const safeValue = Number(value);
+      setCoins(isNaN(safeValue) ? 0 : Math.max(0, safeValue));
+    }
+  };
   const [betAmount, setBetAmount] = useState(0);
   const [betHorse, setBetHorse] = useState(null);
   const [betEnabled, setBetEnabled] = useState(false);
@@ -2289,7 +2303,7 @@ const specialUnlockCriteria = {
       <HorseMazeGame
         selectedHorse={selectedHorseForLabyrinth}
         coins={coins}
-        onUpdateCoins={setCoins}
+        onUpdateCoins={setSafeCoins}
         horseAvatars={horseAvatars}
         horseNames={horseNames}
         unlockedHorses={unlockedHorses}
