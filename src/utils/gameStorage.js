@@ -29,6 +29,7 @@ const defaultGameState = {
   unlockedTarotCards: [], // Array of unlocked tarot card IDs
   nestEgg: null,
   selectedGrazingHorses: [],
+  customThemes: {},
   version: STORAGE_VERSION
 };
 
@@ -81,6 +82,7 @@ export const gameStorage = {
         unlockedSongs: typeof parsed.unlockedSongs === 'object' && parsed.unlockedSongs !== null ? parsed.unlockedSongs : defaultGameState.unlockedSongs,
         nestEgg: parsed.nestEgg !== undefined ? parsed.nestEgg : defaultGameState.nestEgg,
         selectedGrazingHorses: Array.isArray(parsed.selectedGrazingHorses) ? parsed.selectedGrazingHorses : defaultGameState.selectedGrazingHorses,
+        customThemes: typeof parsed.customThemes === 'object' && parsed.customThemes !== null ? parsed.customThemes : defaultGameState.customThemes,
         version: STORAGE_VERSION
       };
 

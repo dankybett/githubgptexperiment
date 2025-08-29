@@ -2518,7 +2518,7 @@ const specialUnlockCriteria = {
                   {/* Custom themes */}
                   {Object.keys(customThemes || {}).map((customCat) => (
                     <option key={customCat} value={customCat}>
-                      {customCat} ✨
+                      {customCat}
                     </option>
                   ))}
                   
