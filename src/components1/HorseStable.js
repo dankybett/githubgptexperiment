@@ -2000,7 +2000,28 @@ COIN TREASURES & REWARDS
             />
           </div>
           
-          
+          {/* Dressage Sign Post - Decorative */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '480px',
+              right: '520px',
+              width: '120px',
+              height: '160px',
+              zIndex: '8'
+            }}
+          >
+            <img 
+              src="/stable/dressage.png" 
+              alt="Dressage Sign Post" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 8px 12px rgba(0, 0, 0, 0.15))'
+              }}
+            />
+          </div>
           
           {/* Turntable - Center left */}
           <div 
