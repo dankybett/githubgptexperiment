@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import FadeInImage from "./FadeInImage";
@@ -120,19 +120,17 @@ export default function RaceTrack({
   // Use stable leader for visual styling to prevent chaotic color changes
   const isCurrentLeader = (index) => stableLeaderIndex === index && isRacing && winnerIndex === null;
   
-  // Calculate race positions (1st, 2nd, 3rd, etc.) for tight races
-  const racePositions = items.map((_, index) => {
-    const sortedByPosition = positions
-      .map((pos, i) => ({ position: pos, index: i }))
-      .sort((a, b) => b.position - a.position);
-    return sortedByPosition.findIndex(item => item.index === index) + 1;
-  });
-  // Calculate camera position based on leading horse - centered for mobile
-  const leadPosition = Math.max(...positions);
-  const leadPixelPos = leadPosition * (trackLength - 200);
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
-  // Reduce offset to keep horses more centered (smaller value = more centered)
-  const cameraOffset = Math.max(0, Math.min(leadPixelPos - viewportWidth * 0.1, trackLength - viewportWidth));
+  // Cache track width calculation
+  const trackWidth = useMemo(() => trackLength - 200, [trackLength]);
+  
+  // Memoize camera calculations to reduce per-frame computation
+  const cameraOffset = useMemo(() => {
+    const leadPosition = Math.max(...positions);
+    const leadPixelPos = leadPosition * trackWidth;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
+    // Reduce offset to keep horses more centered (smaller value = more centered)
+    return Math.max(0, Math.min(leadPixelPos - viewportWidth * 0.1, trackLength - viewportWidth));
+  }, [positions, trackWidth, trackLength]);
 
   return (
     <div className="flex-1 relative flex flex-col">
@@ -232,11 +230,11 @@ export default function RaceTrack({
                   className="absolute top-0 h-full flex items-center z-30"
                   animate={{
                     x: positions[index]
-                      ? `${Math.min(positions[index], 1.1) * (trackLength - 200)}px`
+                      ? `${Math.min(positions[index], 1.1) * trackWidth}px`
                       : "0px",
                   }}
                   transition={{ 
-                    duration: 0.02,
+                    duration: 0.1,
                     ease: "linear"
                   }}
                 >
@@ -327,7 +325,7 @@ export default function RaceTrack({
                       animate={
                         isRacing && positions[index] < 1.1
                           ? {
-                              // Racing animation - continues even past finish line until race stops
+                              // Full racing animation with character - optimized timing
                               rotateZ: [0, -5, 5, -5, 5, 0],
                               y: [0, -4, 4, -3, 3, 0],
                               scale: [1, 1.1, 0.9, 1.1, 0.9, 1],
@@ -335,7 +333,7 @@ export default function RaceTrack({
                           : { rotateZ: 0, y: 0, scale: 1 } // Stopped when race ends
                       }
                       transition={{
-                        duration: isRacing ? 0.3 : 0.5,
+                        duration: isRacing ? 0.4 : 0.5,
                         repeat: isRacing ? Infinity : 0,
                         ease: "easeInOut",
                       }}

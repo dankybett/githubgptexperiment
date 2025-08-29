@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.c953ef0f.css",
-    "main.js": "/static/js/main.cb241831.js",
+    "main.css": "/static/css/main.da56f148.css",
+    "main.js": "/static/js/main.bc14c204.js",
     "static/media/office.png": "/static/media/office.6a44be7e23ce0d814288.png",
     "static/media/candyland.png": "/static/media/candyland.d4d72f3894816ec876d5.png",
     "static/media/chessboard.png": "/static/media/chessboard.99ce2203a65f49d784c2.png",
@@ -15,18 +15,20 @@
     "static/media/racetrack.png": "/static/media/racetrack.8ff2ad70ddf9625108c6.png",
     "static/media/mechanicalhorses.png": "/static/media/mechanicalhorses.754808cb5099cf1e4686.png",
     "static/media/celestialgarden.png": "/static/media/celestialgarden.794463568ab2aaad6c26.png",
+    "static/media/spaghetti.png": "/static/media/spaghetti.fe566e67acb9edb880be.png",
     "static/media/toyland.png": "/static/media/toyland.e41bf1ed00329def7191.png",
     "static/media/mysticalenergy.png": "/static/media/mysticalenergy.f1ccae6acd9edd3d1401.png",
     "static/media/mooncheeseplain.png": "/static/media/mooncheeseplain.0740f9d77f1ba4a7cf80.png",
+    "static/media/street.png": "/static/media/street.f87e087e221b98568a61.png",
     "static/media/spookywoods.png": "/static/media/spookywoods.9a648d441f1f107a15c9.png",
     "static/media/underthesea.png": "/static/media/underthesea.57721ac20c2fe8a7f7ca.png",
     "static/media/insidemouth.png": "/static/media/insidemouth.c5f8f0bac31777eaf007.png",
     "index.html": "/index.html",
-    "main.c953ef0f.css.map": "/static/css/main.c953ef0f.css.map",
-    "main.cb241831.js.map": "/static/js/main.cb241831.js.map"
+    "main.da56f148.css.map": "/static/css/main.da56f148.css.map",
+    "main.bc14c204.js.map": "/static/js/main.bc14c204.js.map"
   },
   "entrypoints": [
-    "static/css/main.c953ef0f.css",
-    "static/js/main.cb241831.js"
+    "static/css/main.da56f148.css",
+    "static/js/main.bc14c204.js"
   ]
 }
