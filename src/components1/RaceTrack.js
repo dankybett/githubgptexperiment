@@ -143,12 +143,13 @@ export default function RaceTrack({
       >
         {/* Track container that moves smoothly */}
         <motion.div
-          className={`shadow-inner bg-gradient-to-r ${
-            currentWeather
-              ? currentWeather.trackColor
-              : "from-green-400 to-green-600"
-          } relative h-full min-h-96`}
-          style={{ width: `${trackLength}px`, backgroundSize: "cover" }}
+          className="shadow-inner relative h-full min-h-96"
+          style={{ 
+            width: `${trackLength}px`, 
+            backgroundImage: 'url(/racetrack/grass.png)',
+            backgroundRepeat: 'repeat',
+            backgroundSize: 'auto'
+          }}
           animate={{ x: -cameraOffset }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
         >
@@ -211,13 +212,22 @@ export default function RaceTrack({
           </div>
 
           <div className="space-y-2 relative z-10 py-2 px-2" style={{ marginTop: "80px" }}>
-            {items.map((item, index) => (
+            {Array.from({ length: 5 }).map((_, index) => {
+              const item = items[index];
+              const hasHorse = index < items.length;
+              return (
               <div
                 key={index}
-                className="relative w-full bg-green-100 bg-opacity-60 border-2 border-green-700 rounded-xl overflow-hidden shadow-md"
-                style={{ height: "64px" }}
+                className="relative w-full border-2 border-white overflow-hidden shadow-md"
+                style={{
+                  height: "64px",
+                  backgroundImage: 'url(/racetrack/grass.png)',
+                  backgroundRepeat: 'repeat',
+                  backgroundSize: 'auto'
+                }}
               >
-                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-green-800 opacity-10" />
+                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white opacity-10" />
+                {hasHorse ? (
                 <motion.div
                   className="absolute top-0 h-full flex items-center z-30"
                   animate={{
@@ -345,11 +355,17 @@ export default function RaceTrack({
                     />
                   </div>
                 </motion.div>
+                ) : (
+                  <div className="absolute top-0 h-full flex items-center justify-center z-30 w-full">
+                    <span className="text-gray-400 text-sm font-semibold">Empty Lane</span>
+                  </div>
+                )}
                 <div className="absolute right-4 top-0.5 text-xs font-bold text-gray-500">
                   #{index + 1}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
         </motion.div>

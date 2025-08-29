@@ -888,7 +888,7 @@ const specialUnlockCriteria = {
     setTrackLength(getFixedTrackLength(raceDistance));
   }, [raceDistance]);
 
-  const maxItems = 6;
+  const maxItems = 5;
 
   const commentaryPhrases = {
     start: [
