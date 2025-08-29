@@ -8,6 +8,7 @@ import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
 import HorseMazeGame from "./components1/labyrinth";
 import SettingsModal from "./components1/SettingsModal";
+import CustomThemeModal from "./components1/CustomThemeModal";
 import { raceEngineAdapter } from "./racing/RaceEngineAdapter";
 import { createSeededRng } from "./utils/prng";
 import { gameStorage } from "./utils/gameStorage";
@@ -69,6 +70,11 @@ export default function RandomPicker() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedHorseForLabyrinth, setSelectedHorseForLabyrinth] = useState(null);
   const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME);
+  
+  // Custom themes state
+  const [customThemes, setCustomThemes] = useState({});
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [editingTheme, setEditingTheme] = useState(null);
 
   // Apply theme fonts using CSS classes
   useEffect(() => {
@@ -671,6 +677,14 @@ const specialUnlockCriteria = {
         setSpecialUnlockProgress(mergedProgress);
       }
       
+      // Load custom themes
+      if (savedData.customThemes && typeof savedData.customThemes === 'object') {
+        console.log('🎨 Loading saved custom themes:', savedData.customThemes);
+        setCustomThemes(savedData.customThemes);
+      } else {
+        console.log('🎨 No saved custom themes found');
+      }
+      
       console.log('Game data loaded successfully');
     } else {
       console.warn('localStorage not available, game progress will not be saved');
@@ -702,7 +716,8 @@ const specialUnlockCriteria = {
         unlockedTarotCards,
         nestEgg,
         selectedGrazingHorses,
-        specialUnlockProgress
+        specialUnlockProgress,
+        customThemes
       };
       
       console.log('🏠 App - Saving game state:', gameState);
@@ -718,7 +733,7 @@ const specialUnlockCriteria = {
       console.log('🏆 Verification - what was actually saved to localStorage:', savedCheck?.specialUnlockProgress);
       console.log('🏆 Verification - care_count in localStorage:', savedCheck?.specialUnlockProgress?.care_count);
     }
-  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, customHorseNames, horseCareStats, dayCount, stableGameTime, currentTheme, unlockedSongs, unlockedTarotCards, nestEgg, selectedGrazingHorses, specialUnlockProgress, gameLoaded, initialLoadComplete]);
+  }, [coins, unlockedHorses, fastestTime, history, horseInventories, horseSkills, horseSkillPoints, customHorseNames, horseCareStats, dayCount, stableGameTime, currentTheme, unlockedSongs, unlockedTarotCards, nestEgg, selectedGrazingHorses, specialUnlockProgress, customThemes, gameLoaded, initialLoadComplete]);
 
   // Handle betting logic when a winner is declared
   useEffect(() => {
@@ -1112,9 +1127,12 @@ const specialUnlockCriteria = {
       return horseNames[avatarIndex] || horseNames[index % horseNames.length];
     }
     
-    // For other themes, use shuffled names
-    const categoryList = shuffledHorseNames[nameCategory] || horseNameCategories["Default"];
-    return categoryList[index % categoryList.length];
+    // For other themes, use shuffled names (check custom themes first)
+    const categoryList = shuffledHorseNames[nameCategory] || 
+                        (customThemes && customThemes[nameCategory]) || 
+                        horseNameCategories[nameCategory] || 
+                        horseNameCategories["Default"];
+    return categoryList && categoryList.length > 0 ? categoryList[index % categoryList.length] : `Horse ${index + 1}`;
   };
 
   const goToRaceScreen = () => {
@@ -1714,6 +1732,38 @@ const specialUnlockCriteria = {
       [horseId]: newName
     }));
   };
+
+  // Custom theme handlers
+  const handleSaveCustomTheme = (themeName, themeNames) => {
+    const newCustomThemes = {
+      ...customThemes,
+      [themeName]: themeNames
+    };
+    setCustomThemes(newCustomThemes);
+    setShowThemeModal(false);
+    setEditingTheme(null);
+  };
+
+  const handleDeleteCustomTheme = (themeName) => {
+    const newCustomThemes = { ...customThemes };
+    delete newCustomThemes[themeName];
+    setCustomThemes(newCustomThemes);
+    
+    // If we're deleting the currently selected theme, switch to Default
+    if (nameCategory === themeName) {
+      setNameCategory("Default");
+    }
+    
+    setShowThemeModal(false);
+    setEditingTheme(null);
+  };
+
+  const handleEditCustomTheme = (themeName) => {
+    if (customThemes && customThemes[themeName]) {
+      setEditingTheme({ name: themeName, names: customThemes[themeName] });
+      setShowThemeModal(true);
+    }
+  };
   
   const unlockTarotCard = (cardId) => {
     setUnlockedTarotCards(prev => {
@@ -1726,7 +1776,7 @@ const specialUnlockCriteria = {
   };
 
   const randomizeHorseNames = () => {
-    const categoryList =
+    const categoryList = (customThemes && customThemes[nameCategory]) ||
       horseNameCategories[nameCategory] || horseNameCategories["Default"];
     
     // Don't shuffle Default theme names
@@ -2430,6 +2480,12 @@ const specialUnlockCriteria = {
                   value={nameCategory}
                   onChange={(e) => {
                     const newCategory = e.target.value;
+                    
+                    if (newCategory === "_CREATE_NEW_") {
+                      setShowThemeModal(true);
+                      return;
+                    }
+                    
                     setNameCategory(newCategory);
                     // Auto-set contestant count to 2 for Yes or No theme
                     if (newCategory === "Yes or No") {
@@ -2452,11 +2508,24 @@ const specialUnlockCriteria = {
                     boxShadow: currentTheme === 'saturday' ? 'inset 0 0 0 1000px #FFF6E3' : 'none',
                   }}
                 >
+                  {/* Built-in themes */}
                   {Object.keys(horseNameCategories).map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
                   ))}
+                  
+                  {/* Custom themes */}
+                  {Object.keys(customThemes || {}).map((customCat) => (
+                    <option key={customCat} value={customCat}>
+                      {customCat} ✨
+                    </option>
+                  ))}
+                  
+                  {/* Create new option */}
+                  <option value="_CREATE_NEW_">
+                    + Create New Theme
+                  </option>
                 </select>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -2468,6 +2537,20 @@ const specialUnlockCriteria = {
                 >
                   🎲
                 </motion.button>
+                
+                {/* Edit button for custom themes */}
+                {customThemes && customThemes[nameCategory] && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleEditCustomTheme(nameCategory)}
+                    className={`${themeUtils.getComponentStyles(currentTheme, 'button', 'primary')} text-white`}
+                    style={{ padding: '4px 12px', fontSize: '16px', minWidth: 'auto', width: 'auto' }}
+                    title="Edit custom theme"
+                  >
+                    ✏️
+                  </motion.button>
+                )}
               </div>
             </div>
           )}
@@ -2497,9 +2580,16 @@ const specialUnlockCriteria = {
                       placeholder={`Or use: ${
                         nameCategory === "Default" 
                           ? getHorseName("", index) // Use the proper avatar-to-name mapping
-                          : shuffledHorseNames[nameCategory][
-                              index % shuffledHorseNames[nameCategory].length
-                            ]
+                          : (() => {
+                              // Check custom themes first, then shuffled names, then built-in themes
+                              const themeNames = (customThemes && customThemes[nameCategory]) ||
+                                                shuffledHorseNames[nameCategory] ||
+                                                horseNameCategories[nameCategory] ||
+                                                [];
+                              return themeNames.length > 0 
+                                ? themeNames[index % themeNames.length]
+                                : `Contestant ${index + 1}`;
+                            })()
                       }`}
                       value={item}
                       onChange={(e) => handleItemChange(index, e.target.value)}
@@ -2694,6 +2784,29 @@ const specialUnlockCriteria = {
                 ))}
               </div>
             </motion.div>
+          )}
+
+          {/* Custom Theme Modal */}
+          {showThemeModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
+              >
+                <CustomThemeModal
+                  isEdit={editingTheme !== null}
+                  existingTheme={editingTheme}
+                  customThemes={customThemes}
+                  onSave={handleSaveCustomTheme}
+                  onCancel={() => {
+                    setShowThemeModal(false);
+                    setEditingTheme(null);
+                  }}
+                  onDelete={editingTheme ? handleDeleteCustomTheme : null}
+                />
+              </motion.div>
+            </div>
           )}
 
           {/* Settings Modal */}
