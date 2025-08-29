@@ -9,6 +9,7 @@
     "ajv-keywords": "^3.5.2",
     "framer-motion": "12.23.9",
     "html2canvas": "^1.4.1",
+    "lucide-react": "^0.542.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-scripts": "^5.0.1"

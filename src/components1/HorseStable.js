@@ -122,6 +122,7 @@ const HorseStable = ({
   onBack,
   onShowLockedHorses,
   onSendToLabyrinth,
+  onSendToDressage,
   onUpdateCoins,
   onHorseRename,
   dayCount,
@@ -2978,6 +2979,16 @@ COIN TREASURES & REWARDS
             console.log('🎒 Stable - fresh horse inventory:', freshHorse?.inventory);
             setHorseBeingSent(freshHorse);
             setShowLabyrinthEntrance(true);
+            setSelectedHorse(null);
+          }}
+          onSendToDressage={() => {
+            // Get the fresh horse data for dressage competition
+            const freshHorse = {
+              ...selectedHorse,
+              inventory: horseInventories[selectedHorse.id] || []
+            };
+            console.log('🏇 Stable - onSendToDressage called with fresh horse:', freshHorse);
+            onSendToDressage && onSendToDressage(freshHorse);
             setSelectedHorse(null);
           }}
           onCareAction={(horseId, actionType) => {

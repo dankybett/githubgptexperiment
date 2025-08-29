@@ -7,6 +7,7 @@ import RaceTrack from "./components1/RaceTrack";
 import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
 import HorseMazeGame from "./components1/labyrinth";
+import EnhancedDressageGame from "./components1/dressage/EnhancedDressageGame";
 import SettingsModal from "./components1/SettingsModal";
 import CustomThemeModal from "./components1/CustomThemeModal";
 import { raceEngineAdapter } from "./racing/RaceEngineAdapter";
@@ -24,6 +25,8 @@ export default function RandomPicker() {
   const [showBattleship, setShowBattleship] = useState(false);
   const [showLabyrinth, setShowLabyrinth] = useState(false);
   const [showLockedHorses, setShowLockedHorses] = useState(false);
+  const [showDressage, setShowDressage] = useState(false);
+  const [selectedHorseForDressage, setSelectedHorseForDressage] = useState(null);
   const [itemCount, setItemCount] = useState(5);
   const [items, setItems] = useState(Array(5).fill(""));
   const [isRacing, setIsRacing] = useState(false);
@@ -2253,6 +2256,12 @@ const specialUnlockCriteria = {
           setShowStable(false);
           setShowLabyrinth(true);
         }}
+        onSendToDressage={(horse) => {
+          console.log('🏇 App - Horse being sent to dressage:', horse);
+          setSelectedHorseForDressage(horse);
+          setShowStable(false);
+          setShowDressage(true);
+        }}
         onUpdateCoins={setCoins}
         onHorseRename={handleHorseRename}
         dayCount={dayCount}
@@ -2384,6 +2393,19 @@ const specialUnlockCriteria = {
 
   if (showBattleship) {
     return <BattleshipGame onBack={() => setShowBattleship(false)} />;
+  }
+
+  if (showDressage) {
+    return (
+      <EnhancedDressageGame 
+        selectedHorse={selectedHorseForDressage}
+        onBack={() => {
+          setShowDressage(false);
+          setSelectedHorseForDressage(null);
+          setShowStable(true);
+        }}
+      />
+    );
   }
 
   // Get current theme for styling

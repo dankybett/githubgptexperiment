@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shuffle, RotateCcw, Play, Trophy, Zap, Star, Plus } from 'lucide-react';
 
-const DressageCardGame = () => {
+const DressageCardGame = ({ selectedHorse, onBack }) => {
   // Card definitions
   const cardDeck = [
     // Walks (4 cards) - Safe foundation + stamina management
@@ -575,7 +575,29 @@ const DressageCardGame = () => {
     return (
       <div className="max-w-4xl mx-auto p-6 bg-gradient-to-b from-blue-50 to-green-50 min-h-screen">
         <div className="text-center mb-8">
+          {onBack && (
+            <div className="mb-4">
+              <button 
+                onClick={onBack}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto text-sm"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Back to Stable
+              </button>
+            </div>
+          )}
           <h1 className="text-4xl font-bold mb-4 text-gray-800">🐎 Dressage Combo Card Game</h1>
+          {selectedHorse && (
+            <div className="mb-4">
+              <img 
+                src={selectedHorse.avatar} 
+                alt={selectedHorse.name}
+                className="w-16 h-16 mx-auto mb-2 rounded-lg shadow-lg"
+              />
+              <p className="text-xl font-semibold text-blue-600">{selectedHorse.name}</p>
+              <p className="text-sm text-gray-600">is ready for dressage competition!</p>
+            </div>
+          )}
           <p className="text-lg text-gray-600 mb-6">Master the art of equestrian elegance through strategic card play</p>
           <button 
             onClick={startGame}
@@ -670,12 +692,23 @@ const DressageCardGame = () => {
           <h1 className="text-4xl font-bold mb-2">Routine Complete!</h1>
           <div className="text-2xl mb-4">Final Score: <span className="font-bold text-blue-600">{totalScore}</span></div>
           <div className="text-xl mb-6">Rating: <span className="font-bold text-green-600">{rating}</span></div>
-          <button 
-            onClick={() => setGameState('menu')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-          >
-            Play Again
-          </button>
+          <div className="flex justify-center gap-4">
+            {onBack && (
+              <button 
+                onClick={onBack}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Back to Stable
+              </button>
+            )}
+            <button 
+              onClick={() => setGameState('menu')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+            >
+              Play Again
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg p-6">
@@ -698,6 +731,19 @@ const DressageCardGame = () => {
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-3xl font-bold mb-2">Dressage Combo Card Game</h1>
+        {selectedHorse && (
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src={selectedHorse.avatar} 
+              alt={selectedHorse.name}
+              className="w-12 h-12 rounded-lg shadow-md"
+            />
+            <div className="text-left">
+              <p className="text-lg font-semibold text-blue-600">{selectedHorse.name}</p>
+              <p className="text-xs text-gray-600">Competing in Dressage</p>
+            </div>
+          </div>
+        )}
         <div className="flex justify-center gap-6 mb-4">
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5 text-yellow-500" />
@@ -887,6 +933,15 @@ const DressageCardGame = () => {
 
       {/* Controls */}
       <div className="flex justify-center gap-4">
+        {onBack && (
+          <button 
+            onClick={onBack}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Back to Stable
+          </button>
+        )}
         <button 
           onClick={() => setGameState('menu')}
           className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"

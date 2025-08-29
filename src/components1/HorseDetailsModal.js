@@ -130,7 +130,7 @@ const SKILL_TREE = {
   }
 };
 
-export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth, onCareAction, onSellItem, onFeedItem, coins, careCosts }) {
+export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLabyrinth, onSendToDressage, onCareAction, onSellItem, onFeedItem, coins, careCosts }) {
   const [name, setName] = useState(horse.name);
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'status', 'skills', or 'inventory'
 
@@ -192,31 +192,50 @@ export default function HorseDetailsModal({ horse, onClose, onRename, onSendToLa
           </button>
         </div>
 
-        {/* Horse Avatar and Send to Labyrinth Button */}
-        <div className="flex items-center justify-center gap-6 mb-4">
+        {/* Horse Avatar and Action Buttons */}
+        <div className="flex items-center justify-center gap-4 mb-4">
           <img
             src={horse.avatar}
             alt={horse.name}
             className="w-24 h-24 object-contain"
           />
-          <button
-            onClick={() => {
-              if (!horse.isSleeping) {
-                console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
-                console.log('📦 Modal - Horse inventory:', horse?.inventory);
-                onSendToLabyrinth();
-              }
-            }}
-            disabled={horse.isSleeping}
-            className={`px-2 py-2 rounded text-xs font-semibold transition-colors ${
-              horse.isSleeping 
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                : 'bg-purple-600 text-white hover:bg-purple-700'
-            }`}
-            title={horse.isSleeping ? `${horse.name} is sleeping` : 'Send to Labyrinth'}
-          >
-            {horse.isSleeping ? `${horse.name} is sleeping` : 'Send to Labyrinth'}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => {
+                if (!horse.isSleeping) {
+                  console.log('🏁 Modal - Send to Labyrinth clicked for horse:', horse);
+                  console.log('📦 Modal - Horse inventory:', horse?.inventory);
+                  onSendToLabyrinth();
+                }
+              }}
+              disabled={horse.isSleeping}
+              className={`px-3 py-2 rounded text-xs font-semibold transition-colors ${
+                horse.isSleeping 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+              }`}
+              title={horse.isSleeping ? `${horse.name} is sleeping` : 'Send to Labyrinth'}
+            >
+              {horse.isSleeping ? 'Horse Sleeping' : '🌟 Labyrinth'}
+            </button>
+            <button
+              onClick={() => {
+                if (!horse.isSleeping) {
+                  console.log('🏇 Modal - Send to Dressage clicked for horse:', horse);
+                  onSendToDressage && onSendToDressage();
+                }
+              }}
+              disabled={horse.isSleeping}
+              className={`px-3 py-2 rounded text-xs font-semibold transition-colors ${
+                horse.isSleeping 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              title={horse.isSleeping ? `${horse.name} is sleeping` : 'Enter Dressage Competition'}
+            >
+              {horse.isSleeping ? 'Horse Sleeping' : '🏇 Dressage'}
+            </button>
+          </div>
         </div>
 
         {/* Tab Content - Fixed Height Container */}
