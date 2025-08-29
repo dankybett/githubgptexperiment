@@ -485,35 +485,175 @@ const DressageCardGame = ({ selectedHorse, onBack }) => {
     return colors[type] || 'bg-gray-100 border-gray-400';
   };
 
-  // Check if move maintains flow
-  const wouldMaintainFlow = (card) => {
-    if (playedCards.length === 0) return true;
+  // Enhanced flow analysis function
+  const analyzeFlow = (card) => {
+    if (playedCards.length === 0) {
+      return {
+        maintains: true,
+        type: 'start',
+        comboBonus: 0,
+        flowMultiplier: 1,
+        newChainLength: 1,
+        reason: 'Starting move'
+      };
+    }
+
     const previousCard = playedCards[playedCards.length - 1];
+    const { score, bonusText, newComboLength } = calculateScore(card, previousCard);
+    const comboBonus = score - card.base;
+    const flowMultiplier = newComboLength >= 3 ? 1.5 : 1;
     
     // Always maintains flow
     if (card.tags.includes("Transition") || card.tags.includes("Walk") || card.tags.includes("Finish")) {
-      return true;
+      return {
+        maintains: true,
+        type: card.tags.includes("Transition") ? 'transition' : card.tags.includes("Walk") ? 'graceful' : 'finish',
+        comboBonus,
+        flowMultiplier,
+        newChainLength,
+        reason: card.tags.includes("Transition") ? 'Universal connector' : card.tags.includes("Walk") ? 'Always graceful' : 'Routine finish'
+      };
     }
     
     // Natural progressions
-    if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) return true;
-    if (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) return true;
-    if (previousCard.tags.includes("Transition")) return true;
+    if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) {
+      return {
+        maintains: true,
+        type: 'natural',
+        comboBonus,
+        flowMultiplier,
+        newChainLength,
+        reason: 'Walk → Trot progression'
+      };
+    }
+    if (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) {
+      return {
+        maintains: true,
+        type: 'natural',
+        comboBonus,
+        flowMultiplier,
+        newChainLength,
+        reason: 'Trot → Canter progression'
+      };
+    }
+    if (previousCard.tags.includes("Transition")) {
+      return {
+        maintains: true,
+        type: 'connected',
+        comboBonus,
+        flowMultiplier,
+        newChainLength,
+        reason: 'After transition'
+      };
+    }
     
-    // Combo continuations
-    if (card.name === "Medium Walk" && previousCard.tags.includes("Walk")) return true;
-    if (card.name === "Extended Trot" && previousCard.tags.includes("Walk")) return true;
-    if (card.name === "Collected Trot" && previousCard.tags.includes("Transition")) return true;
-    if (card.name === "Piaffe" && previousCard.name === "Collected Trot") return true;
-    if (card.name === "Flying Change" && previousCard.tags.includes("Canter")) return true;
-    if (card.name === "Shoulder-In" && previousCard.tags.includes("Trot")) return true;
-    if (card.name === "Passage" && previousCard.name === "Piaffe") return true;
+    // Specific combos
+    const specificCombos = {
+      "Medium Walk": previousCard.tags.includes("Walk") && 'Walk chain',
+      "Extended Trot": previousCard.tags.includes("Walk") && 'Walk → Trot combo',
+      "Collected Trot": previousCard.tags.includes("Transition") && 'Transition combo',
+      "Piaffe": previousCard.name === "Collected Trot" && 'Classical sequence',
+      "Flying Change": previousCard.tags.includes("Canter") && 'Canter combo',
+      "Shoulder-In": previousCard.tags.includes("Trot") && 'Trot chain',
+      "Passage": previousCard.name === "Piaffe" && 'Classical sequence'
+    };
     
-    return false;
+    if (specificCombos[card.name]) {
+      return {
+        maintains: true,
+        type: 'combo',
+        comboBonus,
+        flowMultiplier,
+        newChainLength,
+        reason: specificCombos[card.name]
+      };
+    }
+    
+    // Flow breaks
+    return {
+      maintains: false,
+      type: 'break',
+      comboBonus: 0,
+      flowMultiplier: 1,
+      newChainLength: 0,
+      reason: 'Breaks flow pattern',
+      penalty: comboLength
+    };
+  };
+
+  // Check if move maintains flow (simplified version for existing code)
+  const wouldMaintainFlow = (card) => {
+    return analyzeFlow(card).maintains;
+  };
+
+  // Enhanced Flow Indicator Component
+  const FlowIndicator = ({ card }) => {
+    const flowInfo = analyzeFlow(card);
+    
+    // Handle first card case
+    if (playedCards.length === 0) {
+      return (
+        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+          <div className="text-blue-700 font-medium flex items-center gap-1">
+            <span>🎯</span>
+            <span>Opening Move</span>
+          </div>
+          <div className="text-gray-700 font-medium text-xs mt-1">
+            Score: {card.base} points
+          </div>
+          <div className="text-gray-600 text-xs">Starts your routine</div>
+        </div>
+      );
+    }
+    
+    if (!flowInfo.maintains) {
+      return (
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
+          <div className="text-red-700 font-medium flex items-center gap-1">
+            <span>✗</span>
+            <span>Breaks Flow</span>
+          </div>
+          <div className="text-red-600 text-xs mt-1">
+            Loses {flowInfo.penalty}-move chain
+          </div>
+          <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
+          <div className="text-gray-700 font-medium text-xs mt-1">
+            Score: {card.base} points (no bonuses)
+          </div>
+        </div>
+      );
+    }
+
+    const totalScore = card.base + flowInfo.comboBonus + (flowInfo.flowMultiplier > 1 ? Math.floor(card.base * 0.5) : 0);
+    
+    return (
+      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+        <div className="text-green-700 font-medium flex items-center gap-1">
+          <span>✓</span>
+          <span>Maintains Flow</span>
+        </div>
+        {flowInfo.comboBonus > 0 && (
+          <div className="text-blue-600 text-xs">
+            Combo bonus: +{flowInfo.comboBonus}
+          </div>
+        )}
+        {flowInfo.flowMultiplier > 1 && (
+          <div className="text-purple-600 text-xs font-medium">
+            🌟 Flow bonus: +{Math.floor(card.base * 0.5)}
+          </div>
+        )}
+        <div className="text-gray-700 font-medium text-xs mt-1">
+          Total: {totalScore} points
+        </div>
+        <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
+        <div className="text-gray-600 text-xs">Chain: {comboLength} → {flowInfo.newChainLength}</div>
+      </div>
+    );
   };
 
   const Card = ({ card, onClick, onDiscard, disabled = false, showFlowIndicator = false, discardMode = false }) => {
-    const maintainsFlow = wouldMaintainFlow(card);
+    const flowInfo = analyzeFlow(card);
+    const maintainsFlow = flowInfo.maintains;
     const flowClass = showFlowIndicator ? (maintainsFlow ? 'ring-2 ring-green-400' : 'ring-2 ring-red-400') : '';
     
     return (
@@ -522,13 +662,8 @@ const DressageCardGame = ({ selectedHorse, onBack }) => {
           disabled ? 'opacity-50' : 'hover:scale-105 cursor-pointer'
         }`}
       >
-        <div className="font-bold text-sm mb-1 flex items-center justify-between">
+        <div className="font-bold text-sm mb-1">
           <span>{card.name}</span>
-          {showFlowIndicator && (
-            <span className={`text-xs ${maintainsFlow ? 'text-green-600' : 'text-red-600'}`}>
-              {maintainsFlow ? '✓' : '✗'}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2 mb-2">
           <div className="flex items-center gap-1">
@@ -547,6 +682,11 @@ const DressageCardGame = ({ selectedHorse, onBack }) => {
           {card.risk && <div className="text-red-600">{card.risk}</div>}
           {card.bonus && <div className="text-green-600">{card.bonus}</div>}
         </div>
+        
+        {/* Enhanced Flow Indicator */}
+        {showFlowIndicator && !discardMode && (
+          <FlowIndicator card={card} />
+        )}
         {discardMode ? (
           <button
             onClick={() => onDiscard && onDiscard(card)}
@@ -913,7 +1053,7 @@ const DressageCardGame = ({ selectedHorse, onBack }) => {
                   (currentTurn >= maxTurns && !card.tags.includes("Finish") && hand.some(c => c.tags.includes("Finish") && (staminaSurgeActive ? 0 : stamina) >= c.cost))
                 )
               }
-              showFlowIndicator={playedCards.length > 0 && turnPhase !== 'discard'}
+              showFlowIndicator={turnPhase !== 'discard'}
             />
           ))}
         </div>

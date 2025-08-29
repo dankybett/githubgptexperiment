@@ -67,7 +67,7 @@ const DressageArena = ({
             <div className="flex items-center gap-2">
               <div className="text-sm font-medium">Flow:</div>
               <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(3)].map((_, i) => (
                   <div 
                     key={i} 
                     className={`w-3 h-3 rounded-full ${
@@ -76,7 +76,6 @@ const DressageArena = ({
                   />
                 ))}
               </div>
-              <span className="text-sm">Chain: {comboLength}</span>
             </div>
           </div>
         </motion.div>
