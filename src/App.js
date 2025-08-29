@@ -51,7 +51,7 @@ export default function RandomPicker() {
   const [countdown, setCountdown] = useState(null);
   const [raceTime, setRaceTime] = useState(0);
   const [fastestTime, setFastestTime] = useState(null);
-  const [nameCategory, setNameCategory] = useState("Default");
+  const [nameCategory, setNameCategory] = useState("Default Horse Name");
   const [raceDistance, setRaceDistance] = useState("long");
   const [currentWeather, setCurrentWeather] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -984,7 +984,7 @@ const specialUnlockCriteria = {
   };
 
   const horseNameCategories = {
-    Default: horseNames,
+    "Default Horse Name": horseNames,
     Takeaways: [
       "Fish & Chips",
       "Chinese",
@@ -1077,7 +1077,7 @@ const specialUnlockCriteria = {
     const shuffled = Object.fromEntries(
       Object.entries(horseNameCategories).map(([key, names]) => [
         key,
-        key === "Default" ? names : shuffleArray(names), // Don't shuffle Default theme
+        key === "Default Horse Name" ? names : shuffleArray(names), // Don't shuffle Default Horse Name theme
       ])
     );
     setShuffledHorseNames(shuffled);
@@ -1122,8 +1122,8 @@ const specialUnlockCriteria = {
       return customHorseNames[avatarIndex];
     }
     
-    // For Default theme, map avatar to its specific name
-    if (nameCategory === "Default") {
+    // For Default Horse Name theme, map avatar to its specific name
+    if (nameCategory === "Default Horse Name") {
       return horseNames[avatarIndex] || horseNames[index % horseNames.length];
     }
     
@@ -1131,7 +1131,7 @@ const specialUnlockCriteria = {
     const categoryList = shuffledHorseNames[nameCategory] || 
                         (customThemes && customThemes[nameCategory]) || 
                         horseNameCategories[nameCategory] || 
-                        horseNameCategories["Default"];
+                        horseNameCategories["Default Horse Name"];
     return categoryList && categoryList.length > 0 ? categoryList[index % categoryList.length] : `Horse ${index + 1}`;
   };
 
@@ -1749,9 +1749,9 @@ const specialUnlockCriteria = {
     delete newCustomThemes[themeName];
     setCustomThemes(newCustomThemes);
     
-    // If we're deleting the currently selected theme, switch to Default
+    // If we're deleting the currently selected theme, switch to Default Horse Name
     if (nameCategory === themeName) {
-      setNameCategory("Default");
+      setNameCategory("Default Horse Name");
     }
     
     setShowThemeModal(false);
@@ -1777,10 +1777,10 @@ const specialUnlockCriteria = {
 
   const randomizeHorseNames = () => {
     const categoryList = (customThemes && customThemes[nameCategory]) ||
-      horseNameCategories[nameCategory] || horseNameCategories["Default"];
+      horseNameCategories[nameCategory] || horseNameCategories["Default Horse Name"];
     
-    // Don't shuffle Default theme names
-    if (nameCategory !== "Default") {
+    // Don't shuffle Default Horse Name theme names
+    if (nameCategory !== "Default Horse Name") {
       const shuffledNames = shuffleArray(categoryList);
       setShuffledHorseNames((prev) => ({
         ...prev,
@@ -1792,6 +1792,7 @@ const specialUnlockCriteria = {
       item.trim() === "" ? "" : item
     );
     setItems(newItems);
+    
     setShuffledAvatars(shuffleArray(shuffledAvatars));
   };
 
@@ -2487,6 +2488,8 @@ const specialUnlockCriteria = {
                     }
                     
                     setNameCategory(newCategory);
+                    
+                    
                     // Auto-set contestant count to 2 for Yes or No theme
                     if (newCategory === "Yes or No") {
                       setItemCount(2);
@@ -2578,7 +2581,7 @@ const specialUnlockCriteria = {
                     <input
                       type="text"
                       placeholder={`Or use: ${
-                        nameCategory === "Default" 
+                        nameCategory === "Default Horse Name" 
                           ? getHorseName("", index) // Use the proper avatar-to-name mapping
                           : (() => {
                               // Check custom themes first, then shuffled names, then built-in themes

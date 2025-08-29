@@ -51,7 +51,7 @@ export default function CustomThemeModal({
 
     // Check if theme name already exists (but allow editing the same theme)
     if (!isEdit && (themeName in customThemes || themeName in {
-      "Default": true,
+      "Default Horse Name": true,
       "Takeaways": true,
       "Films": true,
       "Anime": true,
