@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, RotateCcw, Play, Trophy, Zap, Star, Plus } from 'lucide-react';
+import { Shuffle, RotateCcw, Play, Trophy, Zap, Star, Plus, Eye } from 'lucide-react';
 import DressageArena from './DressageArena';
 
 // This is a modified version of the card game that works WITHIN the arena
 const FullArenaGame = ({ selectedHorse, onBack }) => {
-  // Copy all the game state from the original dressage.js
-  const cardDeck = [
+  
+  // Classic Deck Definition
+  const classicDeckCards = [
     // Walks (4 cards) - Safe foundation + stamina management
     { id: 1, name: "Collected Walk", base: 1, tags: ["Walk"], flow: "+1 if after [Transition]", cost: 0, type: "walk" },
     { id: 2, name: "Medium Walk", base: 1, tags: ["Walk"], flow: "+2 if after another [Walk]", cost: 0, type: "walk" },
@@ -49,6 +50,60 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     { id: 27, name: "Freestyle Finish", base: 4, tags: ["Finish"], bonus: "+1 for each gait type used this game", cost: 1, type: "finish" }
   ];
 
+  // Deck Library
+  const deckLibrary = {
+    classic: {
+      name: "Classic Deck",
+      description: "The original balanced dressage deck",
+      cards: classicDeckCards
+    },
+    freestyle: {
+      name: "Freestyle Deck", 
+      description: "Build flow, then break it for artistic expression",
+      cards: [
+        // Foundation Classic Cards (for flow building)
+        { id: 5, name: "Working Trot", base: 2, tags: ["Trot"], flow: "Solid foundation move", cost: 0, type: "trot" },
+        { id: 6, name: "Extended Trot", base: 2, tags: ["Trot"], flow: "+2 if after [Walk]", cost: 0, type: "trot" },
+        { id: 7, name: "Collected Trot", base: 2, tags: ["Trot"], flow: "+2 if after [Transition]", cost: 0, type: "trot" },
+        { id: 10, name: "Working Canter", base: 2, tags: ["Canter"], flow: "Safe setup for flow", cost: 0, type: "canter" },
+        { id: 11, name: "Extended Canter", base: 3, tags: ["Canter"], risk: "Costs 1 Stamina", cost: 1, type: "canter" },
+        { id: 14, name: "Flying Change", base: 2, tags: ["Transition"], flow: "+2 if after [Canter]", cost: 0, type: "transition" },
+        { id: 15, name: "Simple Change", base: 1, tags: ["Transition"], bonus: "Restore 1 Stamina", cost: 0, type: "transition" },
+        { id: 17, name: "Tempo Change", base: 2, tags: ["Transition"], flow: "Universal connector + draw 1 card", cost: 0, type: "transition" },
+        { id: 2, name: "Medium Walk", base: 1, tags: ["Walk"], flow: "+2 if after another [Walk]", cost: 0, type: "walk" },
+        { id: 3, name: "Free Walk on Long Rein", base: 1, tags: ["Walk"], bonus: "Restore 1 Stamina", cost: 0, type: "walk" },
+        { id: 26, name: "Final Halt & Salute", base: 3, tags: ["Finish"], bonus: "+2 if routine length ≥ 6", cost: 0, type: "finish" },
+        
+        // NEW FREESTYLE CARDS
+        // Flow Breaker Cards
+        { id: 101, name: "Spontaneous Leap", base: 2, tags: ["Specialty"], flow: "Breaks flow. +2 points per flow level lost", cost: 0, type: "freestyle" },
+        { id: 102, name: "Artistic Rebellion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Draw cards equal to flow level lost", cost: 0, type: "freestyle" },
+        { id: 103, name: "Bold Improvisation", base: 3, tags: ["Canter"], flow: "Breaks flow. Next card gets +X points (X = flow level lost)", cost: 1, type: "freestyle" },
+        { id: 104, name: "Creative Explosion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Gain +2 stamina", cost: 0, type: "freestyle" },
+        
+        // Post-Break Reward Cards
+        { id: 105, name: "Phoenix Rising", base: 3, tags: ["Trot"], flow: "+3 points if flow was broken this turn", cost: 0, type: "freestyle" },
+        { id: 106, name: "From the Ashes", base: 4, tags: ["Canter"], flow: "Costs 0 if flow was broken this turn, otherwise costs 2", cost: 2, type: "freestyle" },
+        { id: 107, name: "Improvised Grace", base: 2, tags: ["Walk"], flow: "+1 point for each turn since flow was broken (max +4)", cost: 0, type: "freestyle" },
+        { id: 108, name: "Chaos Control", base: 2, tags: ["Transition"], flow: "If flow broken recently: Start new flow at level 2", cost: 0, type: "freestyle" },
+        
+        // Flow Gambler Cards
+        { id: 109, name: "All or Nothing", base: 1, tags: ["Specialty"], flow: "Flow ≥5: +6 points and break flow. Flow <5: +0 points", cost: 0, type: "freestyle" },
+        { id: 110, name: "High Wire Act", base: 3, tags: ["Canter"], flow: "If this breaks flow: +5 points. If maintains flow: Draw 2 cards", cost: 1, type: "freestyle" },
+        
+        // Chaos Amplifier Cards  
+        { id: 111, name: "Wild Card", base: 2, tags: ["Wild"], flow: "Randomly counts as Walk, Trot, or Canter for combos", cost: 0, type: "freestyle" },
+        { id: 112, name: "Unpredictable", base: 1, tags: ["Specialty"], flow: "+1 point for each different card type played this game", cost: 0, type: "freestyle" },
+        { id: 113, name: "Freestyle Finale", base: 3, tags: ["Finish"], flow: "+1 point for each time flow was broken this game", cost: 1, type: "freestyle" }
+      ]
+    }
+  };
+
+  // Game state
+  const [selectedDeck, setSelectedDeck] = useState('classic');
+  const [showDeckSelector, setShowDeckSelector] = useState(false);
+  const [showDeckViewer, setShowDeckViewer] = useState(false);
+
   // Game state
   const [gameState, setGameState] = useState('playing');
   const [showTutorial, setShowTutorial] = useState(false);
@@ -72,14 +127,23 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [maxHandSize] = useState(4);
   const [needsDiscard, setNeedsDiscard] = useState(false);
   
+  // Freestyle deck state tracking
+  const [flowBreakCount, setFlowBreakCount] = useState(0);
+  const [lastFlowBreakTurn, setLastFlowBreakTurn] = useState(-1);
+  const [cardTypesUsed, setCardTypesUsed] = useState(new Set());
+  const [nextCardBonus, setNextCardBonus] = useState(0);
+  
   // Arena-specific state
   const [lastPlayedCard, setLastPlayedCard] = useState(null);
   const [isPerforming, setIsPerforming] = useState(false);
   const [flowBroke, setFlowBroke] = useState(false);
 
+  // Get current deck cards
+  const getCurrentDeck = () => deckLibrary[selectedDeck]?.cards || deckLibrary.classic.cards;
+
   // Shuffle deck - create unique instances to prevent reference issues
   const shuffleDeck = () => {
-    const shuffled = [...cardDeck]
+    const shuffled = [...getCurrentDeck()]
       .map(card => ({ ...card, instanceId: Math.random() })) // Create unique instances
       .sort(() => Math.random() - 0.5);
     setDeck(shuffled);
@@ -103,6 +167,10 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setStretchingCircleUsed(false);
     setStaminaSurgeActive(false);
     setNeedsDiscard(false);
+    setFlowBreakCount(0);
+    setLastFlowBreakTurn(-1);
+    setCardTypesUsed(new Set());
+    setNextCardBonus(0);
     setTurnPhase('buy');
     setMessage('Turn 1/8 - Your turn! Draw cards with stamina or play a move.');
     setGameState('playing');
@@ -169,6 +237,52 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       comboBonus = gaitTypesUsed.size;
       comboText = `Variety bonus +${comboBonus}! `;
     }
+    // FREESTYLE DECK CARDS
+    else if (card.name === "Spontaneous Leap") {
+      comboBonus = flowLevel * 2;
+      comboText = `Flow sacrifice +${comboBonus}! `;
+    }
+    else if (card.name === "Phoenix Rising" && lastFlowBreakTurn === currentTurn - 1) {
+      comboBonus = 3;
+      comboText = `Rising from ashes +${comboBonus}! `;
+    }
+    else if (card.name === "From the Ashes" && lastFlowBreakTurn === currentTurn - 1) {
+      // This card's cost reduction is handled in playCard function
+      comboText = `Ash bonus - free play! `;
+    }
+    else if (card.name === "Improvised Grace") {
+      const turnsSinceBreak = lastFlowBreakTurn >= 0 ? Math.min(4, currentTurn - lastFlowBreakTurn - 1) : 0;
+      comboBonus = turnsSinceBreak;
+      comboText = `Improvisation +${comboBonus}! `;
+    }
+    else if (card.name === "All or Nothing") {
+      if (flowLevel >= 5) {
+        comboBonus = 6;
+        comboText = `All or nothing +${comboBonus}! `;
+      }
+    }
+    else if (card.name === "Unpredictable") {
+      comboBonus = cardTypesUsed.size;
+      comboText = `Unpredictable +${comboBonus}! `;
+    }
+    else if (card.name === "Freestyle Finale") {
+      comboBonus = flowBreakCount;
+      comboText = `Freestyle finale +${comboBonus}! `;
+    }
+    else if (card.name === "High Wire Act") {
+      // Check if this will break flow (we need to calculate flow here)
+      const { flowBroke } = calculateFlowLevel(card, previousCard);
+      if (flowBroke) {
+        comboBonus = 5;
+        comboText = `High wire risk +${comboBonus}! `;
+      }
+    }
+
+    // Add next card bonus if active
+    if (nextCardBonus > 0) {
+      comboBonus += nextCardBonus;
+      comboText += `Next card bonus +${nextCardBonus}! `;
+    }
 
     return { comboBonus, comboText };
   };
@@ -221,6 +335,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       // Natural progression: Trot → Canter
       newFlowLevel = flowLevel + 1;
       flowText = `Trot→Canter flow +${newFlowLevel}! `;
+    } else if (["Spontaneous Leap", "Artistic Rebellion", "Bold Improvisation", "Creative Explosion", "All or Nothing"].includes(card.name)) {
+      // Freestyle cards that intentionally break flow
+      flowBrokeNow = true;
+      flowText = "Artistic flow break! ";
+      newFlowLevel = 0;
+    } else if (card.name === "Chaos Control" && lastFlowBreakTurn === currentTurn - 1) {
+      // Special case: start new flow at level 2 after recent break
+      newFlowLevel = 2;
+      flowText = `Chaos controlled +${newFlowLevel}! `;
     } else {
       // All other combinations break flow
       flowBrokeNow = true;
@@ -662,7 +785,13 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const playCard = (card) => {
     if (gameOver || needsDiscard || isPerforming) return; // Prevent clicks during animation
     
-    const actualCost = staminaSurgeActive && card.name !== "Stamina Surge" ? 0 : card.cost;
+    // Calculate actual cost with special cases
+    let actualCost = card.cost;
+    if (staminaSurgeActive && card.name !== "Stamina Surge") {
+      actualCost = 0;
+    } else if (card.name === "From the Ashes" && lastFlowBreakTurn === currentTurn - 1) {
+      actualCost = 0; // Free if flow was broken last turn
+    }
     if (stamina < actualCost) {
       setMessage("Not enough stamina for this move!");
       return;
@@ -700,6 +829,41 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         }, 100);
       }
     }
+    
+    // FREESTYLE CARD SPECIAL EFFECTS
+    else if (card.name === "Artistic Rebellion") {
+      // Draw cards equal to flow level lost
+      const cardsToDraw = flowLevel;
+      for (let i = 0; i < cardsToDraw && deck.length > 0; i++) {
+        const extraCard = drawCard();
+        if (extraCard) {
+          setTimeout(() => {
+            setHand(prev => [...prev, extraCard]);
+          }, 100 * (i + 1));
+        }
+      }
+    } else if (card.name === "Bold Improvisation") {
+      // Next card gets bonus points equal to flow level lost
+      setNextCardBonus(flowLevel);
+    } else if (card.name === "Creative Explosion") {
+      // Gain +2 stamina
+      newStamina += 2;
+    } else if (card.name === "From the Ashes" && lastFlowBreakTurn === currentTurn - 1) {
+      // Cost already handled in cost calculation - no additional effect needed
+    } else if (card.name === "High Wire Act") {
+      if (!flowBrokeNow) {
+        // If this maintains flow: Draw 2 cards
+        for (let i = 0; i < 2 && deck.length > 0; i++) {
+          const extraCard = drawCard();
+          if (extraCard) {
+            setTimeout(() => {
+              setHand(prev => [...prev, extraCard]);
+            }, 100 * (i + 1));
+          }
+        }
+      }
+      // If this breaks flow: +5 points (handled in combo bonus)
+    }
 
     // Clear stamina surge after use
     if (staminaSurgeActive && card.name !== "Stamina Surge") {
@@ -718,6 +882,22 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (card.tags.includes("Canter")) newGaitTypes.add("Canter");
     if (card.tags.includes("Transition")) newGaitTypes.add("Transition");
     setGaitTypesUsed(newGaitTypes);
+
+    // Track card types for Freestyle deck
+    const newCardTypes = new Set(cardTypesUsed);
+    newCardTypes.add(card.type);
+    setCardTypesUsed(newCardTypes);
+
+    // Handle flow breaking tracking
+    if (flowBrokeNow) {
+      setFlowBreakCount(prev => prev + 1);
+      setLastFlowBreakTurn(currentTurn);
+    }
+
+    // Clear next card bonus after use
+    if (nextCardBonus > 0) {
+      setNextCardBonus(0);
+    }
     
     // Update state - use functional updates to prevent race conditions
     const newHand = hand.filter(c => c.instanceId !== card.instanceId);
@@ -815,7 +995,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       transition: 'bg-yellow-100 border-yellow-400',
       specialty: 'bg-orange-100 border-orange-400',
       power: 'bg-pink-100 border-pink-400',
-      finish: 'bg-red-100 border-red-400'
+      finish: 'bg-red-100 border-red-400',
+      freestyle: 'bg-gradient-to-br from-purple-100 to-pink-100 border-purple-400'
     };
     return colors[type] || 'bg-gray-100 border-gray-400';
   };
@@ -1000,7 +1181,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         </div>
 
         {/* Controls */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 flex-wrap">
           {/* Draw Card Button */}
           {turnPhase === 'buy' && deck.length > 0 && (
             <button
@@ -1016,10 +1197,136 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
               Draw Card (1 Stamina)
             </button>
           )}
+          
+          {/* Deck Selector Button */}
+          <button
+            onClick={() => setShowDeckSelector(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <Shuffle className="w-4 h-4" />
+            {deckLibrary[selectedDeck].name}
+          </button>
+          
+          {/* View Deck Button */}
+          <button
+            onClick={() => setShowDeckViewer(true)}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            View Deck
+          </button>
         </div>
 
         {/* Tutorial Modal */}
         {showTutorial && <DressageTutorial />}
+        
+        {/* Deck Selector Modal */}
+        {showDeckSelector && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Select Deck</h2>
+                <button 
+                  onClick={() => setShowDeckSelector(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {Object.entries(deckLibrary).map(([key, deckInfo]) => (
+                  <div 
+                    key={key}
+                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedDeck === key 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => {
+                      setSelectedDeck(key);
+                      setShowDeckSelector(false);
+                      startGame(); // Restart with new deck
+                    }}
+                  >
+                    <div className="font-bold">{deckInfo.name}</div>
+                    <div className="text-sm text-gray-600">{deckInfo.description}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {deckInfo.cards.length} cards
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Deck Viewer Modal */}
+        {showDeckViewer && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-5xl mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">
+                  {deckLibrary[selectedDeck].name} - {getCurrentDeck().length} Cards
+                </h2>
+                <button 
+                  onClick={() => setShowDeckViewer(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Group cards by type */}
+              {['walk', 'trot', 'canter', 'transition', 'specialty', 'power', 'freestyle', 'finish'].map(cardType => {
+                const typeCards = getCurrentDeck().filter(card => card.type === cardType);
+                if (typeCards.length === 0) return null;
+                
+                return (
+                  <div key={cardType} className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 capitalize">
+                      {cardType} Cards ({typeCards.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {typeCards.map(card => (
+                        <div 
+                          key={card.id}
+                          className={`p-3 rounded-lg border-2 ${getCardColor(card.type)}`}
+                        >
+                          {/* Type Label */}
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                              {getPrimaryGaitType(card)}
+                            </span>
+                            {card.cost > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Zap className="w-3 h-3 text-red-600" />
+                                <span className="text-xs text-red-600">{card.cost}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="font-bold text-sm mb-1">{card.name}</div>
+                          
+                          <div className="flex items-center gap-2 mb-2">
+                            <Star className="w-3 h-3" />
+                            <span className="text-sm font-semibold">{card.base}</span>
+                          </div>
+                          
+                          <div className="text-xs text-gray-600 space-y-1">
+                            {card.flow && <div className="text-blue-600">{card.flow}</div>}
+                            {card.bonus && <div className="text-green-600">{card.bonus}</div>}
+                            {card.risk && <div className="text-red-600">{card.risk}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </DressageArena>
   );
