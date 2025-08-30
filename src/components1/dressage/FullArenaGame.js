@@ -188,14 +188,14 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       flowText = 'Routine concluded! ';
     } else if (card.tags.includes("Transition")) {
       // Transitions always maintain flow (universal connectors)
-      newFlowLevel = Math.min(3, flowLevel + 1);
+      newFlowLevel = flowLevel + 1;
       flowText = `Transition flow +${newFlowLevel}! `;
     } else if (card.tags.includes("Walk")) {
       // Walks maintain flow only after Walk/Transition/Canter
       if (previousCard.tags.includes("Walk") || 
           previousCard.tags.includes("Transition") || 
           previousCard.tags.includes("Canter")) {
-        newFlowLevel = Math.min(3, flowLevel + 1);
+        newFlowLevel = flowLevel + 1;
         if (previousCard.tags.includes("Walk")) {
           flowText = `Walk sequence +${newFlowLevel}! `;
         } else if (previousCard.tags.includes("Canter")) {
@@ -211,15 +211,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       }
     } else if (previousCard.tags.includes("Transition")) {
       // Any card after a Transition maintains flow (universal connector)
-      newFlowLevel = Math.min(3, flowLevel + 1);
+      newFlowLevel = flowLevel + 1;
       flowText = `After transition +${newFlowLevel}! `;
     } else if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) {
       // Natural progression: Walk → Trot
-      newFlowLevel = Math.min(3, flowLevel + 1);
+      newFlowLevel = flowLevel + 1;
       flowText = `Walk→Trot flow +${newFlowLevel}! `;
     } else if (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) {
       // Natural progression: Trot → Canter
-      newFlowLevel = Math.min(3, flowLevel + 1);
+      newFlowLevel = flowLevel + 1;
       flowText = `Trot→Canter flow +${newFlowLevel}! `;
     } else {
       // All other combinations break flow
@@ -245,11 +245,22 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     const { newFlowLevel, flowBroke: flowBrokeNow, flowText } = calculateFlowLevel(card, previousCard);
     bonusText += flowText;
 
-    // 3. Apply flow multiplier bonus (percentage bonus for high flow)
+    // 3. Flow Master special bonus
+    if (card.name === "Flow Master") {
+      if (newFlowLevel >= 7) {
+        score += 4;
+        bonusText += `Flow mastery +4! `;
+      } else if (newFlowLevel >= 5) {
+        score += 2;
+        bonusText += `Flow mastery +2! `;
+      }
+    }
+
+    // 4. Apply flow multiplier bonus (percentage bonus for high flow)
     if (newFlowLevel >= 3) {
       const flowMultiplierBonus = Math.floor(score * 0.5);
       score += flowMultiplierBonus;
-      bonusText += `Flow mastery +${flowMultiplierBonus}! `;
+      bonusText += `Flow level +${flowMultiplierBonus}! `;
     }
 
     return { score, bonusText, newFlowLevel, flowBroke: flowBrokeNow };
@@ -715,7 +726,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setTotalScore(prev => prev + score);
     setPlayedCards(prev => [...prev, { ...card, earnedScore: score }]);
     setFlowLevel(newFlowLevel);
-    setFlowMeter(prev => flowBrokeNow ? 0 : Math.min(3, newFlowLevel));
+    setFlowMeter(prev => flowBrokeNow ? 0 : newFlowLevel);
     
     console.log(`Played ${card.name} (${card.instanceId?.toString().slice(2,8)}), hand size: ${newHand.length}, routine length: ${playedCards.length + 1}`);
 
@@ -915,7 +926,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           <div className="flex items-center gap-2">
             <div className="text-sm font-medium">Flow:</div>
             <div className="flex gap-1">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(Math.max(7, flowMeter))].map((_, i) => (
                 <div 
                   key={i} 
                   className={`w-3 h-3 rounded-full ${
