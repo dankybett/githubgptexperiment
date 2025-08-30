@@ -7,7 +7,7 @@ import RaceTrack from "./components1/RaceTrack";
 import BattleshipGame from "./components1/BattleshipGame";
 import LockedHorses from "./components1/LockedHorses";
 import HorseMazeGame from "./components1/labyrinth";
-import EnhancedDressageGame from "./components1/dressage/EnhancedDressageGame";
+import ArenaIntegratedGame from "./components1/dressage/ArenaIntegratedGame";
 import SettingsModal from "./components1/SettingsModal";
 import CustomThemeModal from "./components1/CustomThemeModal";
 import { raceEngineAdapter } from "./racing/RaceEngineAdapter";
@@ -2397,7 +2397,7 @@ const specialUnlockCriteria = {
 
   if (showDressage) {
     return (
-      <EnhancedDressageGame 
+      <ArenaIntegratedGame 
         selectedHorse={selectedHorseForDressage}
         onBack={() => {
           setShowDressage(false);

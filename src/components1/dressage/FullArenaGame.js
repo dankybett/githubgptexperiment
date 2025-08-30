@@ -8,41 +8,41 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   // Copy all the game state from the original dressage.js
   const cardDeck = [
     // Walks (4 cards) - Safe foundation + stamina management
-    { id: 1, name: "Collected Walk", base: 1, tags: ["Walk"], combo: "+1 if after [Transition]", cost: 0, type: "walk" },
-    { id: 2, name: "Medium Walk", base: 1, tags: ["Walk"], combo: "+2 if after another [Walk]", cost: 0, type: "walk" },
+    { id: 1, name: "Collected Walk", base: 1, tags: ["Walk"], flow: "+1 if after [Transition]", cost: 0, type: "walk" },
+    { id: 2, name: "Medium Walk", base: 1, tags: ["Walk"], flow: "+2 if after another [Walk]", cost: 0, type: "walk" },
     { id: 3, name: "Free Walk on Long Rein", base: 1, tags: ["Walk"], bonus: "Restore 1 Stamina", cost: 0, type: "walk" },
     { id: 4, name: "Stretching Circle", base: 1, tags: ["Walk"], bonus: "Restore 2 Stamina (once per game)", cost: 0, type: "walk", unique: true },
     
     // Trots (5 cards) - Reliable scoring + flow building
-    { id: 5, name: "Working Trot", base: 2, tags: ["Trot"], combo: "Solid foundation move", cost: 0, type: "trot" },
-    { id: 6, name: "Extended Trot", base: 2, tags: ["Trot"], combo: "+2 if after [Walk]", cost: 0, type: "trot" },
-    { id: 7, name: "Collected Trot", base: 2, tags: ["Trot"], combo: "+2 if after [Transition]", cost: 0, type: "trot" },
-    { id: 8, name: "Piaffe", base: 4, tags: ["Trot"], combo: "+2 if after Collected Trot", cost: 1, type: "trot" },
-    { id: 9, name: "Steady Rhythm", base: 2, tags: ["Trot"], combo: "+1 Stamina if combo length ≥ 3", cost: 0, type: "trot" },
+    { id: 5, name: "Working Trot", base: 2, tags: ["Trot"], flow: "Solid foundation move", cost: 0, type: "trot" },
+    { id: 6, name: "Extended Trot", base: 2, tags: ["Trot"], flow: "+2 if after [Walk]", cost: 0, type: "trot" },
+    { id: 7, name: "Collected Trot", base: 2, tags: ["Trot"], flow: "+2 if after [Transition]", cost: 0, type: "trot" },
+    { id: 8, name: "Piaffe", base: 4, tags: ["Trot"], flow: "+2 if after Collected Trot", cost: 1, type: "trot" },
+    { id: 9, name: "Steady Rhythm", base: 2, tags: ["Trot"], flow: "+1 Stamina if flow level ≥ 3", cost: 0, type: "trot" },
     
     // Canters (4 cards) - High risk/reward + power plays
-    { id: 10, name: "Working Canter", base: 2, tags: ["Canter"], combo: "Safe setup for combos", cost: 0, type: "canter" },
+    { id: 10, name: "Working Canter", base: 2, tags: ["Canter"], flow: "Safe setup for flow", cost: 0, type: "canter" },
     { id: 11, name: "Extended Canter", base: 3, tags: ["Canter"], risk: "Costs 1 Stamina", cost: 1, type: "canter" },
-    { id: 12, name: "Canter Pirouette", base: 4, tags: ["Canter"], combo: "+3 if after [Transition]", cost: 2, type: "canter" },
-    { id: 13, name: "Bold Extension", base: 2, tags: ["Canter"], combo: "+1 for each Canter played this game", cost: 1, type: "canter" },
+    { id: 12, name: "Canter Pirouette", base: 4, tags: ["Canter"], flow: "+3 if after [Transition]", cost: 2, type: "canter" },
+    { id: 13, name: "Bold Extension", base: 2, tags: ["Canter"], flow: "+1 for each Canter played this game", cost: 1, type: "canter" },
     
     // Transitions (4 cards) - Flow enablers + utility
-    { id: 14, name: "Flying Change", base: 2, tags: ["Transition"], combo: "+2 if after [Canter]", cost: 0, type: "transition" },
+    { id: 14, name: "Flying Change", base: 2, tags: ["Transition"], flow: "+2 if after [Canter]", cost: 0, type: "transition" },
     { id: 15, name: "Simple Change", base: 1, tags: ["Transition"], bonus: "Restore 1 Stamina", cost: 0, type: "transition" },
-    { id: 16, name: "Rein Back", base: 2, tags: ["Transition"], combo: "+1 if after [Walk]", cost: 0, type: "transition" },
-    { id: 17, name: "Tempo Change", base: 2, tags: ["Transition"], combo: "Universal connector + draw 1 card", cost: 0, type: "transition" },
+    { id: 16, name: "Rein Back", base: 2, tags: ["Transition"], flow: "+1 if after [Walk]", cost: 0, type: "transition" },
+    { id: 17, name: "Tempo Change", base: 2, tags: ["Transition"], flow: "Universal connector + draw 1 card", cost: 0, type: "transition" },
     
     // Specialty (5 cards) - Build-around strategies
-    { id: 18, name: "Shoulder-In", base: 2, tags: ["Trot"], combo: "+1 if after another [Trot]", cost: 0, type: "specialty" },
-    { id: 19, name: "Passage", base: 4, tags: ["Trot"], combo: "+2 if after Piaffe", cost: 1, type: "specialty" },
+    { id: 18, name: "Shoulder-In", base: 2, tags: ["Trot"], flow: "+1 if after another [Trot]", cost: 0, type: "specialty" },
+    { id: 19, name: "Passage", base: 4, tags: ["Trot"], flow: "+2 if after Piaffe", cost: 1, type: "specialty" },
     { id: 20, name: "Counter-Canter", base: 3, tags: ["Canter"], risk: "-1 Style if not preceded by [Transition]", cost: 0, type: "specialty" },
-    { id: 21, name: "Training Level Test", base: 1, tags: ["Walk"], combo: "+1 for each different gait type played", cost: 0, type: "specialty" },
-    { id: 22, name: "Flow Master", base: 1, tags: ["Transition"], combo: "+2 if combo length ≥ 5, +4 if ≥ 7", cost: 0, type: "specialty" },
+    { id: 21, name: "Training Level Test", base: 1, tags: ["Walk"], flow: "+1 for each different gait type played", cost: 0, type: "specialty" },
+    { id: 22, name: "Flow Master", base: 1, tags: ["Transition"], flow: "+2 if flow level ≥ 5, +4 if ≥ 7", cost: 0, type: "specialty" },
     
     // Power Cards (3 cards) - Game changers
-    { id: 23, name: "Perfect Harmony", base: 3, tags: ["Specialty"], combo: "+2 for each gait type used this game", cost: 2, type: "power" },
+    { id: 23, name: "Perfect Harmony", base: 3, tags: ["Specialty"], flow: "+2 for each gait type used this game", cost: 2, type: "power" },
     { id: 24, name: "Stamina Surge", base: 1, tags: ["Walk"], bonus: "Gain 3 Stamina, next card costs 0", cost: 0, type: "power" },
-    { id: 25, name: "Technical Showcase", base: 6, tags: ["Specialty"], risk: "-3 if combo length < 3", cost: 3, type: "power" },
+    { id: 25, name: "Technical Showcase", base: 6, tags: ["Specialty"], risk: "-3 if flow level < 3", cost: 3, type: "power" },
     
     // Finish (2 cards)
     { id: 26, name: "Final Halt & Salute", base: 3, tags: ["Finish"], bonus: "+2 if routine length ≥ 6", cost: 0, type: "finish" },
@@ -70,6 +70,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [stretchingCircleUsed, setStretchingCircleUsed] = useState(false);
   const [staminaSurgeActive, setStaminaSurgeActive] = useState(false);
   const [maxHandSize] = useState(4);
+  const [needsDiscard, setNeedsDiscard] = useState(false);
   
   // Arena-specific state
   const [lastPlayedCard, setLastPlayedCard] = useState(null);
@@ -99,6 +100,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setCantersPlayed(0);
     setStretchingCircleUsed(false);
     setStaminaSurgeActive(false);
+    setNeedsDiscard(false);
     setTurnPhase('buy');
     setMessage('Turn 1/8 - Your turn! Draw cards with stamina or play a move.');
     setGameState('playing');
@@ -117,30 +119,37 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     let newFlowLevel = flowLevel;
     let flowBrokeNow = false;
 
-    // Basic combo checking (simplified version)
-    let hasCombo = false;
+    // Basic flow checking (simplified version)
+    let hasFlow = false;
     
     if (card.name === "Extended Trot" && previousCard?.tags.includes("Walk")) {
       score += 2;
       bonusText += "Walk→Trot +2! ";
-      hasCombo = true;
+      hasFlow = true;
     }
     if (card.name === "Flying Change" && previousCard?.tags.includes("Canter")) {
       score += 2;
-      bonusText += "Canter combo +2! ";
-      hasCombo = true;
+      bonusText += "Canter flow +2! ";
+      hasFlow = true;
     }
-    // Add more combo logic as needed...
+    // Add more flow logic as needed...
 
-    // Flow logic
-    if (hasCombo || card.tags.includes("Transition")) {
+    // Flow logic with gait progression support
+    if (hasFlow || card.tags.includes("Transition")) {
       newFlowLevel += 1;
       bonusText += `Flow +${newFlowLevel}! `;
     } else if (previousCard && !card.tags.includes("Finish")) {
       const naturalFlow = (
+        // Cross-gait natural progressions
         (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) ||
         (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) ||
-        card.tags.includes("Walk")
+        // Walks always maintain flow
+        card.tags.includes("Walk") ||
+        // Same-gait progressions (Trot 1→2→3, Canter 1→2→3)
+        ((previousCard.tags.includes("Trot") && card.tags.includes("Trot")) && 
+         maintainsSameGaitFlow(card, previousCard)) ||
+        ((previousCard.tags.includes("Canter") && card.tags.includes("Canter")) && 
+         maintainsSameGaitFlow(card, previousCard))
       );
       
       if (!naturalFlow) {
@@ -148,10 +157,12 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         bonusText += "Flow broken... ";
         newFlowLevel = 0;
       } else {
-        newFlowLevel = Math.max(1, newFlowLevel);
+        // Increment flow level for maintaining flow
+        newFlowLevel = Math.min(3, newFlowLevel + 1);
       }
     } else {
-      newFlowLevel = Math.max(1, newFlowLevel);
+      // First card or finish card - set initial flow level
+      newFlowLevel = 1;
     }
 
     // Flow multiplier bonus
@@ -164,13 +175,49 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     return { score, bonusText, newFlowLevel, flowBroke: flowBrokeNow };
   };
 
+  // Gait progression system
+  const getGaitLevel = (cardName, tags) => {
+    // Trot progression levels
+    if (tags.includes("Trot")) {
+      if (["Working Trot", "Steady Rhythm"].includes(cardName)) return 1; // Foundation
+      if (["Extended Trot"].includes(cardName)) return 2; // Advanced
+      if (["Collected Trot", "Piaffe", "Shoulder-In", "Passage"].includes(cardName)) return 3; // Refined
+    }
+    
+    // Canter progression levels  
+    if (tags.includes("Canter")) {
+      if (["Working Canter"].includes(cardName)) return 1; // Foundation
+      if (["Extended Canter", "Bold Extension"].includes(cardName)) return 2; // Advanced
+      if (["Canter Pirouette", "Counter-Canter"].includes(cardName)) return 3; // Refined
+    }
+    
+    return 0; // Not a progressive gait
+  };
+
+  // Check if same-gait transition maintains flow
+  const maintainsSameGaitFlow = (currentCard, previousCard) => {
+    // Walks always maintain flow
+    if (currentCard.tags.includes("Walk")) return true;
+    
+    // For trots and canters, check progression order
+    const prevLevel = getGaitLevel(previousCard.name, previousCard.tags);
+    const currentLevel = getGaitLevel(currentCard.name, currentCard.tags);
+    
+    if (prevLevel > 0 && currentLevel > 0) {
+      // Allow same level or progression to higher level, but not regression
+      return currentLevel >= prevLevel;
+    }
+    
+    return false;
+  };
+
   // Enhanced flow analysis function
   const analyzeFlow = (card) => {
     if (playedCards.length === 0) {
       return {
         maintains: true,
         type: 'start',
-        comboBonus: 0,
+        flowBonus: 0,
         flowMultiplier: 1,
         newFlowLevel: 1,
         reason: 'Starting move'
@@ -179,7 +226,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
     const previousCard = playedCards[playedCards.length - 1];
     const { score, bonusText, newFlowLevel, flowBroke } = calculateScore(card, previousCard);
-    const comboBonus = score - card.base;
+    const flowBonus = score - card.base;
     const flowMultiplier = newFlowLevel >= 3 ? 1.5 : 1;
     
     // Always maintains flow
@@ -187,19 +234,19 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       return {
         maintains: true,
         type: card.tags.includes("Transition") ? 'transition' : card.tags.includes("Walk") ? 'graceful' : 'finish',
-        comboBonus,
+        flowBonus,
         flowMultiplier,
         newFlowLevel,
         reason: card.tags.includes("Transition") ? 'Universal connector' : card.tags.includes("Walk") ? 'Always graceful' : 'Routine finish'
       };
     }
     
-    // Natural progressions
+    // Natural cross-gait progressions
     if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) {
       return {
         maintains: true,
         type: 'natural',
-        comboBonus,
+        flowBonus,
         flowMultiplier,
         newFlowLevel,
         reason: 'Walk → Trot progression'
@@ -209,7 +256,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       return {
         maintains: true,
         type: 'natural',
-        comboBonus,
+        flowBonus,
         flowMultiplier,
         newFlowLevel,
         reason: 'Trot → Canter progression'
@@ -219,27 +266,58 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       return {
         maintains: true,
         type: 'connected',
-        comboBonus,
+        flowBonus,
         flowMultiplier,
         newFlowLevel,
         reason: 'After transition'
       };
     }
     
-    // Specific combos
-    const specificCombos = {
-      "Extended Trot": previousCard.tags.includes("Walk") && 'Walk → Trot combo',
-      "Flying Change": previousCard.tags.includes("Canter") && 'Canter combo',
+    // Same-gait progressions (new logic)
+    if ((previousCard.tags.includes("Trot") && card.tags.includes("Trot")) ||
+        (previousCard.tags.includes("Canter") && card.tags.includes("Canter"))) {
+      
+      if (maintainsSameGaitFlow(card, previousCard)) {
+        const prevLevel = getGaitLevel(previousCard.name, previousCard.tags);
+        const currentLevel = getGaitLevel(card.name, card.tags);
+        const gaitType = card.tags.includes("Trot") ? "Trot" : "Canter";
+        
+        return {
+          maintains: true,
+          type: 'progression',
+          flowBonus,
+          flowMultiplier,
+          newFlowLevel,
+          reason: currentLevel > prevLevel ? `${gaitType} progression` : `${gaitType} continuation`
+        };
+      } else {
+        // Same gait but wrong order (regression)
+        return {
+          maintains: false,
+          type: 'regression',
+          flowBonus: 0,
+          flowMultiplier: 1,
+          newFlowLevel: 0,
+          reason: 'Improper gait regression',
+          penalty: flowLevel
+        };
+      }
+    }
+    
+    // Specific flow bonuses
+    const specificFlowBonuses = {
+      "Extended Trot": previousCard.tags.includes("Walk") && 'Walk → Trot flow',
+      "Flying Change": previousCard.tags.includes("Canter") && 'Canter flow',
     };
     
-    if (specificCombos[card.name]) {
+    if (specificFlowBonuses[card.name]) {
       return {
         maintains: true,
         type: 'combo',
-        comboBonus,
+        flowBonus,
         flowMultiplier,
         newFlowLevel,
-        reason: specificCombos[card.name]
+        reason: specificFlowBonuses[card.name]
       };
     }
     
@@ -247,7 +325,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     return {
       maintains: !flowBroke,
       type: 'break',
-      comboBonus: flowBroke ? 0 : comboBonus,
+      flowBonus: flowBroke ? 0 : flowBonus,
       flowMultiplier: 1,
       newFlowLevel: flowBroke ? 0 : newFlowLevel,
       reason: flowBroke ? 'Breaks flow pattern' : 'Maintains flow',
@@ -255,7 +333,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     };
   };
 
-  // Enhanced Flow Indicator Component
+  // Simplified Flow Indicator Component
   const FlowIndicator = ({ card }) => {
     const flowInfo = analyzeFlow(card);
     
@@ -263,14 +341,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (playedCards.length === 0) {
       return (
         <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-          <div className="text-blue-700 font-medium flex items-center gap-1">
-            <span>🎯</span>
-            <span>Opening Move</span>
-          </div>
-          <div className="text-gray-700 font-medium text-xs mt-1">
-            Score: {card.base} points
-          </div>
-          <div className="text-gray-600 text-xs">Starts your routine</div>
+          <div className="text-blue-700 font-medium">🎯 Opening Move</div>
+          <div className="text-gray-700 text-xs mt-1">Score: {card.base} points</div>
         </div>
       );
     }
@@ -278,44 +350,24 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (!flowInfo.maintains) {
       return (
         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
-          <div className="text-red-700 font-medium flex items-center gap-1">
-            <span>✗</span>
-            <span>Breaks Flow</span>
-          </div>
-          <div className="text-red-600 text-xs mt-1">
-            Loses flow level {flowInfo.penalty}
-          </div>
-          <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
-          <div className="text-gray-700 font-medium text-xs mt-1">
-            Score: {card.base} points (no bonuses)
-          </div>
+          <div className="text-red-700 font-medium">✗ Breaks Flow</div>
+          <div className="text-gray-700 text-xs mt-1">Score: {card.base} points</div>
         </div>
       );
     }
 
-    const totalScore = card.base + flowInfo.comboBonus + (flowInfo.flowMultiplier > 1 ? Math.floor(card.base * 0.5) : 0);
+    const totalScore = card.base + flowInfo.flowBonus + (flowInfo.flowMultiplier > 1 ? Math.floor(card.base * 0.5) : 0);
     
     return (
       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-        <div className="text-green-700 font-medium flex items-center gap-1">
-          <span>✓</span>
-          <span>Maintains Flow</span>
-        </div>
-        {flowInfo.comboBonus > 0 && (
-          <div className="text-blue-600 text-xs">
-            Combo bonus: +{flowInfo.comboBonus}
-          </div>
+        <div className="text-green-700 font-medium">✓ Maintains Flow</div>
+        <div className="text-gray-700 text-xs mt-1">Score: {totalScore} points</div>
+        {flowInfo.flowBonus > 0 && (
+          <div className="text-blue-600 text-xs">+{flowInfo.flowBonus} flow bonus</div>
         )}
         {flowInfo.flowMultiplier > 1 && (
-          <div className="text-purple-600 text-xs font-medium">
-            🌟 Flow bonus: +{Math.floor(card.base * 0.5)}
-          </div>
+          <div className="text-purple-600 text-xs">+{Math.floor(card.base * 0.5)} flow bonus</div>
         )}
-        <div className="text-gray-700 font-medium text-xs mt-1">
-          Total: {totalScore} points
-        </div>
-        <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
-        <div className="text-gray-600 text-xs">Flow: {flowLevel} → {flowInfo.newFlowLevel}</div>
       </div>
     );
   };
@@ -355,9 +407,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
               onMouseLeave={() => setHoveredCard(null)}
             >
               <span className="text-xs bg-white px-1 rounded font-bold">{index + 1}</span>
-              <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                {getPrimaryGaitType(card)[0]}
-              </span>
+              {getProgressionLevelText(card) ? (
+                <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                  {card.tags.includes("Trot") ? "T" : "C"}{getGaitLevel(card.name, card.tags)}
+                </span>
+              ) : (
+                <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                  {getPrimaryGaitType(card)[0]}
+                </span>
+              )}
               <span className="truncate max-w-16">{card.name}</span>
               <span className="text-xs font-bold">+{card.earnedScore}</span>
               
@@ -390,13 +448,13 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       // BASIC FLOW SECTION
       {
         title: "Basic Flow Rule #1: Natural Progressions", 
-        content: "Horses naturally progress through gaits: Walk → Trot → Canter. These transitions always maintain flow.",
+        content: "Horses naturally progress: Walk → Trot → Canter. Walks are always graceful. Trots and Canters can chain if played in logical order (Working → Extended → Collected).",
         example: {
           cards: [
             { name: "Free Walk", tags: ["Walk"], base: 1, type: "walk" },
             { name: "Extended Trot", tags: ["Trot"], base: 2, type: "trot" }
           ],
-          flow: "✓ Walk → Trot maintains flow and gets +2 combo bonus!"
+          flow: "✓ Walk → Trot maintains flow and gets +2 flow bonus!"
         },
         section: "basic"
       },
@@ -423,6 +481,19 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
             { name: "Canter", tags: ["Canter"], base: 3, type: "canter" }
           ],
           flow: "✓ Flow level 3+ gives: Walk (1), Trot (3), Canter (4.5 points)!"
+        },
+        section: "basic"
+      },
+      {
+        title: "Gait Progression System",
+        content: "Trots and Canters have progression levels: Working (basic) → Extended (advanced) → Collected/Refined (expert). You can progress up or stay at same level, but not regress!",
+        example: {
+          cards: [
+            { name: "Working Trot", tags: ["Trot"], base: 2, type: "trot" },
+            { name: "Extended Trot", tags: ["Trot"], base: 2, type: "trot" },
+            { name: "Collected Trot", tags: ["Trot"], base: 2, type: "trot" }
+          ],
+          flow: "✓ Working → Extended → Collected maintains flow!"
         },
         section: "basic"
       },
@@ -493,7 +564,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
       {
         title: "You're Ready to Compete!",
-        content: "You now know: Basic flow, special cards, finishing rules, and strategy! Practice makes perfect. Good luck!",
+        content: "You now know: Basic flow, gait progressions, special cards, finishing rules, and strategy! Practice makes perfect. Good luck!",
         example: null,
         section: "conclusion"
       }
@@ -542,9 +613,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                   <div key={index} className="flex items-center">
                     <div className={`px-3 py-2 rounded border-2 text-sm ${getCardColor(card.type)}`}>
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                          {getPrimaryGaitType(card)}
-                        </span>
+                        {getProgressionLevelText(card) ? (
+                          <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                            {getProgressionLevelText(card)}
+                          </span>
+                        ) : (
+                          <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                            {getPrimaryGaitType(card)}
+                          </span>
+                        )}
                       </div>
                       <div className="font-bold mb-1">{card.name}</div>
                       <div className="flex items-center gap-1 mb-1">
@@ -607,6 +684,47 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     return newCard;
   };
 
+  // Discard a card
+  const discardCard = (card) => {
+    const newHand = hand.filter(c => c.id !== card.id);
+    setHand(newHand);
+    
+    // Check if we still need to discard more
+    if (newHand.length <= maxHandSize) {
+      setNeedsDiscard(false);
+      
+      // Resume turn progression after discard is complete
+      // Draw a new card automatically for next turn
+      const newCard = drawCard();
+      let finalHand = newHand;
+      if (newCard) {
+        finalHand = [...newHand, newCard];
+        setHand(finalHand);
+        
+        // Check if drawing the new card puts us over limit again
+        if (finalHand.length > maxHandSize) {
+          setNeedsDiscard(true);
+          setMessage(`Drew ${newCard.name}! You have ${finalHand.length} cards - discard down to ${maxHandSize}.`);
+          return; // Stay in discard mode
+        }
+      }
+      
+      // Increment turn
+      const nextTurn = currentTurn + 1;
+      setCurrentTurn(nextTurn);
+      setTurnPhase('buy');
+      
+      // Set appropriate message
+      if (nextTurn >= maxTurns) {
+        setMessage(`Turn ${nextTurn}/${maxTurns} - FINAL TURN! You must finish this turn!`);
+      } else if (nextTurn >= maxTurns - 1) {
+        setMessage(`Turn ${nextTurn}/${maxTurns} - Judge getting impatient! Consider finishing soon.`);
+      } else {
+        setMessage(`Turn ${nextTurn}/${maxTurns} - Cards discarded! ${newCard ? `Drew ${newCard.name}.` : ''} Play your next move.`);
+      }
+    }
+  };
+
   // Buy additional cards
   const buyCard = () => {
     if (stamina < 1 || deck.length === 0) return;
@@ -621,7 +739,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Play a card with arena integration
   const playCard = (card) => {
-    if (gameOver) return;
+    if (gameOver || needsDiscard) return;
     
     const actualCost = staminaSurgeActive && card.name !== "Stamina Surge" ? 0 : card.cost;
     if (stamina < actualCost) {
@@ -652,10 +770,13 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       newStamina += 3;
       setStaminaSurgeActive(true);
     } else if (card.name === "Tempo Change") {
-      // Draw extra card
+      // Draw extra card - this doesn't trigger discard, player can go over 4 cards
       const extraCard = drawCard();
       if (extraCard) {
-        setHand(prev => [...prev, extraCard]);
+        // Add the card after this function completes
+        setTimeout(() => {
+          setHand(prev => [...prev, extraCard]);
+        }, 100);
       }
     }
 
@@ -681,7 +802,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setStamina(Math.max(0, newStamina));
     setTotalScore(prev => prev + score);
     setPlayedCards(prev => [...prev, { ...card, earnedScore: score }]);
-    setHand(prev => prev.filter(c => c.id !== card.id));
+    const newHand = hand.filter(c => c.id !== card.id);
+    setHand(newHand);
     setFlowLevel(newFlowLevel);
     setFlowMeter(prev => flowBrokeNow ? 0 : Math.min(3, newFlowLevel));
 
@@ -689,6 +811,13 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setTimeout(() => {
       setIsPerforming(false);
     }, 3000);
+
+    // Check if player needs to discard after playing card
+    if (newHand.length > maxHandSize) {
+      setNeedsDiscard(true);
+      setMessage(`Played ${card.name}! You have ${newHand.length} cards - discard down to ${maxHandSize}.`);
+      return; // Don't proceed to turn end until discard is complete
+    }
 
     // Handle game end conditions
     if (card.tags.includes("Finish")) {
@@ -707,7 +836,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       setGameOver(true);
       setGameState('finished');
       setMessage(`Time's up! Final score: ${Math.max(0, totalScore + score)}`);
-    } else if (deck.length === 0 && hand.length === 1) { // Will be 0 after removing this card
+    } else if (deck.length === 0 && newHand.length === 0) {
       // Game ends if no more cards
       setGameOver(true);
       setGameState('finished');
@@ -751,6 +880,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     return "SPECIALTY";
   };
 
+  // Get progression level display text
+  const getProgressionLevelText = (card) => {
+    const level = getGaitLevel(card.name, card.tags);
+    if (level === 0) return null;
+    
+    const gaitType = card.tags.includes("Trot") ? "TROT" : "CANTER";
+    return `${gaitType} ${level}`;
+  };
+
   // Card color helper
   const getCardColor = (type) => {
     const colors = {
@@ -791,7 +929,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         currentScore={totalScore}
         stamina={stamina}
         flowMeter={flowMeter}
-        comboLength={flowLevel}
+        flowLength={flowLevel}
         currentTurn={currentTurn}
         maxTurns={maxTurns}
         lastPlayedCard={lastPlayedCard}
@@ -856,9 +994,9 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           <div className="text-center">
             <button
               onClick={buyCard}
-              disabled={stamina < 1}
+              disabled={stamina < 1 || needsDiscard}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 mx-auto ${
-                stamina >= 1 
+                stamina >= 1 && !needsDiscard
                   ? 'bg-green-600 hover:bg-green-700 text-white' 
                   : 'bg-gray-400 text-gray-600 cursor-not-allowed'
               }`}
@@ -871,19 +1009,42 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
         {/* Hand */}
         <div className="bg-white rounded-lg p-4 shadow-lg">
-          <h2 className="text-lg font-bold mb-3">Your Hand ({hand.length} cards)</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold">Your Hand ({hand.length} cards)</h2>
+            {needsDiscard && (
+              <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                Must discard to {maxHandSize} cards
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hand.map(card => (
               <div 
                 key={card.id}
-                className={`p-3 rounded-lg border-2 transition-all cursor-pointer hover:scale-105 ${getCardColor(card.type)}`}
-                onClick={() => playCard(card)}
+                className={`p-3 rounded-lg border-2 transition-all cursor-pointer hover:scale-105 ${
+                  needsDiscard ? 'border-red-400 bg-red-50 hover:bg-red-100' : getCardColor(card.type)
+                }`}
+                onClick={() => needsDiscard ? discardCard(card) : playCard(card)}
+                title={needsDiscard ? "Click to discard this card" : `Play ${card.name}`}
               >
-                {/* Type Label */}
+                {/* Type Label with Progression Level */}
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                    {getPrimaryGaitType(card)}
-                  </span>
+                  {getProgressionLevelText(card) ? (
+                    <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                      {getProgressionLevelText(card)}
+                    </span>
+                  ) : (
+                    <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                      {getPrimaryGaitType(card)}
+                    </span>
+                  )}
+                  
+                  {/* Discard Indicator */}
+                  {needsDiscard && (
+                    <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      DISCARD
+                    </div>
+                  )}
                 </div>
                 
                 <div className="font-bold text-sm mb-1">{card.name}</div>
@@ -898,12 +1059,12 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                   )}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {card.combo && <div>{card.combo}</div>}
+                  {card.flow && <div>{card.flow}</div>}
                   {card.bonus && <div className="text-green-600">{card.bonus}</div>}
                 </div>
                 
-                {/* Enhanced Flow Indicator */}
-                <FlowIndicator card={card} />
+                {/* Enhanced Flow Indicator - only show when not discarding */}
+                {!needsDiscard && <FlowIndicator card={card} />}
               </div>
             ))}
           </div>

@@ -51,7 +51,7 @@ const JudgeCard = ({ judge, score, reaction, isReacting }) => {
 const JudgesPanel = ({ 
   lastPlayedCard = null, 
   currentScore = 0, 
-  comboLength = 0, 
+  flowLength = 0, 
   flowBroke = false,
   competitionLevel = 'Training'
 }) => {
@@ -170,8 +170,8 @@ const JudgesPanel = ({
       const baseScore = lastPlayedCard.earnedScore || lastPlayedCard.base || 0;
       
       judges.forEach(judge => {
-        const judgeScore = calculateJudgeScore(judge, lastPlayedCard, baseScore, comboLength, flowBroke);
-        const reaction = generateJudgeReaction(judge, lastPlayedCard, judgeScore, comboLength, flowBroke);
+        const judgeScore = calculateJudgeScore(judge, lastPlayedCard, baseScore, flowLength, flowBroke);
+        const reaction = generateJudgeReaction(judge, lastPlayedCard, judgeScore, flowLength, flowBroke);
         
         setJudgeScores(prev => ({ ...prev, [judge.id]: judgeScore }));
         setJudgeReactions(prev => ({ ...prev, [judge.id]: reaction }));
@@ -185,7 +185,7 @@ const JudgesPanel = ({
 
       return () => clearTimeout(timer);
     }
-  }, [lastPlayedCard, comboLength, flowBroke, judges]);
+  }, [lastPlayedCard, flowLength, flowBroke, judges]);
 
   return (
     <div className="grid grid-cols-4 gap-4 mb-4">

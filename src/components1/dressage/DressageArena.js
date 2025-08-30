@@ -9,7 +9,7 @@ const DressageArena = ({
   currentScore = 0, 
   stamina = 3, 
   flowMeter = 0, 
-  comboLength = 0,
+  flowLength = 0,
   currentTurn = 1,
   maxTurns = 8,
   lastPlayedCard = null,
@@ -114,7 +114,7 @@ const DressageArena = ({
               selectedHorse={selectedHorse}
               lastPlayedCard={lastPlayedCard}
               isPerforming={isPerforming}
-              comboLength={comboLength}
+              flowLength={flowLength}
               flowBroke={flowBroke}
             />
 
@@ -134,7 +134,7 @@ const DressageArena = ({
           <JudgesPanel
             lastPlayedCard={lastPlayedCard}
             currentScore={currentScore}
-            comboLength={comboLength}
+            flowLength={flowLength}
             flowBroke={flowBroke}
             competitionLevel={competitionLevel}
           />

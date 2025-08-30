@@ -5,7 +5,7 @@ const HorsePerformance = ({
   selectedHorse, 
   lastPlayedCard = null, 
   isPerforming = false,
-  comboLength = 0,
+  flowLength = 0,
   flowBroke = false 
 }) => {
   const [currentMove, setCurrentMove] = useState(null);
@@ -167,7 +167,7 @@ const HorsePerformance = ({
   useEffect(() => {
     if (lastPlayedCard && isPerforming) {
       setCurrentMove(lastPlayedCard);
-      const effects = generateMoveEffects(lastPlayedCard, comboLength, flowBroke);
+      const effects = generateMoveEffects(lastPlayedCard, flowLength, flowBroke);
       setMoveEffects(effects);
 
       // Clear effects after animation
@@ -178,7 +178,7 @@ const HorsePerformance = ({
 
       return () => clearTimeout(timer);
     }
-  }, [lastPlayedCard, isPerforming, comboLength, flowBroke]);
+  }, [lastPlayedCard, isPerforming, flowLength, flowBroke]);
 
   const moveAnimation = currentMove ? getMoveAnimation(currentMove) : {};
 
