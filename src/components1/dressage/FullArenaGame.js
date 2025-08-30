@@ -77,9 +77,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [isPerforming, setIsPerforming] = useState(false);
   const [flowBroke, setFlowBroke] = useState(false);
 
-  // Shuffle deck
+  // Shuffle deck - create unique instances to prevent reference issues
   const shuffleDeck = () => {
-    const shuffled = [...cardDeck].sort(() => Math.random() - 0.5);
+    const shuffled = [...cardDeck]
+      .map(card => ({ ...card, instanceId: Math.random() })) // Create unique instances
+      .sort(() => Math.random() - 0.5);
     setDeck(shuffled);
     return shuffled;
   };
@@ -189,9 +191,24 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       newFlowLevel = Math.min(3, flowLevel + 1);
       flowText = `Transition flow +${newFlowLevel}! `;
     } else if (card.tags.includes("Walk")) {
-      // Walks are always graceful - maintain flow
-      newFlowLevel = Math.min(3, flowLevel + 1);
-      flowText = `Graceful flow +${newFlowLevel}! `;
+      // Walks maintain flow only after Walk/Transition/Canter
+      if (previousCard.tags.includes("Walk") || 
+          previousCard.tags.includes("Transition") || 
+          previousCard.tags.includes("Canter")) {
+        newFlowLevel = Math.min(3, flowLevel + 1);
+        if (previousCard.tags.includes("Walk")) {
+          flowText = `Walk sequence +${newFlowLevel}! `;
+        } else if (previousCard.tags.includes("Canter")) {
+          flowText = `Canter→Walk flow +${newFlowLevel}! `;
+        } else {
+          flowText = `After transition +${newFlowLevel}! `;
+        }
+      } else {
+        // Walk after Trot breaks flow
+        flowBrokeNow = true;
+        flowText = "Flow broken... ";
+        newFlowLevel = 0;
+      }
     } else if (previousCard.tags.includes("Transition")) {
       // Any card after a Transition maintains flow (universal connector)
       newFlowLevel = Math.min(3, flowLevel + 1);
@@ -275,9 +292,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (playedCards.length === 0) {
       return (
         <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-          <div className="text-blue-700 font-medium">🎯 Opening Move</div>
+          <div className="text-blue-700 font-medium">Opening Move</div>
           <div className="text-gray-700 text-xs mt-1">Score: {flowInfo.totalScore} points</div>
-          <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
         </div>
       );
     }
@@ -285,23 +301,21 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (!flowInfo.maintains) {
       return (
         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
-          <div className="text-red-700 font-medium">✗ Breaks Flow</div>
+          <div className="text-red-700 font-medium">Breaks Flow</div>
           <div className="text-gray-700 text-xs mt-1">Score: {flowInfo.totalScore} points</div>
-          <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
         </div>
       );
     }
 
     return (
       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-        <div className="text-green-700 font-medium">✓ Maintains Flow</div>
+        <div className="text-green-700 font-medium">Maintains Flow</div>
         <div className="text-gray-700 text-xs mt-1">Score: {flowInfo.totalScore} points</div>
-        <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
         {flowInfo.comboBonus > 0 && (
           <div className="text-blue-600 text-xs">+{flowInfo.comboBonus} combo bonus</div>
         )}
         {flowInfo.flowLevel >= 3 && (
-          <div className="text-purple-600 text-xs">🌟 Flow level {flowInfo.flowLevel} (+50%)</div>
+          <div className="text-purple-600 text-xs">Flow level {flowInfo.flowLevel} (+50%)</div>
         )}
       </div>
     );
@@ -324,10 +338,6 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       <div className="bg-white rounded-lg p-3 mb-4 border">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold">Your Routine ({playedCards.length} moves)</h3>
-          <div className="text-xs text-gray-600">
-            Score: <span className="font-bold text-blue-600">{totalScore}</span> | 
-            Flow: <span className="font-bold text-green-600">{flowLevel}</span>
-          </div>
         </div>
         
         {/* Card sequence */}
@@ -345,12 +355,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
               <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
                 {getPrimaryGaitType(card)[0]}
               </span>
-              <span className="truncate max-w-16">{card.name}</span>
               <span className="text-xs font-bold">+{card.earnedScore}</span>
               
               {/* Hover tooltip */}
               {hoveredCard === index && (
-                <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black text-white text-xs rounded whitespace-nowrap">
+                <div className="absolute z-10 bottom-full left-0 mb-1 px-2 py-1 bg-black text-white text-xs rounded whitespace-nowrap">
                   {card.name} - {card.earnedScore} points
                   {card.earnedScore > card.base && <div className="text-green-300">Bonus: +{card.earnedScore - card.base}</div>}
                 </div>
@@ -359,7 +368,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           ))}
         </div>
         
-        <div className="text-xs text-gray-400">Hover cards for details</div>
+        <div className="text-xs text-gray-400">Press cards for details</div>
       </div>
     );
   };
@@ -609,7 +618,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Discard a card - ONLY handles discarding
   const discardCard = (card) => {
-    const newHand = hand.filter(c => c.id !== card.id);
+    const newHand = hand.filter(c => c.instanceId !== card.instanceId);
     setHand(newHand);
     
     // Check if we still need to discard more
@@ -700,7 +709,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setGaitTypesUsed(newGaitTypes);
     
     // Update state - use functional updates to prevent race conditions
-    const newHand = hand.filter(c => c.id !== card.id);
+    const newHand = hand.filter(c => c.instanceId !== card.instanceId);
     setHand(newHand);  // Remove from hand FIRST
     setStamina(Math.max(0, newStamina));
     setTotalScore(prev => prev + score);
@@ -708,7 +717,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setFlowLevel(newFlowLevel);
     setFlowMeter(prev => flowBrokeNow ? 0 : Math.min(3, newFlowLevel));
     
-    console.log(`Played ${card.name}, hand size: ${newHand.length}, routine length: ${playedCards.length + 1}`);
+    console.log(`Played ${card.name} (${card.instanceId?.toString().slice(2,8)}), hand size: ${newHand.length}, routine length: ${playedCards.length + 1}`);
 
     // Clear performance state after animation
     setTimeout(() => {
@@ -830,6 +839,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         lastPlayedCard={lastPlayedCard}
         isPerforming={isPerforming}
         flowBroke={flowBroke}
+        onBack={onBack}
+        onShowTutorial={() => {
+          setShowTutorial(true);
+          setTutorialStep(0);
+        }}
       >
         <div className="bg-white rounded-lg p-6 shadow-lg text-center">
           <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
@@ -871,6 +885,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       lastPlayedCard={lastPlayedCard}
       isPerforming={isPerforming}
       flowBroke={flowBroke}
+      onBack={onBack}
+      onShowTutorial={() => {
+        setShowTutorial(true);
+        setTutorialStep(0);
+      }}
     >
       {/* Game Content */}
       <div className="space-y-4">
@@ -881,26 +900,34 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           </div>
         )}
 
+        {/* Score Header */}
+        <div className="flex justify-center gap-8 text-sm bg-white rounded-lg p-4 shadow-lg mb-4">
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-yellow-500" />
+            <span className="font-bold">Score: {totalScore}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-blue-500" />
+            <span className="font-bold">Stamina: {stamina}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium">Flow:</div>
+            <div className="flex gap-1">
+              {[...Array(3)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-3 h-3 rounded-full ${
+                    i < flowMeter ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Compact Routine Summary */}
         <RoutineSummary />
 
-        {/* Buy Cards */}
-        {turnPhase === 'buy' && deck.length > 0 && (
-          <div className="text-center">
-            <button
-              onClick={buyCard}
-              disabled={stamina < 1 || needsDiscard}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 mx-auto ${
-                stamina >= 1 && !needsDiscard
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              Draw Card (1 Stamina)
-            </button>
-          </div>
-        )}
 
         {/* Hand */}
         <div className="bg-white rounded-lg p-4 shadow-lg">
@@ -961,22 +988,19 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
         {/* Controls */}
         <div className="flex justify-center gap-4">
-          <button 
-            onClick={() => {
-              setShowTutorial(true);
-              setTutorialStep(0);
-            }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            🎓 Tutorial
-          </button>
-          {onBack && (
-            <button 
-              onClick={onBack}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          {/* Draw Card Button */}
+          {turnPhase === 'buy' && deck.length > 0 && (
+            <button
+              onClick={buyCard}
+              disabled={stamina < 1 || needsDiscard}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                stamina >= 1 && !needsDiscard
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              }`}
             >
-              <RotateCcw className="w-4 h-4" />
-              Back to Stable
+              <Plus className="w-4 h-4" />
+              Draw Card (1 Stamina)
             </button>
           )}
         </div>

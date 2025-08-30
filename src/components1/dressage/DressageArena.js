@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Star, Zap } from 'lucide-react';
+import { Star, Zap, RotateCcw } from 'lucide-react';
 import JudgesPanel from './JudgesPanel';
 import HorsePerformance from './HorsePerformance';
 
@@ -16,6 +16,8 @@ const DressageArena = ({
   isPerforming = false,
   flowBroke = false,
   competitionLevel = 'Training',
+  onBack,
+  onShowTutorial,
   children 
 }) => {
   // Arena dimensions and styling
@@ -35,49 +37,34 @@ const DressageArena = ({
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-6 bg-white rounded-lg p-4 shadow-lg"
         >
-          <h1 className="text-2xl font-bold text-gray-800 mb-3">
-            🏆 Dressage Competition Arena
-          </h1>
-          
-          {selectedHorse && (
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <img 
-                src={selectedHorse.avatar} 
-                alt={selectedHorse.name}
-                className="w-16 h-16 rounded-lg shadow-md border-2 border-yellow-400"
-              />
-              <div className="text-left">
-                <h2 className="text-xl font-bold text-blue-600">{selectedHorse.name}</h2>
-                <p className="text-sm text-gray-600">Competing in Dressage</p>
-                <p className="text-xs text-gray-500">Turn {currentTurn}/{maxTurns}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Score Header */}
-          <div className="flex justify-center gap-8 text-sm">
-            <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" />
-              <span className="font-bold">Score: {currentScore}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-blue-500" />
-              <span className="font-bold">Stamina: {stamina}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-medium">Flow:</div>
-              <div className="flex gap-1">
-                {[...Array(3)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-3 h-3 rounded-full ${
-                      i < flowMeter ? 'bg-green-500' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
+          <div className="flex items-center justify-between">
+            <div className="flex-1"></div>
+            <div className="flex-1 flex justify-end items-center gap-4">
+              <h1 className="text-2xl font-bold text-gray-800">
+                Dressage
+              </h1>
+              <div className="flex gap-2">
+              {onShowTutorial && (
+                <button 
+                  onClick={onShowTutorial}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                >
+                  Tutorial
+                </button>
+              )}
+              {onBack && (
+                <button 
+                  onClick={onBack}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Back
+                </button>
+              )}
               </div>
             </div>
           </div>
+          
         </motion.div>
 
         {/* Main Arena */}

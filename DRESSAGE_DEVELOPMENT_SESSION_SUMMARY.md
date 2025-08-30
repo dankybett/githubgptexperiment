@@ -1,20 +1,20 @@
 # Dressage Card Game Development - Session Summary
 
 ## 🎯 **Project Overview**
-User has a horse stable game and wanted to add a dressage card game prototype. We successfully implemented and enhanced the dressage system with a full competition arena experience, comprehensive tutorial system, and sophisticated flow mechanics with gait progression.
+User has a horse stable game and wanted to add a dressage card game prototype. We successfully implemented and enhanced the dressage system with a full competition arena experience, comprehensive tutorial system, and strategic flow mechanics.
 
-## 📁 **Current File Structure**
+## 📁 **Current File Structure** *(Cleaned & Simplified)*
 ```
 src/components1/
-├── dressage.js                     # Original prototype (still used as reference)
-└── dressage/                       # New enhanced components
+└── dressage/                       # Clean dressage components
     ├── DressageArena.js            # Main arena layout with judges/horse display
-    ├── JudgesPanel.js              # Dynamic judges with personalities & reactions
+    ├── JudgesPanel.js              # Dynamic judges with personalities & reactions  
     ├── HorsePerformance.js         # Horse animations for different moves
-    ├── FullArenaGame.js            # Complete card game within arena
-    ├── ArenaIntegratedGame.js      # Wrapper managing intro → gameplay flow
-    └── EnhancedDressageGame.js     # Entry point (used by App.js)
+    ├── FullArenaGame.js            # Complete card game mechanics (MAIN GAME)
+    └── ArenaIntegratedGame.js      # Arena intro → gameplay flow
 ```
+
+**✅ Removed Files:** `dressage.js` (redundant), `EnhancedDressageGame.js` (unnecessary wrapper)
 
 ## 🚀 **Implementation Progress**
 
@@ -48,17 +48,36 @@ src/components1/
 - **Simplified Flow System**: Unified flow terminology (removed confusing "chain" vs "flow")
 - **3-Dot Flow Meter**: Matches bonus threshold (3+ flow = bonus)
 
-### ✅ **Phase 4 - Gait Progression System (COMPLETE)**
-- **Logical Trot Progression**: Working (1) → Extended (2) → Collected/Refined (3)
-- **Logical Canter Progression**: Working (1) → Extended (2) → Pirouette/Refined (3)
-- **Flow Rules**: Can progress up or stay same level, but not regress
-- **Walk Exception**: Walks always maintain flow (realistic dressage behavior)
-- **Progression Indicators**: All trot/canter cards show level badges
+### ✅ **Phase 4 - Code Cleanup & Bug Fixes (COMPLETE)** *[NEW SESSION]*
+**3 Major Issues Fixed:**
+
+#### **Issue 1: Discard State Bug** 
+- **Problem**: Drawing multiple cards with stamina caused infinite discard loops
+- **Solution**: Separated discard logic from turn progression 
+- **Result**: Clean discard → startNextTurn() flow
+
+#### **Issue 2: Combo vs Flow Mechanics Confusion**
+- **Problem**: Mixed specific card combos with general flow system 
+- **Solution**: Clear separation:
+  - **COMBOS** = Specific card synergies → Fixed bonus points (+1, +2, +3)
+  - **FLOW** = General rhythm maintenance → Percentage multipliers (+50% at level 3)
+- **Result**: Strategic clarity between card interactions vs rhythm bonuses
+
+#### **Issue 3: Complex Flow System**
+- **Problem**: Overcomplicated gait progression (Working→Extended→Collected) 
+- **Solution**: Simplified strategic flow rules:
+  - ✅ **Maintains Flow**: Walk→Trot→Canter, Walks (always), Transitions (universal), After Transitions
+  - ❌ **Breaks Flow**: All other combinations (creates strategic decisions)
+- **Result**: ~400 lines → ~150 lines, much clearer mechanics
+
+#### **Issue 4: Card Duplication Bug**
+- **Problem**: Same cards playable infinitely (routine showed 21+ moves)
+- **Solution**: Unique `instanceId` for each card instance to prevent object reference issues
+- **Result**: Proper card removal from hand, no duplicate React keys
 
 ### ✅ **Phase 5 - Comprehensive Tutorial System (COMPLETE)**
-- **12-Step Tutorial**: Covers basic flow, gait progression, special cards, finishing
-- **Section-Based**: Color-coded progression through Basic → Special → Strategy
-- **Visual Examples**: Real card displays showing exactly how mechanics work
+- **12-Step Tutorial**: Covers flow mechanics, card combos, special effects, strategy
+- **Section-Based**: Color-coded progression through mechanics
 - **Interactive Navigation**: Previous/Next with progress tracking
 - **Modal Overlay**: Accessible anytime via Tutorial button
 
