@@ -724,14 +724,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       setIsPerforming(false);
     }, 3000);
 
-    // Check if player needs to discard after playing card
-    if (newHand.length > maxHandSize) {
-      setNeedsDiscard(true);
-      setMessage(`Played ${card.name}! You have ${newHand.length} cards - discard down to ${maxHandSize}.`);
-      return; // Don't proceed to turn end until discard is complete
-    }
-
-    // Handle game end conditions
+    // Handle game end conditions first
     if (card.tags.includes("Finish")) {
       setGameOver(true);
       setGameState('finished');
@@ -743,11 +736,20 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       
       const turnBonus = currentTurn <= 6 ? " Efficient timing bonus!" : currentTurn <= 7 ? " Good timing!" : "";
       setMessage(`Routine complete!${turnBonus} Final score: ${finalScore} - ${rating} level!`);
+      return;
     } else if (currentTurn >= maxTurns) {
       // Final turn passed without finishing
       setGameOver(true);
       setGameState('finished');
       setMessage(`Time's up! Final score: ${Math.max(0, totalScore + score)}`);
+      return;
+    }
+
+    // Check if player needs to discard after playing card
+    if (newHand.length > maxHandSize) {
+      setNeedsDiscard(true);
+      setMessage(`Played ${card.name}! You have ${newHand.length} cards - discard down to ${maxHandSize}.`);
+      return; // Don't proceed to turn end until discard is complete
     } else if (deck.length === 0 && newHand.length === 0) {
       // Game ends if no more cards
       setGameOver(true);
