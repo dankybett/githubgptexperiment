@@ -111,229 +111,163 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     startGame();
   }, []);
 
-  // Simplified scoring for now (copy key parts from original)
+  // Calculate specific card combo bonuses (immediate point bonuses)
+  const calculateComboBonus = (card, previousCard) => {
+    let comboBonus = 0;
+    let comboText = '';
+
+    if (!previousCard) return { comboBonus: 0, comboText: '' };
+
+    // Specific card combinations give fixed bonus points
+    if (card.name === "Extended Trot" && previousCard?.tags.includes("Walk")) {
+      comboBonus = 2;
+      comboText = "Walk→Trot combo +2! ";
+    }
+    else if (card.name === "Flying Change" && previousCard?.tags.includes("Canter")) {
+      comboBonus = 2;
+      comboText = "Canter combo +2! ";
+    }
+    else if (card.name === "Collected Walk" && previousCard?.tags.includes("Transition")) {
+      comboBonus = 1;
+      comboText = "Transition combo +1! ";
+    }
+    else if (card.name === "Medium Walk" && previousCard?.tags.includes("Walk")) {
+      comboBonus = 2;
+      comboText = "Walk chain +2! ";
+    }
+    else if (card.name === "Collected Trot" && previousCard?.tags.includes("Transition")) {
+      comboBonus = 2;
+      comboText = "Transition combo +2! ";
+    }
+    else if (card.name === "Piaffe" && previousCard?.name === "Collected Trot") {
+      comboBonus = 2;
+      comboText = "Classical sequence +2! ";
+    }
+    else if (card.name === "Canter Pirouette" && previousCard?.tags.includes("Transition")) {
+      comboBonus = 3;
+      comboText = "Transition mastery +3! ";
+    }
+    else if (card.name === "Shoulder-In" && previousCard?.tags.includes("Trot")) {
+      comboBonus = 1;
+      comboText = "Trot chain +1! ";
+    }
+    else if (card.name === "Passage" && previousCard?.name === "Piaffe") {
+      comboBonus = 2;
+      comboText = "Classical sequence +2! ";
+    }
+    else if (card.name === "Bold Extension") {
+      comboBonus = cantersPlayed;
+      comboText = `Canter mastery +${cantersPlayed}! `;
+    }
+    else if (card.name === "Perfect Harmony") {
+      comboBonus = gaitTypesUsed.size * 2;
+      comboText = `Perfect harmony +${comboBonus}! `;
+    }
+    else if (card.name === "Training Level Test") {
+      comboBonus = gaitTypesUsed.size;
+      comboText = `Variety bonus +${comboBonus}! `;
+    }
+
+    return { comboBonus, comboText };
+  };
+
+  // Calculate flow level - simplified rules for strategic decision-making
+  const calculateFlowLevel = (card, previousCard) => {
+    let newFlowLevel = flowLevel;
+    let flowBrokeNow = false;
+    let flowText = '';
+
+    if (!previousCard) {
+      // First card - start flow at level 1
+      newFlowLevel = 1;
+      flowText = 'Flow started! ';
+    } else if (card.tags.includes("Finish")) {
+      // Finish cards don't break flow
+      flowText = 'Routine concluded! ';
+    } else if (card.tags.includes("Transition")) {
+      // Transitions always maintain flow (universal connectors)
+      newFlowLevel = Math.min(3, flowLevel + 1);
+      flowText = `Transition flow +${newFlowLevel}! `;
+    } else if (card.tags.includes("Walk")) {
+      // Walks are always graceful - maintain flow
+      newFlowLevel = Math.min(3, flowLevel + 1);
+      flowText = `Graceful flow +${newFlowLevel}! `;
+    } else if (previousCard.tags.includes("Transition")) {
+      // Any card after a Transition maintains flow (universal connector)
+      newFlowLevel = Math.min(3, flowLevel + 1);
+      flowText = `After transition +${newFlowLevel}! `;
+    } else if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) {
+      // Natural progression: Walk → Trot
+      newFlowLevel = Math.min(3, flowLevel + 1);
+      flowText = `Walk→Trot flow +${newFlowLevel}! `;
+    } else if (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) {
+      // Natural progression: Trot → Canter
+      newFlowLevel = Math.min(3, flowLevel + 1);
+      flowText = `Trot→Canter flow +${newFlowLevel}! `;
+    } else {
+      // All other combinations break flow
+      flowBrokeNow = true;
+      flowText = "Flow broken... ";
+      newFlowLevel = 0;
+    }
+
+    return { newFlowLevel, flowBroke: flowBrokeNow, flowText };
+  };
+
+  // Main scoring function - combines combo and flow bonuses
   const calculateScore = (card, previousCard) => {
     let score = card.base;
     let bonusText = '';
-    let flowBonus = 0;
-    let newFlowLevel = flowLevel;
-    let flowBrokeNow = false;
 
-    // Basic flow checking (simplified version)
-    let hasFlow = false;
-    
-    if (card.name === "Extended Trot" && previousCard?.tags.includes("Walk")) {
-      score += 2;
-      bonusText += "Walk→Trot +2! ";
-      hasFlow = true;
-    }
-    if (card.name === "Flying Change" && previousCard?.tags.includes("Canter")) {
-      score += 2;
-      bonusText += "Canter flow +2! ";
-      hasFlow = true;
-    }
-    // Add more flow logic as needed...
+    // 1. Calculate combo bonuses (fixed point bonuses)
+    const { comboBonus, comboText } = calculateComboBonus(card, previousCard);
+    score += comboBonus;
+    bonusText += comboText;
 
-    // Flow logic with gait progression support
-    if (hasFlow || card.tags.includes("Transition")) {
-      newFlowLevel += 1;
-      bonusText += `Flow +${newFlowLevel}! `;
-    } else if (previousCard && !card.tags.includes("Finish")) {
-      const naturalFlow = (
-        // Cross-gait natural progressions
-        (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) ||
-        (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) ||
-        // Walks always maintain flow
-        card.tags.includes("Walk") ||
-        // Same-gait progressions (Trot 1→2→3, Canter 1→2→3)
-        ((previousCard.tags.includes("Trot") && card.tags.includes("Trot")) && 
-         maintainsSameGaitFlow(card, previousCard)) ||
-        ((previousCard.tags.includes("Canter") && card.tags.includes("Canter")) && 
-         maintainsSameGaitFlow(card, previousCard))
-      );
-      
-      if (!naturalFlow) {
-        flowBrokeNow = true;
-        bonusText += "Flow broken... ";
-        newFlowLevel = 0;
-      } else {
-        // Increment flow level for maintaining flow
-        newFlowLevel = Math.min(3, newFlowLevel + 1);
-      }
-    } else {
-      // First card or finish card - set initial flow level
-      newFlowLevel = 1;
-    }
+    // 2. Calculate flow level and check if it broke
+    const { newFlowLevel, flowBroke: flowBrokeNow, flowText } = calculateFlowLevel(card, previousCard);
+    bonusText += flowText;
 
-    // Flow multiplier bonus
+    // 3. Apply flow multiplier bonus (percentage bonus for high flow)
     if (newFlowLevel >= 3) {
-      flowBonus = Math.floor(score * 0.5);
-      score += flowBonus;
-      bonusText += `Flow mastery +${flowBonus}! `;
+      const flowMultiplierBonus = Math.floor(score * 0.5);
+      score += flowMultiplierBonus;
+      bonusText += `Flow mastery +${flowMultiplierBonus}! `;
     }
 
     return { score, bonusText, newFlowLevel, flowBroke: flowBrokeNow };
   };
 
-  // Gait progression system
-  const getGaitLevel = (cardName, tags) => {
-    // Trot progression levels
-    if (tags.includes("Trot")) {
-      if (["Working Trot", "Steady Rhythm"].includes(cardName)) return 1; // Foundation
-      if (["Extended Trot"].includes(cardName)) return 2; // Advanced
-      if (["Collected Trot", "Piaffe", "Shoulder-In", "Passage"].includes(cardName)) return 3; // Refined
-    }
-    
-    // Canter progression levels  
-    if (tags.includes("Canter")) {
-      if (["Working Canter"].includes(cardName)) return 1; // Foundation
-      if (["Extended Canter", "Bold Extension"].includes(cardName)) return 2; // Advanced
-      if (["Canter Pirouette", "Counter-Canter"].includes(cardName)) return 3; // Refined
-    }
-    
-    return 0; // Not a progressive gait
-  };
 
-  // Check if same-gait transition maintains flow
-  const maintainsSameGaitFlow = (currentCard, previousCard) => {
-    // Walks always maintain flow
-    if (currentCard.tags.includes("Walk")) return true;
-    
-    // For trots and canters, check progression order
-    const prevLevel = getGaitLevel(previousCard.name, previousCard.tags);
-    const currentLevel = getGaitLevel(currentCard.name, currentCard.tags);
-    
-    if (prevLevel > 0 && currentLevel > 0) {
-      // Allow same level or progression to higher level, but not regression
-      return currentLevel >= prevLevel;
-    }
-    
-    return false;
-  };
-
-  // Enhanced flow analysis function
+  // Simplified flow analysis for UI components
   const analyzeFlow = (card) => {
     if (playedCards.length === 0) {
       return {
         maintains: true,
-        type: 'start',
-        flowBonus: 0,
-        flowMultiplier: 1,
-        newFlowLevel: 1,
-        reason: 'Starting move'
+        reason: 'Opening move',
+        totalScore: card.base
       };
     }
 
     const previousCard = playedCards[playedCards.length - 1];
-    const { score, bonusText, newFlowLevel, flowBroke } = calculateScore(card, previousCard);
-    const flowBonus = score - card.base;
-    const flowMultiplier = newFlowLevel >= 3 ? 1.5 : 1;
+    const { comboBonus } = calculateComboBonus(card, previousCard);
+    const { newFlowLevel, flowBroke, flowText } = calculateFlowLevel(card, previousCard);
     
-    // Always maintains flow
-    if (card.tags.includes("Transition") || card.tags.includes("Walk") || card.tags.includes("Finish")) {
-      return {
-        maintains: true,
-        type: card.tags.includes("Transition") ? 'transition' : card.tags.includes("Walk") ? 'graceful' : 'finish',
-        flowBonus,
-        flowMultiplier,
-        newFlowLevel,
-        reason: card.tags.includes("Transition") ? 'Universal connector' : card.tags.includes("Walk") ? 'Always graceful' : 'Routine finish'
-      };
+    let totalScore = card.base + comboBonus;
+    if (newFlowLevel >= 3) {
+      totalScore += Math.floor(totalScore * 0.5); // +50% flow bonus
     }
-    
-    // Natural cross-gait progressions
-    if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) {
-      return {
-        maintains: true,
-        type: 'natural',
-        flowBonus,
-        flowMultiplier,
-        newFlowLevel,
-        reason: 'Walk → Trot progression'
-      };
-    }
-    if (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) {
-      return {
-        maintains: true,
-        type: 'natural',
-        flowBonus,
-        flowMultiplier,
-        newFlowLevel,
-        reason: 'Trot → Canter progression'
-      };
-    }
-    if (previousCard.tags.includes("Transition")) {
-      return {
-        maintains: true,
-        type: 'connected',
-        flowBonus,
-        flowMultiplier,
-        newFlowLevel,
-        reason: 'After transition'
-      };
-    }
-    
-    // Same-gait progressions (new logic)
-    if ((previousCard.tags.includes("Trot") && card.tags.includes("Trot")) ||
-        (previousCard.tags.includes("Canter") && card.tags.includes("Canter"))) {
-      
-      if (maintainsSameGaitFlow(card, previousCard)) {
-        const prevLevel = getGaitLevel(previousCard.name, previousCard.tags);
-        const currentLevel = getGaitLevel(card.name, card.tags);
-        const gaitType = card.tags.includes("Trot") ? "Trot" : "Canter";
-        
-        return {
-          maintains: true,
-          type: 'progression',
-          flowBonus,
-          flowMultiplier,
-          newFlowLevel,
-          reason: currentLevel > prevLevel ? `${gaitType} progression` : `${gaitType} continuation`
-        };
-      } else {
-        // Same gait but wrong order (regression)
-        return {
-          maintains: false,
-          type: 'regression',
-          flowBonus: 0,
-          flowMultiplier: 1,
-          newFlowLevel: 0,
-          reason: 'Improper gait regression',
-          penalty: flowLevel
-        };
-      }
-    }
-    
-    // Specific flow bonuses
-    const specificFlowBonuses = {
-      "Extended Trot": previousCard.tags.includes("Walk") && 'Walk → Trot flow',
-      "Flying Change": previousCard.tags.includes("Canter") && 'Canter flow',
-    };
-    
-    if (specificFlowBonuses[card.name]) {
-      return {
-        maintains: true,
-        type: 'combo',
-        flowBonus,
-        flowMultiplier,
-        newFlowLevel,
-        reason: specificFlowBonuses[card.name]
-      };
-    }
-    
-    // Flow breaks
+
     return {
       maintains: !flowBroke,
-      type: 'break',
-      flowBonus: flowBroke ? 0 : flowBonus,
-      flowMultiplier: 1,
-      newFlowLevel: flowBroke ? 0 : newFlowLevel,
-      reason: flowBroke ? 'Breaks flow pattern' : 'Maintains flow',
-      penalty: flowBroke ? flowLevel : 0
+      reason: flowText.trim(),
+      totalScore,
+      comboBonus,
+      flowLevel: newFlowLevel
     };
   };
 
-  // Simplified Flow Indicator Component
+  // Clean Flow Indicator Component
   const FlowIndicator = ({ card }) => {
     const flowInfo = analyzeFlow(card);
     
@@ -342,7 +276,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       return (
         <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
           <div className="text-blue-700 font-medium">🎯 Opening Move</div>
-          <div className="text-gray-700 text-xs mt-1">Score: {card.base} points</div>
+          <div className="text-gray-700 text-xs mt-1">Score: {flowInfo.totalScore} points</div>
+          <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
         </div>
       );
     }
@@ -351,22 +286,22 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       return (
         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
           <div className="text-red-700 font-medium">✗ Breaks Flow</div>
-          <div className="text-gray-700 text-xs mt-1">Score: {card.base} points</div>
+          <div className="text-gray-700 text-xs mt-1">Score: {flowInfo.totalScore} points</div>
+          <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
         </div>
       );
     }
 
-    const totalScore = card.base + flowInfo.flowBonus + (flowInfo.flowMultiplier > 1 ? Math.floor(card.base * 0.5) : 0);
-    
     return (
       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
         <div className="text-green-700 font-medium">✓ Maintains Flow</div>
-        <div className="text-gray-700 text-xs mt-1">Score: {totalScore} points</div>
-        {flowInfo.flowBonus > 0 && (
-          <div className="text-blue-600 text-xs">+{flowInfo.flowBonus} flow bonus</div>
+        <div className="text-gray-700 text-xs mt-1">Score: {flowInfo.totalScore} points</div>
+        <div className="text-gray-600 text-xs">{flowInfo.reason}</div>
+        {flowInfo.comboBonus > 0 && (
+          <div className="text-blue-600 text-xs">+{flowInfo.comboBonus} combo bonus</div>
         )}
-        {flowInfo.flowMultiplier > 1 && (
-          <div className="text-purple-600 text-xs">+{Math.floor(card.base * 0.5)} flow bonus</div>
+        {flowInfo.flowLevel >= 3 && (
+          <div className="text-purple-600 text-xs">🌟 Flow level {flowInfo.flowLevel} (+50%)</div>
         )}
       </div>
     );
@@ -407,15 +342,9 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
               onMouseLeave={() => setHoveredCard(null)}
             >
               <span className="text-xs bg-white px-1 rounded font-bold">{index + 1}</span>
-              {getProgressionLevelText(card) ? (
-                <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                  {card.tags.includes("Trot") ? "T" : "C"}{getGaitLevel(card.name, card.tags)}
-                </span>
-              ) : (
-                <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                  {getPrimaryGaitType(card)[0]}
-                </span>
-              )}
+              <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                {getPrimaryGaitType(card)[0]}
+              </span>
               <span className="truncate max-w-16">{card.name}</span>
               <span className="text-xs font-bold">+{card.earnedScore}</span>
               
@@ -613,15 +542,9 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                   <div key={index} className="flex items-center">
                     <div className={`px-3 py-2 rounded border-2 text-sm ${getCardColor(card.type)}`}>
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        {getProgressionLevelText(card) ? (
-                          <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                            {getProgressionLevelText(card)}
-                          </span>
-                        ) : (
-                          <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                            {getPrimaryGaitType(card)}
-                          </span>
-                        )}
+                        <span className={`text-xs px-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                          {getPrimaryGaitType(card)}
+                        </span>
                       </div>
                       <div className="font-bold mb-1">{card.name}</div>
                       <div className="flex items-center gap-1 mb-1">
@@ -684,7 +607,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     return newCard;
   };
 
-  // Discard a card
+  // Discard a card - ONLY handles discarding
   const discardCard = (card) => {
     const newHand = hand.filter(c => c.id !== card.id);
     setHand(newHand);
@@ -692,36 +615,14 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     // Check if we still need to discard more
     if (newHand.length <= maxHandSize) {
       setNeedsDiscard(false);
+      setMessage(`Cards discarded! Starting next turn...`);
       
-      // Resume turn progression after discard is complete
-      // Draw a new card automatically for next turn
-      const newCard = drawCard();
-      let finalHand = newHand;
-      if (newCard) {
-        finalHand = [...newHand, newCard];
-        setHand(finalHand);
-        
-        // Check if drawing the new card puts us over limit again
-        if (finalHand.length > maxHandSize) {
-          setNeedsDiscard(true);
-          setMessage(`Drew ${newCard.name}! You have ${finalHand.length} cards - discard down to ${maxHandSize}.`);
-          return; // Stay in discard mode
-        }
-      }
-      
-      // Increment turn
-      const nextTurn = currentTurn + 1;
-      setCurrentTurn(nextTurn);
-      setTurnPhase('buy');
-      
-      // Set appropriate message
-      if (nextTurn >= maxTurns) {
-        setMessage(`Turn ${nextTurn}/${maxTurns} - FINAL TURN! You must finish this turn!`);
-      } else if (nextTurn >= maxTurns - 1) {
-        setMessage(`Turn ${nextTurn}/${maxTurns} - Judge getting impatient! Consider finishing soon.`);
-      } else {
-        setMessage(`Turn ${nextTurn}/${maxTurns} - Cards discarded! ${newCard ? `Drew ${newCard.name}.` : ''} Play your next move.`);
-      }
+      // Now that discard is complete, proceed with turn progression
+      setTimeout(() => {
+        startNextTurn('Cards discarded!');
+      }, 1000);
+    } else {
+      setMessage(`Discard ${newHand.length - maxHandSize} more card${newHand.length - maxHandSize !== 1 ? 's' : ''}.`);
     }
   };
 
@@ -739,7 +640,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Play a card with arena integration
   const playCard = (card) => {
-    if (gameOver || needsDiscard) return;
+    if (gameOver || needsDiscard || isPerforming) return; // Prevent clicks during animation
     
     const actualCost = staminaSurgeActive && card.name !== "Stamina Surge" ? 0 : card.cost;
     if (stamina < actualCost) {
@@ -798,14 +699,16 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (card.tags.includes("Transition")) newGaitTypes.add("Transition");
     setGaitTypesUsed(newGaitTypes);
     
-    // Update state
+    // Update state - use functional updates to prevent race conditions
+    const newHand = hand.filter(c => c.id !== card.id);
+    setHand(newHand);  // Remove from hand FIRST
     setStamina(Math.max(0, newStamina));
     setTotalScore(prev => prev + score);
     setPlayedCards(prev => [...prev, { ...card, earnedScore: score }]);
-    const newHand = hand.filter(c => c.id !== card.id);
-    setHand(newHand);
     setFlowLevel(newFlowLevel);
     setFlowMeter(prev => flowBrokeNow ? 0 : Math.min(3, newFlowLevel));
+    
+    console.log(`Played ${card.name}, hand size: ${newHand.length}, routine length: ${playedCards.length + 1}`);
 
     // Clear performance state after animation
     setTimeout(() => {
@@ -880,14 +783,6 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     return "SPECIALTY";
   };
 
-  // Get progression level display text
-  const getProgressionLevelText = (card) => {
-    const level = getGaitLevel(card.name, card.tags);
-    if (level === 0) return null;
-    
-    const gaitType = card.tags.includes("Trot") ? "TROT" : "CANTER";
-    return `${gaitType} ${level}`;
-  };
 
   // Card color helper
   const getCardColor = (type) => {
@@ -1029,15 +924,9 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
               >
                 {/* Type Label with Progression Level */}
                 <div className="flex items-center justify-between mb-2">
-                  {getProgressionLevelText(card) ? (
-                    <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                      {getProgressionLevelText(card)}
-                    </span>
-                  ) : (
-                    <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
-                      {getPrimaryGaitType(card)}
-                    </span>
-                  )}
+                  <span className={`text-xs px-2 py-1 rounded font-bold ${getTypeColor(getPrimaryGaitType(card))}`}>
+                    {getPrimaryGaitType(card)}
+                  </span>
                   
                   {/* Discard Indicator */}
                   {needsDiscard && (
