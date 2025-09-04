@@ -76,19 +76,19 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         
         // NEW FREESTYLE CARDS
         // Flow Breaker Cards
-        { id: 101, name: "Spontaneous Leap", base: 2, tags: ["Specialty"], flow: "Breaks flow. +2 points per flow level lost", cost: 0, type: "freestyle" },
+        { id: 101, name: "Spontaneous Leap", base: 2, tags: ["Specialty"], flow: "Breaks flow. +2 points per flow level lost (max +6)", cost: 0, type: "freestyle" },
         { id: 102, name: "Artistic Rebellion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Draw cards equal to flow level lost", cost: 0, type: "freestyle" },
-        { id: 103, name: "Bold Improvisation", base: 3, tags: ["Canter"], flow: "Breaks flow. Next card gets +X points (X = flow level lost)", cost: 1, type: "freestyle" },
+        { id: 103, name: "Bold Improvisation", base: 3, tags: ["Canter"], flow: "Breaks flow. Next card gets +X points (X = flow level lost, max +3)", cost: 1, type: "freestyle" },
         { id: 104, name: "Creative Explosion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Gain +2 stamina", cost: 0, type: "freestyle" },
         
         // Post-Break Reward Cards
         { id: 105, name: "Phoenix Rising", base: 3, tags: ["Trot"], flow: "+3 points if flow was broken this turn", cost: 0, type: "freestyle" },
-        { id: 106, name: "From the Ashes", base: 4, tags: ["Canter"], flow: "Costs 0 if flow was broken this turn, otherwise costs 2", cost: 2, type: "freestyle" },
+        { id: 106, name: "From the Ashes", base: 3, tags: ["Canter"], flow: "Costs 0 if flow was broken this turn, otherwise costs 2", cost: 2, type: "freestyle" },
         { id: 107, name: "Improvised Grace", base: 2, tags: ["Walk"], flow: "+1 point for each turn since flow was broken (max +4)", cost: 0, type: "freestyle" },
         { id: 108, name: "Chaos Control", base: 2, tags: ["Transition"], flow: "If flow broken recently: Start new flow at level 2", cost: 0, type: "freestyle" },
         
         // Flow Gambler Cards
-        { id: 109, name: "All or Nothing", base: 1, tags: ["Specialty"], flow: "Flow ≥5: +6 points and break flow. Flow <5: +0 points", cost: 0, type: "freestyle" },
+        { id: 109, name: "All or Nothing", base: 1, tags: ["Specialty"], flow: "Flow ≥5: +6 points and break flow. Flow <5: +0 points", cost: 1, type: "freestyle" },
         { id: 110, name: "High Wire Act", base: 3, tags: ["Canter"], flow: "If this breaks flow: +5 points. If maintains flow: Draw 2 cards", cost: 1, type: "freestyle" },
         
         // Chaos Amplifier Cards  
@@ -119,6 +119,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [flowLevel, setFlowLevel] = useState(0);
   const [turnPhase, setTurnPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState(1);
+  const [wildCardResults, setWildCardResults] = useState({}); // Track what each Wild Card became
   const [maxTurns] = useState(8);
   const [gaitTypesUsed, setGaitTypesUsed] = useState(new Set());
   const [cantersPlayed, setCantersPlayed] = useState(0);
@@ -182,7 +183,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   }, []);
 
   // Calculate specific card combo bonuses (immediate point bonuses)
-  const calculateComboBonus = (card, previousCard) => {
+  const calculateComboBonus = (card, previousCard, wildCardResults = {}) => {
     let comboBonus = 0;
     let comboText = '';
 
@@ -239,7 +240,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     }
     // FREESTYLE DECK CARDS
     else if (card.name === "Spontaneous Leap") {
-      comboBonus = flowLevel * 2;
+      comboBonus = Math.min(flowLevel * 2, 6);
       comboText = `Flow sacrifice +${comboBonus}! `;
     }
     else if (card.name === "Phoenix Rising" && lastFlowBreakTurn === currentTurn - 1) {
@@ -271,7 +272,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     }
     else if (card.name === "High Wire Act") {
       // Check if this will break flow (we need to calculate flow here)
-      const { flowBroke } = calculateFlowLevel(card, previousCard);
+      const { flowBroke } = calculateFlowLevel(card, previousCard, wildCardResults);
       if (flowBroke) {
         comboBonus = 5;
         comboText = `High wire risk +${comboBonus}! `;
@@ -288,31 +289,43 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   };
 
   // Calculate flow level - simplified rules for strategic decision-making
-  const calculateFlowLevel = (card, previousCard) => {
+  const calculateFlowLevel = (card, previousCard, wildCardResults = {}) => {
+    // Handle Wild Card - replace its tags with the determined type
+    let effectiveCard = card;
+    let effectivePreviousCard = previousCard;
+    
+    if (card.tags?.includes("Wild") && wildCardResults[card.id]) {
+      effectiveCard = { ...card, tags: [wildCardResults[card.id]] };
+    }
+    
+    if (previousCard?.tags?.includes("Wild") && wildCardResults[previousCard.id]) {
+      effectivePreviousCard = { ...previousCard, tags: [wildCardResults[previousCard.id]] };
+    }
+
     let newFlowLevel = flowLevel;
     let flowBrokeNow = false;
     let flowText = '';
 
-    if (!previousCard) {
+    if (!effectivePreviousCard) {
       // First card - start flow at level 1
       newFlowLevel = 1;
       flowText = 'Flow started! ';
-    } else if (card.tags.includes("Finish")) {
+    } else if (effectiveCard.tags.includes("Finish")) {
       // Finish cards don't break flow
       flowText = 'Routine concluded! ';
-    } else if (card.tags.includes("Transition")) {
+    } else if (effectiveCard.tags.includes("Transition")) {
       // Transitions always maintain flow (universal connectors)
       newFlowLevel = flowLevel + 1;
       flowText = `Transition flow +${newFlowLevel}! `;
-    } else if (card.tags.includes("Walk")) {
+    } else if (effectiveCard.tags.includes("Walk")) {
       // Walks maintain flow only after Walk/Transition/Canter
-      if (previousCard.tags.includes("Walk") || 
-          previousCard.tags.includes("Transition") || 
-          previousCard.tags.includes("Canter")) {
+      if (effectivePreviousCard.tags.includes("Walk") || 
+          effectivePreviousCard.tags.includes("Transition") || 
+          effectivePreviousCard.tags.includes("Canter")) {
         newFlowLevel = flowLevel + 1;
-        if (previousCard.tags.includes("Walk")) {
+        if (effectivePreviousCard.tags.includes("Walk")) {
           flowText = `Walk sequence +${newFlowLevel}! `;
-        } else if (previousCard.tags.includes("Canter")) {
+        } else if (effectivePreviousCard.tags.includes("Canter")) {
           flowText = `Canter→Walk flow +${newFlowLevel}! `;
         } else {
           flowText = `After transition +${newFlowLevel}! `;
@@ -323,15 +336,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         flowText = "Flow broken... ";
         newFlowLevel = 0;
       }
-    } else if (previousCard.tags.includes("Transition")) {
+    } else if (effectivePreviousCard.tags.includes("Transition")) {
       // Any card after a Transition maintains flow (universal connector)
       newFlowLevel = flowLevel + 1;
       flowText = `After transition +${newFlowLevel}! `;
-    } else if (previousCard.tags.includes("Walk") && card.tags.includes("Trot")) {
+    } else if (effectivePreviousCard.tags.includes("Walk") && effectiveCard.tags.includes("Trot")) {
       // Natural progression: Walk → Trot
       newFlowLevel = flowLevel + 1;
       flowText = `Walk→Trot flow +${newFlowLevel}! `;
-    } else if (previousCard.tags.includes("Trot") && card.tags.includes("Canter")) {
+    } else if (effectivePreviousCard.tags.includes("Trot") && effectiveCard.tags.includes("Canter")) {
       // Natural progression: Trot → Canter
       newFlowLevel = flowLevel + 1;
       flowText = `Trot→Canter flow +${newFlowLevel}! `;
@@ -355,17 +368,17 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   };
 
   // Main scoring function - combines combo and flow bonuses
-  const calculateScore = (card, previousCard) => {
+  const calculateScore = (card, previousCard, wildCardResults = {}) => {
     let score = card.base;
     let bonusText = '';
 
     // 1. Calculate combo bonuses (fixed point bonuses)
-    const { comboBonus, comboText } = calculateComboBonus(card, previousCard);
+    const { comboBonus, comboText } = calculateComboBonus(card, previousCard, wildCardResults);
     score += comboBonus;
     bonusText += comboText;
 
     // 2. Calculate flow level and check if it broke
-    const { newFlowLevel, flowBroke: flowBrokeNow, flowText } = calculateFlowLevel(card, previousCard);
+    const { newFlowLevel, flowBroke: flowBrokeNow, flowText } = calculateFlowLevel(card, previousCard, wildCardResults);
     bonusText += flowText;
 
     // 3. Flow Master special bonus
@@ -400,9 +413,18 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       };
     }
 
+    // Special case for Wild Card - unpredictable
+    if (card.tags?.includes("Wild")) {
+      return {
+        maintains: null, // Unknown
+        reason: 'Unpredictable',
+        totalScore: card.base
+      };
+    }
+
     const previousCard = playedCards[playedCards.length - 1];
-    const { comboBonus } = calculateComboBonus(card, previousCard);
-    const { newFlowLevel, flowBroke, flowText } = calculateFlowLevel(card, previousCard);
+    const { comboBonus } = calculateComboBonus(card, previousCard, wildCardResults);
+    const { newFlowLevel, flowBroke, flowText } = calculateFlowLevel(card, previousCard, wildCardResults);
     
     let totalScore = card.base + comboBonus;
     if (newFlowLevel >= 3) {
@@ -432,6 +454,16 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       );
     }
     
+    // Handle unpredictable Wild Card
+    if (flowInfo.maintains === null) {
+      return (
+        <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
+          <div className="text-purple-700 font-medium">? Flow Unknown</div>
+          <div className="text-gray-700 text-xs mt-1">Depends on random result</div>
+        </div>
+      );
+    }
+
     if (!flowInfo.maintains) {
       return (
         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
@@ -797,8 +829,17 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       return;
     }
 
+    // Handle Wild Card type determination
+    let wildCardMessage = '';
+    if (card.tags?.includes("Wild")) {
+      const wildTypes = ["Walk", "Trot", "Canter"];
+      const randomType = wildTypes[Math.floor(Math.random() * wildTypes.length)];
+      setWildCardResults(prev => ({ ...prev, [card.id]: randomType }));
+      wildCardMessage = `Wild Card became: ${randomType}! `;
+    }
+
     const previousCard = playedCards[playedCards.length - 1];
-    const { score, bonusText, newFlowLevel, flowBroke: flowBrokeNow } = calculateScore(card, previousCard);
+    const { score, bonusText, newFlowLevel, flowBroke: flowBrokeNow } = calculateScore(card, previousCard, wildCardResults);
 
     // Set arena state for animations
     setIsPerforming(true);
@@ -843,8 +884,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         }
       }
     } else if (card.name === "Bold Improvisation") {
-      // Next card gets bonus points equal to flow level lost
-      setNextCardBonus(flowLevel);
+      // Next card gets bonus points equal to flow level lost (max +3)
+      setNextCardBonus(Math.min(flowLevel, 3));
     } else if (card.name === "Creative Explosion") {
       // Gain +2 stamina
       newStamina += 2;
@@ -948,7 +989,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       setMessage(`All cards played! Final score: ${totalScore + score}`);
     } else {
       // Continue to next turn
-      startNextTurn(bonusText);
+      startNextTurn(wildCardMessage + bonusText);
     }
   };
 
@@ -977,6 +1018,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Get primary gait type from card tags
   const getPrimaryGaitType = (card) => {
+    // Check if this is a Wild Card with a determined result
+    if (card.tags?.includes("Wild") && wildCardResults[card.id]) {
+      return wildCardResults[card.id].toUpperCase();
+    }
+    
     if (card.tags.includes("Walk")) return "WALK";
     if (card.tags.includes("Trot")) return "TROT"; 
     if (card.tags.includes("Canter")) return "CANTER";
@@ -1169,7 +1215,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                   )}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {card.flow && <div>{card.flow}</div>}
+                  {card.flow && <div>{card.tags?.includes("Wild") ? "? (Random: Walk/Trot/Canter)" : card.flow}</div>}
                   {card.bonus && <div className="text-green-600">{card.bonus}</div>}
                 </div>
                 
@@ -1314,7 +1360,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                           </div>
                           
                           <div className="text-xs text-gray-600 space-y-1">
-                            {card.flow && <div className="text-blue-600">{card.flow}</div>}
+                            {card.flow && <div className="text-blue-600">{card.tags?.includes("Wild") ? "? (Random: Walk/Trot/Canter)" : card.flow}</div>}
                             {card.bonus && <div className="text-green-600">{card.bonus}</div>}
                             {card.risk && <div className="text-red-600">{card.risk}</div>}
                           </div>
