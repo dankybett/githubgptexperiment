@@ -247,10 +247,10 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setGameState('playing');
   };
 
-  // Initialize game on mount
+  // Initialize game on mount and when deck changes
   useEffect(() => {
     startGame();
-  }, []);
+  }, [selectedDeck]);
 
   // Calculate specific card combo bonuses (immediate point bonuses)
   const calculateComboBonus = (card, previousCard, wildCardResults = {}) => {
@@ -1536,7 +1536,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                     onClick={() => {
                       setSelectedDeck(key);
                       setShowDeckSelector(false);
-                      startGame(); // Restart with new deck
+                      // Game will restart automatically via useEffect
                     }}
                   >
                     <div className="font-bold">{deckInfo.name}</div>
