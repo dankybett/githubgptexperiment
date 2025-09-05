@@ -30,6 +30,17 @@ const defaultGameState = {
   nestEgg: null,
   selectedGrazingHorses: [],
   customThemes: {},
+  // Dressage competition progression
+  dressageCompetition: {
+    selectedLevel: 'introductory',
+    progress: {
+      introductory: { unlocked: true, bestAverage: 0 },
+      intermediate: { unlocked: false, bestAverage: 0 },
+      grandPrix: { unlocked: false, bestAverage: 0 }
+    }
+  },
+  // Per-horse dressage progress keyed by horse id
+  dressageHorseProgress: {},
   version: STORAGE_VERSION
 };
 
@@ -83,6 +94,30 @@ export const gameStorage = {
         nestEgg: parsed.nestEgg !== undefined ? parsed.nestEgg : defaultGameState.nestEgg,
         selectedGrazingHorses: Array.isArray(parsed.selectedGrazingHorses) ? parsed.selectedGrazingHorses : defaultGameState.selectedGrazingHorses,
         customThemes: typeof parsed.customThemes === 'object' && parsed.customThemes !== null ? parsed.customThemes : defaultGameState.customThemes,
+        dressageCompetition: typeof parsed.dressageCompetition === 'object' && parsed.dressageCompetition !== null
+          ? {
+              selectedLevel: ['introductory','intermediate','grandPrix'].includes(parsed.dressageCompetition.selectedLevel)
+                ? parsed.dressageCompetition.selectedLevel
+                : defaultGameState.dressageCompetition.selectedLevel,
+              progress: {
+                introductory: {
+                  unlocked: !!(parsed.dressageCompetition.progress?.introductory?.unlocked),
+                  bestAverage: Math.max(0, Number(parsed.dressageCompetition.progress?.introductory?.bestAverage) || 0)
+                },
+                intermediate: {
+                  unlocked: !!(parsed.dressageCompetition.progress?.intermediate?.unlocked),
+                  bestAverage: Math.max(0, Number(parsed.dressageCompetition.progress?.intermediate?.bestAverage) || 0)
+                },
+                grandPrix: {
+                  unlocked: !!(parsed.dressageCompetition.progress?.grandPrix?.unlocked),
+                  bestAverage: Math.max(0, Number(parsed.dressageCompetition.progress?.grandPrix?.bestAverage) || 0)
+                }
+              }
+            }
+          : defaultGameState.dressageCompetition,
+        dressageHorseProgress: typeof parsed.dressageHorseProgress === 'object' && parsed.dressageHorseProgress !== null
+          ? parsed.dressageHorseProgress
+          : {},
         version: STORAGE_VERSION
       };
 

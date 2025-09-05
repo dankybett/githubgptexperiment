@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle, RotateCcw, Play, Trophy, Zap, Star, Plus, Eye, User } from 'lucide-react';
 import DressageArena from './DressageArena';
 import { JudgeSystem } from './JudgeSystem';
+import { dressageStorage } from '../../utils/dressageStorage';
 
 // This is a modified version of the card game that works WITHIN the arena
 const FullArenaGame = ({ selectedHorse, onBack }) => {
@@ -217,6 +218,19 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [showJudgePanel, setShowJudgePanel] = useState(false);
   const [judgeScores, setJudgeScores] = useState([]);
   const [focusedJudgeId, setFocusedJudgeId] = useState(null);
+  // Competition state
+  const COMP_THRESHOLDS = {
+    introductory: 18,
+    intermediate: 25,
+    grandPrix: 35
+  };
+  const [competitionLevel, setCompetitionLevel] = useState('introductory');
+  const [competitionProgress, setCompetitionProgress] = useState({
+    introductory: { unlocked: true, bestAverage: 0 },
+    intermediate: { unlocked: false, bestAverage: 0 },
+    grandPrix: { unlocked: false, bestAverage: 0 }
+  });
+  const [showCompetitionSelector, setShowCompetitionSelector] = useState(false);
 
   // Visual mapping for judge categories -> character visuals
   const systemJudgeVisuals = {
@@ -283,8 +297,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Initialize game on mount and when deck changes
   useEffect(() => {
+    try {
+      const perHorse = dressageStorage.getHorseProgress(selectedHorse);
+      if (perHorse) {
+        setCompetitionLevel(perHorse.selectedLevel || 'introductory');
+        setCompetitionProgress(perHorse.progress || competitionProgress);
+      }
+    } catch {}
     startGame();
-  }, [selectedDeck]);
+  }, [selectedDeck, selectedHorse?.id, selectedHorse?.name]);
 
   // Calculate specific card combo bonuses (immediate point bonuses)
   const calculateComboBonus = (card, previousCard, wildCardResults = {}) => {
@@ -1253,8 +1274,27 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       else if (averageScore >= 25) rating = "Advanced";
       else if (averageScore >= 18) rating = "Intermediate";
       
+      // Update competition progress and unlocks
+      const updatedProgress = { ...competitionProgress };
+      const levelKey = competitionLevel;
+      const best = Math.max(averageScore, competitionProgress[levelKey]?.bestAverage || 0);
+      updatedProgress[levelKey] = { ...(competitionProgress[levelKey] || {}), bestAverage: best, unlocked: true };
+      if (averageScore >= COMP_THRESHOLDS[levelKey]) {
+        if (levelKey === 'introductory') {
+          updatedProgress.intermediate = { ...(competitionProgress.intermediate || {}), unlocked: true, bestAverage: competitionProgress.intermediate?.bestAverage || 0 };
+        } else if (levelKey === 'intermediate') {
+          updatedProgress.grandPrix = { ...(competitionProgress.grandPrix || {}), unlocked: true, bestAverage: competitionProgress.grandPrix?.bestAverage || 0 };
+        }
+      }
+      setCompetitionProgress(updatedProgress);
+      try {
+        const perHorseRecord = { selectedLevel: competitionLevel, progress: updatedProgress };
+        dressageStorage.setHorseProgress(selectedHorse, perHorseRecord);
+      } catch {}
+
       const turnBonus = currentTurn <= 6 ? " Efficient timing bonus!" : currentTurn <= 7 ? " Good timing!" : "";
-      setMessage(`Routine complete!${turnBonus} Average judge score: ${averageScore} - ${rating} level!`);
+      const qualText = averageScore >= COMP_THRESHOLDS[levelKey] ? ` Qualified for ${levelKey === 'introductory' ? 'Intermediate' : levelKey === 'intermediate' ? 'Grand Prix' : 'Grand Prix'}!` : '';
+      setMessage(`Routine complete!${turnBonus} Average judge score: ${averageScore} - ${rating} level!${qualText}`);
       return;
     } else if (currentTurn >= maxTurns) {
       // Final turn passed without finishing
@@ -1445,6 +1485,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         setShowTutorial(true);
         setTutorialStep(0);
       }}
+      competitionLevel={competitionLevel === 'introductory' ? 'Introductory' : competitionLevel === 'intermediate' ? 'Intermediate' : 'Grand Prix'}
       selectedJudges={selectedJudges}
       onJudgeClick={(judge) => {
         const sysId = judge?.systemJudge?.id || null;
@@ -1454,6 +1495,20 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     >
       {/* Game Content */}
       <div className="space-y-4">
+        {/* Competition Selector */}
+        <div className="flex items-center justify-center gap-3">
+          <div className="bg-white rounded-lg px-3 py-2 shadow text-sm">
+            Competition: <span className="font-bold">{competitionLevel === 'introductory' ? 'Introductory' : competitionLevel === 'intermediate' ? 'Intermediate' : 'Grand Prix'}</span>
+            <span className="ml-2 text-gray-500">Target {COMP_THRESHOLDS[competitionLevel]}+</span>
+          </div>
+          <button
+            className="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
+            onClick={() => setShowCompetitionSelector(true)}
+          >
+            Change
+          </button>
+        </div>
+
         {/* Message */}
         {message && (
           <div className="bg-blue-100 border border-blue-400 text-blue-800 px-4 py-2 rounded-lg text-center">
@@ -1830,6 +1885,52 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Competition Level Selector Modal */}
+        {showCompetitionSelector && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Select Competition Level</h2>
+                <button onClick={() => setShowCompetitionSelector(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+              </div>
+              {[
+                { key: 'introductory', label: 'Introductory' },
+                { key: 'intermediate', label: 'Intermediate' },
+                { key: 'grandPrix', label: 'Grand Prix' }
+              ].map(item => {
+                const unlocked = competitionProgress[item.key]?.unlocked;
+                const best = competitionProgress[item.key]?.bestAverage || 0;
+                return (
+                  <button
+                    key={item.key}
+                    disabled={!unlocked}
+                    onClick={() => {
+                      setCompetitionLevel(item.key);
+                      setShowCompetitionSelector(false);
+                      try {
+                        const perHorseRecord = { selectedLevel: item.key, progress: competitionProgress };
+                        dressageStorage.setHorseProgress(selectedHorse, perHorseRecord);
+                      } catch {}
+                      startGame();
+                    }}
+                    className={`w-full text-left p-3 mb-2 border-2 rounded ${unlocked ? 'border-blue-400 hover:bg-blue-50' : 'border-gray-200 bg-gray-50 cursor-not-allowed'}`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-bold">{item.label}</div>
+                        <div className="text-xs text-gray-600">Target {COMP_THRESHOLDS[item.key]}+ | Best: {best}</div>
+                      </div>
+                      {!unlocked && (
+                        <div className="text-xs text-gray-500">Locked</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
