@@ -50,6 +50,67 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     { id: 27, name: "Freestyle Finish", base: 4, tags: ["Finish"], bonus: "+1 for each gait type used this game", cost: 1, type: "finish" }
   ];
 
+  // Hybrid Deck Definition  
+  const hybridDeckCards = [
+    // Foundation & Flow Builders (17 cards)
+    // Walk (3 cards)
+    { id: 201, name: "Medium Walk", base: 1, tags: ["Walk"], flow: "+2 if after another [Walk]", cost: 0, type: "walk" },
+    { id: 202, name: "Free Walk on Long Rein", base: 1, tags: ["Walk"], bonus: "Restore 1 Stamina", cost: 0, type: "walk" },
+    { id: 203, name: "Stretching Circle", base: 1, tags: ["Walk"], bonus: "Restore 2 Stamina (once per game)", cost: 0, type: "walk", unique: true },
+    
+    // Trot (5 cards)
+    { id: 204, name: "Working Trot", base: 2, tags: ["Trot"], flow: "Solid foundation move", cost: 0, type: "trot" },
+    { id: 205, name: "Extended Trot", base: 2, tags: ["Trot"], flow: "+2 if after [Walk]", cost: 0, type: "trot" },
+    { id: 206, name: "Collected Trot", base: 2, tags: ["Trot"], flow: "+2 if after [Transition]", cost: 0, type: "trot" },
+    { id: 207, name: "Piaffe", base: 4, tags: ["Trot"], flow: "+2 if after Collected Trot", cost: 1, type: "trot" },
+    { id: 208, name: "Steady Rhythm", base: 2, tags: ["Trot"], flow: "+1 Stamina if flow level ≥ 3", cost: 0, type: "trot" },
+    
+    // Canter (5 cards)
+    { id: 209, name: "Working Canter", base: 2, tags: ["Canter"], flow: "Safe setup for flow", cost: 0, type: "canter" },
+    { id: 210, name: "Extended Canter", base: 3, tags: ["Canter"], risk: "Costs 1 Stamina", cost: 1, type: "canter" },
+    { id: 211, name: "Collected Canter", base: 3, tags: ["Canter"], flow: "+2 if after [Transition]", cost: 0, type: "canter" },
+    { id: 212, name: "Pirouette", base: 4, tags: ["Canter"], flow: "+2 if after Collected Canter", cost: 1, type: "canter" },
+    { id: 213, name: "Counter-Canter", base: 3, tags: ["Canter"], risk: "-1 Style if not preceded by [Transition]", cost: 0, type: "canter" },
+    
+    // Transitions (4 cards)
+    { id: 214, name: "Flying Change", base: 2, tags: ["Transition"], flow: "+2 if after [Canter]", cost: 0, type: "transition" },
+    { id: 215, name: "Simple Change", base: 1, tags: ["Transition"], bonus: "Restore 1 Stamina", cost: 0, type: "transition" },
+    { id: 216, name: "Rein Back", base: 2, tags: ["Transition"], flow: "+1 if after [Walk]", cost: 0, type: "transition" },
+    { id: 217, name: "Tempo Change", base: 2, tags: ["Transition"], flow: "Universal connector + draw 1 card", cost: 0, type: "transition" },
+    
+    // Freestyle Risk/Reward (11 cards)
+    // Flow Breakers (3 cards)
+    { id: 218, name: "Spontaneous Leap", base: 2, tags: ["Specialty"], flow: "Breaks flow. +2 points per flow level lost (max +6)", cost: 0, type: "freestyle" },
+    { id: 219, name: "Artistic Rebellion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Draw cards equal to flow level lost", cost: 0, type: "freestyle" },
+    { id: 220, name: "Creative Explosion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Gain +2 stamina", cost: 0, type: "freestyle" },
+    
+    // Post-Break Rewards (3 cards)
+    { id: 221, name: "Phoenix Rising", base: 3, tags: ["Trot"], flow: "+3 points if flow was broken this turn", cost: 0, type: "freestyle" },
+    { id: 222, name: "From the Ashes", base: 3, tags: ["Canter"], flow: "Costs 0 if flow was broken this turn, otherwise costs 2", cost: 2, type: "freestyle" },
+    { id: 223, name: "Improvised Grace", base: 2, tags: ["Walk"], flow: "+1 point for each turn since flow was broken (max +4)", cost: 0, type: "freestyle" },
+    
+    // Flow Gambler (2 cards)
+    { id: 224, name: "All or Nothing", base: 1, tags: ["Specialty"], flow: "Flow ≥5: +6 points and break flow. Flow <5: +0 points", cost: 1, type: "freestyle" },
+    { id: 225, name: "High Wire Act", base: 3, tags: ["Canter"], flow: "If this breaks flow: +5 points. If maintains flow: Draw 2 cards", cost: 1, type: "freestyle" },
+    
+    // Chaos/Utility (3 cards)
+    { id: 226, name: "Chaos Control", base: 2, tags: ["Transition"], flow: "If flow broken recently: Start new flow at level 2", cost: 0, type: "freestyle" },
+    { id: 227, name: "Wild Card", base: 2, tags: ["Wild"], flow: "Randomly counts as Walk, Trot, or Canter for combos", cost: 0, type: "freestyle" },
+    { id: 228, name: "Freestyle Finale", base: 3, tags: ["Finish"], flow: "+1 point for each time flow was broken this game", cost: 1, type: "freestyle" },
+    
+    // Hybrid Bridge Cards (6 cards)
+    { id: 229, name: "Strategic Pause", base: 1, tags: ["Specialty"], flow: "Draw 2, discard 1 (if flow ≥3, keep both)", cost: 0, type: "hybrid" },
+    { id: 230, name: "Flow Gambit", base: 2, tags: ["Specialty"], flow: "If flow ≥3: break flow, gain +flow level points", cost: 0, type: "hybrid" },
+    { id: 231, name: "Calculated Risk", base: 2, tags: ["Specialty"], flow: "Choose: +2 safe OR +4 risky (50% chance break flow)", cost: 1, type: "hybrid" },
+    { id: 232, name: "Second Chance", base: 1, tags: ["Specialty"], flow: "If flow broken this game: draw 3", cost: 0, type: "hybrid" },
+    { id: 233, name: "Perfect Balance", base: 4, tags: ["Specialty"], flow: "Costs 0 if both Classic + Freestyle played this game", cost: 2, type: "hybrid" },
+    { id: 234, name: "Rhythmic Recovery", base: 2, tags: ["Specialty"], flow: "If flow was broken last turn: +2 points + restore 2 stamina", cost: 0, type: "hybrid" },
+    
+    // Finishers (2 cards)
+    { id: 235, name: "Final Halt & Salute", base: 3, tags: ["Finish"], bonus: "+2 if routine length ≥ 6", cost: 0, type: "finish" },
+    { id: 236, name: "Balanced Finale", base: 3, tags: ["Finish"], flow: "+3 if you both maintained flow ≥3 and broke flow at least once", cost: 0, type: "finish" }
+  ];
+
   // Deck Library
   const deckLibrary = {
     classic: {
@@ -96,6 +157,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         { id: 112, name: "Unpredictable", base: 1, tags: ["Specialty"], flow: "+1 point for each different card type played this game", cost: 0, type: "freestyle" },
         { id: 113, name: "Freestyle Finale", base: 3, tags: ["Finish"], flow: "+1 point for each time flow was broken this game", cost: 1, type: "freestyle" }
       ]
+    },
+    hybrid: {
+      name: "Hybrid Deck",
+      description: "Balanced mix of classic foundation and freestyle innovation with unique bridge mechanics",
+      cards: hybridDeckCards
     }
   };
 
@@ -138,6 +204,10 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [lastPlayedCard, setLastPlayedCard] = useState(null);
   const [isPerforming, setIsPerforming] = useState(false);
   const [flowBroke, setFlowBroke] = useState(false);
+  
+  // Hybrid card choice state
+  const [showCalculatedRiskChoice, setShowCalculatedRiskChoice] = useState(false);
+  const [pendingCardPlay, setPendingCardPlay] = useState(null);
 
   // Get current deck cards
   const getCurrentDeck = () => deckLibrary[selectedDeck]?.cards || deckLibrary.classic.cards;
@@ -210,13 +280,25 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       comboBonus = 2;
       comboText = "Transition combo +2! ";
     }
+    else if (card.name === "Collected Canter" && previousCard?.tags.includes("Transition")) {
+      comboBonus = 2;
+      comboText = "Transition combo +2! ";
+    }
     else if (card.name === "Piaffe" && previousCard?.name === "Collected Trot") {
+      comboBonus = 2;
+      comboText = "Classical sequence +2! ";
+    }
+    else if (card.name === "Pirouette" && previousCard?.name === "Collected Canter") {
       comboBonus = 2;
       comboText = "Classical sequence +2! ";
     }
     else if (card.name === "Canter Pirouette" && previousCard?.tags.includes("Transition")) {
       comboBonus = 3;
       comboText = "Transition mastery +3! ";
+    }
+    else if (card.name === "Rein Back" && previousCard?.tags.includes("Walk")) {
+      comboBonus = 1;
+      comboText = "Walk combo +1! ";
     }
     else if (card.name === "Shoulder-In" && previousCard?.tags.includes("Trot")) {
       comboBonus = 1;
@@ -276,6 +358,46 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       if (flowBroke) {
         comboBonus = 5;
         comboText = `High wire risk +${comboBonus}! `;
+      }
+    }
+    // HYBRID DECK CARDS
+    else if (card.name === "Flow Gambit" && flowLevel >= 3) {
+      comboBonus = flowLevel;
+      comboText = `Flow gambit +${flowLevel}! `;
+    }
+    else if (card.name === "Perfect Balance") {
+      // Check if both classic and freestyle cards played
+      const hasClassic = cardTypesUsed.has('walk') || cardTypesUsed.has('trot') || cardTypesUsed.has('canter') || cardTypesUsed.has('transition');
+      const hasFreestyle = cardTypesUsed.has('freestyle');
+      if (hasClassic && hasFreestyle) {
+        comboText = `Perfect balance - free play! `;
+      }
+    }
+    else if (card.name === "Calculated Risk") {
+      // This will be handled by the choice modal - placeholder for now
+      // The actual bonus will be set when the choice is made
+    }
+    else if (card.name === "Rhythmic Recovery" && lastFlowBreakTurn === currentTurn - 1) {
+      comboBonus = 2;
+      comboText = `Rhythmic recovery +2! `;
+    }
+    else if (card.name === "Balanced Finale") {
+      // Check if both maintained flow ≥3 and broke flow at least once
+      const hasHighFlow = playedCards.some((_, index) => {
+        // Calculate flow for each played card to see if we ever reached 3+
+        let tempFlow = 0;
+        for (let i = 0; i <= index; i++) {
+          const currentCard = playedCards[i];
+          const prevCard = i > 0 ? playedCards[i - 1] : null;
+          const { newFlowLevel } = calculateFlowLevel(currentCard, prevCard, wildCardResults);
+          tempFlow = newFlowLevel;
+          if (tempFlow >= 3) return true;
+        }
+        return false;
+      });
+      if (hasHighFlow && flowBreakCount > 0) {
+        comboBonus = 3;
+        comboText = `Balanced finale +3! `;
       }
     }
 
@@ -813,8 +935,32 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     }
   };
 
+  // Handle Calculated Risk choice
+  const handleCalculatedRiskChoice = (safe) => {
+    const card = pendingCardPlay;
+    setShowCalculatedRiskChoice(false);
+    setPendingCardPlay(null);
+    
+    // Execute the card with the chosen risk level
+    executeCardPlay(card, safe ? 'safe' : 'risky');
+  };
+
   // Play a card with arena integration
   const playCard = (card) => {
+    if (gameOver || needsDiscard || isPerforming) return; // Prevent clicks during animation
+    
+    // Special case for Calculated Risk - show choice modal
+    if (card.name === "Calculated Risk") {
+      setPendingCardPlay(card);
+      setShowCalculatedRiskChoice(true);
+      return;
+    }
+    
+    executeCardPlay(card);
+  };
+
+  // Execute card play (separated to handle Calculated Risk choices)
+  const executeCardPlay = (card, riskChoice = null) => {
     if (gameOver || needsDiscard || isPerforming) return; // Prevent clicks during animation
     
     // Calculate actual cost with special cases
@@ -839,12 +985,45 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     }
 
     const previousCard = playedCards[playedCards.length - 1];
+    
+    // Handle Calculated Risk special scoring
+    let calculatedRiskBonus = 0;
+    let calculatedRiskText = '';
+    if (card.name === "Calculated Risk" && riskChoice) {
+      if (riskChoice === 'safe') {
+        calculatedRiskBonus = 2;
+        calculatedRiskText = 'Safe choice +2! ';
+      } else if (riskChoice === 'risky') {
+        const riskySuccess = Math.random() < 0.5; // 50% chance
+        if (riskySuccess) {
+          calculatedRiskBonus = 4;
+          calculatedRiskText = 'Risky success +4! ';
+        } else {
+          calculatedRiskBonus = 0;
+          calculatedRiskText = 'Risky failure - flow broken! ';
+          // Force flow break for failed risky choice
+        }
+      }
+    }
+    
     const { score, bonusText, newFlowLevel, flowBroke: flowBrokeNow } = calculateScore(card, previousCard, wildCardResults);
+    
+    // Apply Calculated Risk modifications
+    let finalScore = score + calculatedRiskBonus;
+    let finalBonusText = bonusText + calculatedRiskText;
+    let finalFlowBroke = flowBrokeNow;
+    let finalFlowLevel = newFlowLevel;
+    
+    // Force flow break for failed risky Calculated Risk
+    if (card.name === "Calculated Risk" && riskChoice === 'risky' && calculatedRiskBonus === 0) {
+      finalFlowBroke = true;
+      finalFlowLevel = 0;
+    }
 
     // Set arena state for animations
     setIsPerforming(true);
-    setLastPlayedCard({ ...card, earnedScore: score });
-    setFlowBroke(flowBrokeNow);
+    setLastPlayedCard({ ...card, earnedScore: finalScore });
+    setFlowBroke(finalFlowBroke);
     
     // Update game state
     let newStamina = stamina - actualCost;
@@ -855,7 +1034,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     } else if (card.name === "Stretching Circle" && !stretchingCircleUsed) {
       newStamina += 2;
       setStretchingCircleUsed(true);
-    } else if (card.name === "Steady Rhythm" && newFlowLevel >= 3) {
+    } else if (card.name === "Steady Rhythm" && finalFlowLevel >= 3) {
       newStamina += 1;
     } else if (card.name === "Stamina Surge") {
       newStamina += 3;
@@ -905,6 +1084,40 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       }
       // If this breaks flow: +5 points (handled in combo bonus)
     }
+    
+    // HYBRID CARD SPECIAL EFFECTS
+    else if (card.name === "Strategic Pause") {
+      // Draw 2, discard 1 (if flow ≥3, keep both)
+      const cardsToDraw = flowLevel >= 3 ? 2 : 1; // If flow ≥3, we keep both so draw 2 without discarding
+      for (let i = 0; i < 2 && deck.length > 0; i++) {
+        const extraCard = drawCard();
+        if (extraCard) {
+          setTimeout(() => {
+            setHand(prev => [...prev, extraCard]);
+          }, 100 * (i + 1));
+        }
+      }
+      // If flow < 3, player will need to discard 1 card after drawing 2
+      if (flowLevel < 3) {
+        setTimeout(() => {
+          setNeedsDiscard(true);
+          setMessage(`Strategic Pause: Choose 1 card to discard.`);
+        }, 300);
+      }
+    } else if (card.name === "Second Chance" && flowBreakCount > 0) {
+      // Draw 3 cards if flow broken this game
+      for (let i = 0; i < 3 && deck.length > 0; i++) {
+        const extraCard = drawCard();
+        if (extraCard) {
+          setTimeout(() => {
+            setHand(prev => [...prev, extraCard]);
+          }, 100 * (i + 1));
+        }
+      }
+    } else if (card.name === "Rhythmic Recovery" && lastFlowBreakTurn === currentTurn - 1) {
+      // +2 stamina (points already handled in combo bonus)
+      newStamina += 2;
+    }
 
     // Clear stamina surge after use
     if (staminaSurgeActive && card.name !== "Stamina Surge") {
@@ -930,7 +1143,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setCardTypesUsed(newCardTypes);
 
     // Handle flow breaking tracking
-    if (flowBrokeNow) {
+    if (finalFlowBroke) {
       setFlowBreakCount(prev => prev + 1);
       setLastFlowBreakTurn(currentTurn);
     }
@@ -944,10 +1157,10 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     const newHand = hand.filter(c => c.instanceId !== card.instanceId);
     setHand(newHand);  // Remove from hand FIRST
     setStamina(Math.max(0, newStamina));
-    setTotalScore(prev => prev + score);
-    setPlayedCards(prev => [...prev, { ...card, earnedScore: score }]);
-    setFlowLevel(newFlowLevel);
-    setFlowMeter(prev => flowBrokeNow ? 0 : newFlowLevel);
+    setTotalScore(prev => prev + finalScore);
+    setPlayedCards(prev => [...prev, { ...card, earnedScore: finalScore }]);
+    setFlowLevel(finalFlowLevel);
+    setFlowMeter(prev => finalFlowBroke ? 0 : finalFlowLevel);
     
     console.log(`Played ${card.name} (${card.instanceId?.toString().slice(2,8)}), hand size: ${newHand.length}, routine length: ${playedCards.length + 1}`);
 
@@ -960,20 +1173,20 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (card.tags.includes("Finish")) {
       setGameOver(true);
       setGameState('finished');
-      const finalScore = totalScore + score;
+      const finalTotalScore = totalScore + finalScore;
       let rating = "Novice";
-      if (finalScore >= 35) rating = "Master";
-      else if (finalScore >= 25) rating = "Advanced";
-      else if (finalScore >= 18) rating = "Intermediate";
+      if (finalTotalScore >= 35) rating = "Master";
+      else if (finalTotalScore >= 25) rating = "Advanced";
+      else if (finalTotalScore >= 18) rating = "Intermediate";
       
       const turnBonus = currentTurn <= 6 ? " Efficient timing bonus!" : currentTurn <= 7 ? " Good timing!" : "";
-      setMessage(`Routine complete!${turnBonus} Final score: ${finalScore} - ${rating} level!`);
+      setMessage(`Routine complete!${turnBonus} Final score: ${finalTotalScore} - ${rating} level!`);
       return;
     } else if (currentTurn >= maxTurns) {
       // Final turn passed without finishing
       setGameOver(true);
       setGameState('finished');
-      setMessage(`Time's up! Final score: ${Math.max(0, totalScore + score)}`);
+      setMessage(`Time's up! Final score: ${Math.max(0, totalScore + finalScore)}`);
       return;
     }
 
@@ -986,10 +1199,10 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       // Game ends if no more cards
       setGameOver(true);
       setGameState('finished');
-      setMessage(`All cards played! Final score: ${totalScore + score}`);
+      setMessage(`All cards played! Final score: ${totalScore + finalScore}`);
     } else {
       // Continue to next turn
-      startNextTurn(wildCardMessage + bonusText);
+      startNextTurn(wildCardMessage + finalBonusText);
     }
   };
 
@@ -1042,7 +1255,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       specialty: 'bg-orange-100 border-orange-400',
       power: 'bg-pink-100 border-pink-400',
       finish: 'bg-red-100 border-red-400',
-      freestyle: 'bg-gradient-to-br from-purple-100 to-pink-100 border-purple-400'
+      freestyle: 'bg-gradient-to-br from-purple-100 to-pink-100 border-purple-400',
+      hybrid: 'bg-gradient-to-br from-blue-100 to-green-100 border-teal-400'
     };
     return colors[type] || 'bg-gray-100 border-gray-400';
   };
@@ -1266,6 +1480,36 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
         {/* Tutorial Modal */}
         {showTutorial && <DressageTutorial />}
         
+        {/* Calculated Risk Choice Modal */}
+        {showCalculatedRiskChoice && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-bold mb-2">Calculated Risk</h2>
+                <p className="text-gray-700 mb-4">Choose your approach:</p>
+              </div>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleCalculatedRiskChoice(true)}
+                  className="w-full p-4 bg-green-100 border border-green-400 rounded-lg hover:bg-green-200 transition-colors"
+                >
+                  <div className="font-bold text-green-800">Safe Choice</div>
+                  <div className="text-sm text-green-700">Guaranteed +2 points</div>
+                </button>
+                
+                <button
+                  onClick={() => handleCalculatedRiskChoice(false)}
+                  className="w-full p-4 bg-red-100 border border-red-400 rounded-lg hover:bg-red-200 transition-colors"
+                >
+                  <div className="font-bold text-red-800">Risky Choice</div>
+                  <div className="text-sm text-red-700">50% chance: +4 points OR break flow</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Deck Selector Modal */}
         {showDeckSelector && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1324,7 +1568,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
               </div>
               
               {/* Group cards by type */}
-              {['walk', 'trot', 'canter', 'transition', 'specialty', 'power', 'freestyle', 'finish'].map(cardType => {
+              {['walk', 'trot', 'canter', 'transition', 'specialty', 'power', 'freestyle', 'hybrid', 'finish'].map(cardType => {
                 const typeCards = getCurrentDeck().filter(card => card.type === cardType);
                 if (typeCards.length === 0) return null;
                 
