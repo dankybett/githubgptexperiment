@@ -604,7 +604,7 @@ const JudgesPanel = ({
         </div>
         
         {/* Competition Stats - Top Left */}
-        <div className="absolute top-4 left-8" style={{ zIndex: 20 }}>
+        <div className="absolute top-4 left-8" style={{ zIndex: 20, display: 'none' }}>
           <div className="text-center p-2" style={{
             background: 'linear-gradient(145deg, rgba(232,245,232,0.95), rgba(200,230,200,0.95))',
             border: '2px solid #28a745',

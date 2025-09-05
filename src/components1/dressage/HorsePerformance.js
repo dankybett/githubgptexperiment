@@ -181,92 +181,50 @@ const HorsePerformance = ({
   }, [lastPlayedCard, isPerforming, flowLength, flowBroke]);
 
   const moveAnimation = currentMove ? getMoveAnimation(currentMove) : {};
-
+  
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {/* Horse with movement animation */}
-      {selectedHorse && (
-        <motion.div
-          className="flex flex-col items-center z-10"
-          animate={currentMove ? {
-            x: moveAnimation.position?.map(p => p.x) || [0],
-            y: moveAnimation.position?.map(p => p.y) || [0],
-            rotate: moveAnimation.rotation || [0],
-            scale: moveAnimation.scale || [1]
-          } : {
-            y: [0, -2, 0]
-          }}
-          transition={currentMove ? {
-            duration: moveAnimation.duration || 2,
-            ease: "easeInOut",
-            times: moveAnimation.position ? 
-              moveAnimation.position.map((_, i) => i / (moveAnimation.position.length - 1)) : 
-              [0, 1]
-          } : {
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <motion.img 
-            src={selectedHorse.avatar} 
-            alt={selectedHorse.name}
-            className="w-24 h-24 object-contain drop-shadow-2xl filter brightness-110"
-          />
-          <motion.div 
-            className="mt-2 px-3 py-1 bg-white bg-opacity-90 rounded-full shadow-md"
-            animate={flowBroke ? { backgroundColor: ['#ffffff', '#ffebee', '#ffffff'] } : {}}
-            transition={{ duration: 0.5, repeat: flowBroke ? 2 : 0 }}
-          >
-            <p className="text-sm font-semibold text-gray-800">{selectedHorse.name}</p>
-          </motion.div>
-        </motion.div>
-      )}
-
-      {/* Move effects overlay */}
-      <AnimatePresence>
-        {moveEffects.map((effect, index) => (
+      <div style={{ transform: 'translateY(-40px)' }}>
+        {/* Horse with movement animation */}
+        {selectedHorse && (
           <motion.div
-            key={effect.id}
-            initial={{ 
-              opacity: 0, 
-              y: 20,
-              scale: 0.8
+            className="flex flex-col items-center z-10"
+            animate={currentMove ? {
+              x: moveAnimation.position?.map(p => p.x) || [0],
+              y: moveAnimation.position?.map(p => p.y) || [0],
+              rotate: moveAnimation.rotation || [0],
+              scale: moveAnimation.scale || [1]
+            } : {
+              y: [0, -2, 0]
             }}
-            animate={{ 
-              opacity: 1, 
-              y: -30 - (index * 25),
-              scale: 1
-            }}
-            exit={{ 
-              opacity: 0, 
-              y: -60,
-              scale: 1.2
-            }}
-            transition={{ 
-              duration: 0.8,
-              delay: index * 0.2
-            }}
-            className={`absolute pointer-events-none ${effect.color} ${effect.size} font-bold text-center`}
-            style={{
-              textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-              filter: effect.sparkle ? 'drop-shadow(0 0 8px gold)' : 'none'
+            transition={currentMove ? {
+              duration: moveAnimation.duration || 2,
+              ease: "easeInOut",
+              times: moveAnimation.position ? 
+                moveAnimation.position.map((_, i) => i / (moveAnimation.position.length - 1)) : 
+                [0, 1]
+            } : {
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
             }}
           >
-            {effect.text}
-            {effect.sparkle && (
-              <motion.span
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="inline-block ml-2"
-              >
-                ✨
-              </motion.span>
-            )}
+            <motion.img 
+              src={selectedHorse.avatar} 
+              alt={selectedHorse.name}
+              className="w-24 h-24 object-contain drop-shadow-2xl filter brightness-110"
+            />
+            <motion.div 
+              className="mt-2 px-3 py-1 bg-white bg-opacity-90 rounded-full shadow-md"
+              animate={flowBroke ? { backgroundColor: ['#ffffff', '#ffebee', '#ffffff'] } : {}}
+              transition={{ duration: 0.5, repeat: flowBroke ? 2 : 0 }}
+            >
+              <p className="text-sm font-semibold text-gray-800">{selectedHorse.name}</p>
+            </motion.div>
           </motion.div>
-        ))}
-      </AnimatePresence>
-
+        )}
+        {/* Floating move text removed */}
+      </div>
       {/* Arena atmosphere effects during performance */}
       {isPerforming && currentMove && (
         <motion.div
