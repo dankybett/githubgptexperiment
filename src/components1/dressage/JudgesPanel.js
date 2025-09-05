@@ -18,11 +18,15 @@ const JudgeCard = ({ judge, score, reaction, isReacting }) => {
       transition={{ duration: 0.3 }}
     >
       <motion.div 
-        className="text-2xl mb-2"
+        className="mb-2 flex justify-center"
         animate={isReacting ? { rotate: [0, -10, 10, 0] } : {}}
         transition={{ duration: 0.5 }}
       >
-        {judge.avatar}
+        <img 
+          src={judge.avatar} 
+          alt={judge.name}
+          className="w-12 h-12 object-contain"
+        />
       </motion.div>
       
       <div className="text-xs font-semibold">{judge.name}</div>
@@ -55,32 +59,111 @@ const JudgesPanel = ({
   flowBroke = false,
   competitionLevel = 'Training'
 }) => {
-  const [judges] = useState([
+  // All available judges with their images
+  const allJudges = [
     {
-      id: 'ernst',
-      name: 'Judge Ernst',
-      avatar: '👨‍⚖️',
-      specialty: 'Technique',
-      preferences: ['precision', 'combos', 'flow'],
-      personality: 'strict'
+      id: 'alien',
+      name: 'Judge Zyx',
+      avatar: '/judges/alienjudge.png',
+      specialty: 'Innovation',
+      preferences: ['creativity', 'unique_moves', 'risk'],
+      personality: 'curious'
     },
     {
-      id: 'maria', 
-      name: 'Judge Maria',
-      avatar: '👩‍⚖️',
-      specialty: 'Artistry',
-      preferences: ['variety', 'elegance', 'creativity'],
+      id: 'cowboy',
+      name: 'Judge Tex',
+      avatar: '/judges/cowboyjudge.png',
+      specialty: 'Spirit',
+      preferences: ['boldness', 'freedom', 'power'],
+      personality: 'laid_back'
+    },
+    {
+      id: 'gachaman',
+      name: 'Judge Gachi',
+      avatar: '/judges/gachamanjudge.png',
+      specialty: 'Power',
+      preferences: ['strength', 'intensity', 'combos'],
+      personality: 'intense'
+    },
+    {
+      id: 'ghost',
+      name: 'Judge Phantom',
+      avatar: '/judges/ghostjudge.png',
+      specialty: 'Grace',
+      preferences: ['elegance', 'flow', 'artistry'],
+      personality: 'mysterious'
+    },
+    {
+      id: 'hero',
+      name: 'Judge Hero',
+      avatar: '/judges/herojudge.png',
+      specialty: 'Courage',
+      preferences: ['risk', 'advanced_moves', 'boldness'],
       personality: 'encouraging'
     },
     {
-      id: 'klaus',
-      name: 'Judge Klaus', 
-      avatar: '🧑‍⚖️',
-      specialty: 'Boldness',
-      preferences: ['power', 'risk', 'advanced_moves'],
+      id: 'icecream',
+      name: 'Judge Gelato',
+      avatar: '/judges/icecreammanjudge.png',
+      specialty: 'Joy',
+      preferences: ['variety', 'creativity', 'fun'],
+      personality: 'cheerful'
+    },
+    {
+      id: 'maestro',
+      name: 'Judge Maestro',
+      avatar: '/judges/maestrojudge.png',
+      specialty: 'Artistry',
+      preferences: ['precision', 'elegance', 'flow'],
+      personality: 'refined'
+    },
+    {
+      id: 'queen',
+      name: 'Judge Regina',
+      avatar: '/judges/queenjudge.png',
+      specialty: 'Excellence',
+      preferences: ['perfection', 'technique', 'precision'],
       personality: 'demanding'
+    },
+    {
+      id: 'robot',
+      name: 'Judge X-42',
+      avatar: '/judges/robotjudge.png',
+      specialty: 'Precision',
+      preferences: ['accuracy', 'technique', 'consistency'],
+      personality: 'analytical'
+    },
+    {
+      id: 'samurai',
+      name: 'Judge Takeshi',
+      avatar: '/judges/samuraijudge.png',
+      specialty: 'Discipline',
+      preferences: ['technique', 'precision', 'tradition'],
+      personality: 'strict'
+    },
+    {
+      id: 'strongman',
+      name: 'Judge Atlas',
+      avatar: '/judges/strongmanjudge.png',
+      specialty: 'Strength',
+      preferences: ['power', 'boldness', 'advanced_moves'],
+      personality: 'tough'
+    },
+    {
+      id: 'typewriter',
+      name: 'Judge Quill',
+      avatar: '/judges/typewriterjudge.png',
+      specialty: 'Narrative',
+      preferences: ['creativity', 'variety', 'storytelling'],
+      personality: 'thoughtful'
     }
-  ]);
+  ];
+
+  // Randomly select 3 judges for this competition
+  const [judges] = useState(() => {
+    const shuffled = [...allJudges].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 3);
+  });
 
   const [judgeScores, setJudgeScores] = useState({});
   const [judgeReactions, setJudgeReactions] = useState({});
@@ -89,26 +172,89 @@ const JudgesPanel = ({
   // Generate judge reactions based on the card played
   const generateJudgeReaction = (judge, card, score, combo, broke) => {
     const reactions = {
-      ernst: {
-        high: ['Excellent precision!', 'Perfect form!', 'Technically sound!', 'Beautiful execution!'],
-        medium: ['Good technique', 'Solid performance', 'Well executed', 'Acceptable form'],
-        low: ['Needs improvement', 'Form could be better', 'Work on precision', 'Room to grow'],
-        combo: ['Wonderful sequence!', 'Perfect flow!', 'Masterful combination!'],
-        flow_broken: ['Flow disrupted', 'Sequence broken', 'Loss of rhythm']
+      alien: {
+        high: ['Fascinating!', 'Most intriguing!', 'Revolutionary!', 'Extraordinary innovation!'],
+        medium: ['Interesting approach', 'Curious technique', 'Novel attempt', 'Unique perspective'],
+        low: ['Too conventional', 'More creativity needed', 'Think outside reality', 'Where is innovation?'],
+        combo: ['Brilliant sequence!', 'Cosmic harmony!', 'Transcendent flow!'],
+        flow_broken: ['Reality disrupted', 'Dimension shifted', 'Quantum interference']
       },
-      maria: {
-        high: ['Magnificent artistry!', 'Pure elegance!', 'Breathtaking!', 'Sublime performance!'],
-        medium: ['Lovely movement', 'Nice expression', 'Good artistry', 'Pleasant to watch'],
-        low: ['More feeling needed', 'Express yourself more', 'Find your rhythm', 'Show more grace'],
-        combo: ['Beautiful harmony!', 'Artistic genius!', 'Poetry in motion!'],
-        flow_broken: ['Lost the magic', 'Artistry interrupted', 'Find your rhythm again']
+      cowboy: {
+        high: ['Yeehaw! Outstanding!', 'Mighty fine riding!', 'That\'s the spirit!', 'Born to ride!'],
+        medium: ['Not bad, partner', 'Good honest effort', 'Getting there', 'Keep at it'],
+        low: ['Needs more grit', 'Show some backbone', 'Ride with heart', 'Find your courage'],
+        combo: ['Smooth as silk!', 'Like breaking a bronco!', 'Pure poetry!'],
+        flow_broken: ['Lost the rhythm', 'Back to basics', 'Settle down now']
       },
-      klaus: {
-        high: ['Bold and powerful!', 'Impressive risk!', 'Commanding presence!', 'Fearless execution!'],
-        medium: ['Decent effort', 'Show more confidence', 'Good attempt', 'Adequate power'],
-        low: ['Too safe', 'More boldness needed', 'Take risks!', 'Show some courage'],
-        combo: ['Daring sequence!', 'Brave combination!', 'Powerful flow!'],
-        flow_broken: ['Lost momentum', 'Hesitation noted', 'Confidence shaken']
+      gachaman: {
+        high: ['INCREDIBLE POWER!', 'MAXIMUM INTENSITY!', 'PURE STRENGTH!', 'UNSTOPPABLE!'],
+        medium: ['Good energy', 'Show more power', 'Building up', 'Getting stronger'],
+        low: ['Too weak!', 'MORE POWER!', 'Push harder!', 'Find your strength!'],
+        combo: ['ULTIMATE COMBO!', 'CHAIN ATTACK!', 'POWER SURGE!'],
+        flow_broken: ['Power disrupted', 'Energy scattered', 'Focus lost']
+      },
+      ghost: {
+        high: ['Ethereal beauty...', 'Transcendent grace...', 'Hauntingly perfect...', 'Sublime elegance...'],
+        medium: ['Gentle movement', 'Flowing nicely', 'Graceful attempt', 'Pleasant drift'],
+        low: ['More soul needed', 'Find your spirit', 'Embrace the mystery', 'Let go...'],
+        combo: ['Spectral harmony...', 'Ghostly perfection...', 'Ethereal flow...'],
+        flow_broken: ['Spirit disrupted', 'Essence scattered', 'Lost in shadows']
+      },
+      hero: {
+        high: ['Heroic performance!', 'Brave and bold!', 'Champion spirit!', 'Victory is yours!'],
+        medium: ['Noble effort', 'Good courage shown', 'Fighting well', 'Keep pushing'],
+        low: ['Never give up!', 'Find your courage!', 'Heroes persist!', 'Rise above!'],
+        combo: ['Heroic combo!', 'Champion sequence!', 'Victorious flow!'],
+        flow_broken: ['Temporary setback', 'Heroes recover', 'Fight on!']
+      },
+      icecream: {
+        high: ['Sweet perfection!', 'Delightfully cool!', 'Simply delicious!', 'What a treat!'],
+        medium: ['Pretty good', 'Nice and smooth', 'Sweet effort', 'Getting there'],
+        low: ['Needs more flavor', 'Add some sprinkles', 'Make it sweeter', 'More joy needed'],
+        combo: ['Triple scoop combo!', 'Sweet harmony!', 'Delicious flow!'],
+        flow_broken: ['Melted a bit', 'Cool down', 'Stay sweet']
+      },
+      maestro: {
+        high: ['Magnifico!', 'Artistic perfection!', 'Sublime artistry!', 'Breathtaking beauty!'],
+        medium: ['Bene, very good', 'Artistic merit', 'Nice expression', 'Growing artistry'],
+        low: ['More passion!', 'Feel the music!', 'Art needs soul!', 'Express yourself!'],
+        combo: ['Perfect symphony!', 'Artistic genius!', 'Harmonious flow!'],
+        flow_broken: ['Music interrupted', 'Lost the rhythm', 'Find the beat again']
+      },
+      queen: {
+        high: ['Absolutely regal!', 'Fit for royalty!', 'Magnificent!', 'Truly excellent!'],
+        medium: ['Acceptable standard', 'Adequate performance', 'Room for refinement', 'Getting better'],
+        low: ['Not royal quality', 'Demands excellence', 'Standards must rise', 'Unworthy performance'],
+        combo: ['Queenly sequence!', 'Royal perfection!', 'Majestic flow!'],
+        flow_broken: ['Standards dropped', 'Disappointing', 'Compose yourself']
+      },
+      robot: {
+        high: ['OPTIMAL PERFORMANCE', 'PRECISION: 100%', 'EXCELLENCE ACHIEVED', 'PARAMETERS MET'],
+        medium: ['ADEQUATE EXECUTION', 'ACCEPTABLE RANGE', 'STANDARD MET', 'PROCESSING...'],
+        low: ['ERROR DETECTED', 'BELOW PARAMETERS', 'RECALIBRATION NEEDED', 'PERFORMANCE: POOR'],
+        combo: ['SEQUENCE OPTIMAL', 'CHAIN EXECUTED', 'FLOW COMPUTED'],
+        flow_broken: ['SYSTEM ERROR', 'FLOW DISRUPTED', 'RESET REQUIRED']
+      },
+      samurai: {
+        high: ['Honorable technique!', 'Disciplined excellence!', 'Perfect form!', 'Warrior spirit!'],
+        medium: ['Good discipline', 'Adequate form', 'Training shows', 'Respectful effort'],
+        low: ['Discipline lacking', 'Form needs work', 'Train harder', 'Honor demands more'],
+        combo: ['Masterful kata!', 'Perfect sequence!', 'Warrior\'s flow!'],
+        flow_broken: ['Dishonor', 'Form broken', 'Restore discipline']
+      },
+      strongman: {
+        high: ['MIGHTY STRENGTH!', 'POWERFUL DISPLAY!', 'CRUSHING IT!', 'UNSTOPPABLE FORCE!'],
+        medium: ['Good muscle', 'Building power', 'Getting stronger', 'Solid effort'],
+        low: ['Too weak!', 'LIFT MORE!', 'POWER UP!', 'STRENGTH NEEDED!'],
+        combo: ['POWER COMBO!', 'CRUSHING SEQUENCE!', 'MIGHTY FLOW!'],
+        flow_broken: ['Power lost', 'Strength failed', 'Muscle up!']
+      },
+      typewriter: {
+        high: ['Eloquent performance!', 'Beautiful narrative!', 'Perfect prose!', 'Story well told!'],
+        medium: ['Good chapter', 'Nice storyline', 'Developing well', 'Plot thickens'],
+        low: ['Needs editing', 'Story unclear', 'More narrative', 'Find your voice'],
+        combo: ['Perfect plot!', 'Story flows!', 'Narrative gold!'],
+        flow_broken: ['Plot hole', 'Story interrupted', 'Lost the thread']
       }
     };
 
@@ -127,10 +273,45 @@ const JudgesPanel = ({
     else if (score >= 2) level = 'medium'; 
     else level = 'low';
 
-    // Judge-specific preferences
-    if (judge.id === 'ernst' && (card?.tags?.includes('Transition') || card?.name?.includes('Collected'))) level = 'high';
-    if (judge.id === 'maria' && (card?.type === 'specialty' || card?.name?.includes('Passage'))) level = 'high';
-    if (judge.id === 'klaus' && (card?.cost > 0 || card?.name?.includes('Bold') || card?.name?.includes('Extended'))) level = 'high';
+    // Judge-specific preferences (can upgrade reaction level)
+    switch (judge.id) {
+      case 'alien':
+        if (card?.type === 'specialty' || card?.cost > 2) level = 'high';
+        break;
+      case 'cowboy':
+        if (card?.name?.includes('Extended') || card?.name?.includes('Bold')) level = 'high';
+        break;
+      case 'gachaman':
+        if (card?.cost > 0 || combo >= 4) level = 'high';
+        break;
+      case 'ghost':
+        if (card?.tags?.includes('Walk') || card?.name?.includes('Passage')) level = 'high';
+        break;
+      case 'hero':
+        if (card?.cost > 1 || card?.risk) level = 'high';
+        break;
+      case 'icecream':
+        if (card?.type === 'specialty') level = 'high';
+        break;
+      case 'maestro':
+        if (card?.tags?.includes('Transition') || card?.type === 'specialty') level = 'high';
+        break;
+      case 'queen':
+        if (card?.name?.includes('Perfect') || card?.name?.includes('Elite')) level = 'high';
+        break;
+      case 'robot':
+        if (card?.tags?.includes('Transition') || combo >= 3) level = 'high';
+        break;
+      case 'samurai':
+        if (card?.tags?.includes('Transition') || card?.name?.includes('Collected')) level = 'high';
+        break;
+      case 'strongman':
+        if (card?.cost > 0 || card?.name?.includes('Power')) level = 'high';
+        break;
+      case 'typewriter':
+        if (card?.type === 'specialty' || card?.name?.includes('Creative')) level = 'high';
+        break;
+    }
 
     const options = reactions[judge.id][level];
     return options[Math.floor(Math.random() * options.length)];
@@ -140,25 +321,78 @@ const JudgesPanel = ({
   const calculateJudgeScore = (judge, card, baseScore, combo, broke) => {
     let score = baseScore;
     
-    // Ernst (Technique) bonuses
-    if (judge.id === 'ernst') {
-      if (card?.tags?.includes('Transition')) score += 0.5;
-      if (combo >= 3) score += 1.0;
-      if (broke) score -= 1.0;
-    }
+    // Apply general combo/flow bonuses/penalties
+    if (combo >= 3) score += 0.5;
+    if (broke) score -= 0.5;
     
-    // Maria (Artistry) bonuses  
-    if (judge.id === 'maria') {
-      if (card?.type === 'specialty') score += 0.5;
-      if (card?.name?.includes('Passage') || card?.name?.includes('Piaffe')) score += 1.0;
-      if (card?.tags?.includes('Walk')) score += 0.3; // Grace bonus
-    }
-    
-    // Klaus (Boldness) bonuses
-    if (judge.id === 'klaus') {
-      if (card?.cost > 0) score += 0.8; // Expensive = bold
-      if (card?.name?.includes('Bold') || card?.name?.includes('Extended')) score += 1.0;
-      if (card?.risk) score += 0.5; // Risk taking
+    // Judge-specific bonuses based on their preferences
+    switch (judge.id) {
+      case 'alien':
+        if (card?.type === 'specialty' || card?.name?.includes('Creative')) score += 0.8;
+        if (card?.cost > 2) score += 0.6; // Unusual moves
+        break;
+        
+      case 'cowboy':
+        if (card?.name?.includes('Extended') || card?.name?.includes('Bold')) score += 0.7;
+        if (card?.tags?.includes('Canter') || card?.tags?.includes('Gallop')) score += 0.5;
+        break;
+        
+      case 'gachaman':
+        if (card?.cost > 0) score += 0.8;
+        if (combo >= 4) score += 1.2; // Extra combo bonus
+        if (card?.name?.includes('Power') || card?.name?.includes('Strong')) score += 0.6;
+        break;
+        
+      case 'ghost':
+        if (card?.tags?.includes('Walk') || card?.name?.includes('Passage')) score += 0.7;
+        if (card?.tags?.includes('Transition')) score += 0.5;
+        break;
+        
+      case 'hero':
+        if (card?.cost > 1) score += 0.6;
+        if (card?.name?.includes('Bold') || card?.name?.includes('Brave')) score += 0.8;
+        if (card?.risk) score += 0.7;
+        break;
+        
+      case 'icecream':
+        if (card?.type === 'specialty') score += 0.6;
+        score += Math.random() * 0.4; // Cheerful randomness
+        break;
+        
+      case 'maestro':
+        if (card?.tags?.includes('Transition') || card?.name?.includes('Collected')) score += 0.8;
+        if (card?.type === 'specialty') score += 0.6;
+        if (combo >= 3) score += 0.8; // Extra artistry bonus
+        break;
+        
+      case 'queen':
+        if (card?.name?.includes('Perfect') || card?.name?.includes('Elite')) score += 1.0;
+        if (score < 3) score *= 0.7; // Demanding standards
+        break;
+        
+      case 'robot':
+        if (card?.tags?.includes('Transition')) score += 0.6;
+        if (combo >= 3) score += 0.7;
+        score = Math.round(score * 10) / 10; // Precise scoring
+        break;
+        
+      case 'samurai':
+        if (card?.tags?.includes('Transition') || card?.name?.includes('Collected')) score += 0.7;
+        if (card?.name?.includes('Discipline') || card?.name?.includes('Form')) score += 0.8;
+        if (broke) score -= 1.2; // Extra penalty for broken discipline
+        break;
+        
+      case 'strongman':
+        if (card?.cost > 0) score += 0.9;
+        if (card?.name?.includes('Extended') || card?.name?.includes('Power')) score += 0.8;
+        if (card?.name?.includes('Bold')) score += 0.6;
+        break;
+        
+      case 'typewriter':
+        if (card?.type === 'specialty') score += 0.7;
+        if (combo >= 2) score += 0.6; // Story building
+        if (card?.name?.includes('Creative') || card?.name?.includes('Artistic')) score += 0.5;
+        break;
     }
 
     return Math.max(0, Math.min(10, score)); // Clamp between 0-10
