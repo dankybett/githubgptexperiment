@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const JudgeCard = ({ judge, score, reaction, isReacting }) => {
+const JudgeCard = ({ judge, score, reaction, isReacting, integrated = false }) => {
   const judgeBoxStyle = {
     background: isReacting 
       ? 'linear-gradient(145deg, #fff3cd, #ffeaa7)' 
@@ -10,29 +10,38 @@ const JudgeCard = ({ judge, score, reaction, isReacting }) => {
     borderRadius: '8px'
   };
 
+  const integratedStyle = integrated ? {
+    ...judgeBoxStyle,
+    background: isReacting 
+      ? 'linear-gradient(145deg, rgba(255,243,205,0.95), rgba(255,234,167,0.95))' 
+      : 'linear-gradient(145deg, rgba(240,240,240,0.95), rgba(208,208,208,0.95))',
+    backdropFilter: 'blur(4px)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+  } : judgeBoxStyle;
+
   return (
     <motion.div 
-      className="text-center p-3 transition-all duration-300"
-      style={judgeBoxStyle}
+      className={`text-center transition-all duration-300 ${integrated ? 'p-2' : 'p-3'}`}
+      style={integratedStyle}
       animate={isReacting ? { scale: 1.05 } : { scale: 1 }}
       transition={{ duration: 0.3 }}
     >
       <motion.div 
-        className="mb-2 flex justify-center"
+        className="mb-1 flex justify-center"
         animate={isReacting ? { rotate: [0, -10, 10, 0] } : {}}
         transition={{ duration: 0.5 }}
       >
         <img 
           src={judge.avatar} 
           alt={judge.name}
-          className="w-12 h-12 object-contain"
+          className={integrated ? "w-10 h-10 object-contain" : "w-12 h-12 object-contain"}
         />
       </motion.div>
       
-      <div className="text-xs font-semibold">{judge.name}</div>
-      <div className="text-xs text-gray-600">{judge.specialty}</div>
+      <div className={`font-semibold ${integrated ? 'text-xs' : 'text-xs'}`}>{judge.name}</div>
+      <div className={`text-gray-600 ${integrated ? 'text-xs' : 'text-xs'}`}>{judge.specialty}</div>
       
-      <div className="mt-2 text-sm font-bold">
+      <div className={`mt-1 font-bold ${integrated ? 'text-xs' : 'text-sm'}`}>
         {score !== undefined ? score.toFixed(1) : '--'}
       </div>
 
@@ -42,7 +51,7 @@ const JudgeCard = ({ judge, score, reaction, isReacting }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mt-1 text-xs text-gray-700 bg-white bg-opacity-70 rounded px-2 py-1"
+            className={`mt-1 text-gray-700 bg-white bg-opacity-70 rounded px-2 py-1 ${integrated ? 'text-xs' : 'text-xs'}`}
           >
             {reaction}
           </motion.div>
@@ -57,7 +66,8 @@ const JudgesPanel = ({
   currentScore = 0, 
   flowLength = 0, 
   flowBroke = false,
-  competitionLevel = 'Training'
+  competitionLevel = 'Training',
+  integrated = false
 }) => {
   // All available judges with their images
   const allJudges = [
@@ -421,6 +431,145 @@ const JudgesPanel = ({
     }
   }, [lastPlayedCard, flowLength, flowBroke, judges]);
 
+  // Define judge positions for integrated layout
+  const judgePositions = [
+    { position: 'absolute bottom-4 left-8', transform: '' }, // Bottom left
+    { position: 'absolute bottom-4 right-8', transform: '' }, // Bottom right  
+    { position: 'absolute top-4 right-8', transform: '' }, // Top right
+  ];
+
+  if (integrated) {
+    return (
+      <>
+        {/* Judges Table - Foreground */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center" style={{ zIndex: 30 }}>
+          {/* Judges Table */}
+          <div className="relative">
+            {/* Table Surface */}
+            <div 
+              className="relative px-8 py-2"
+              style={{
+                background: 'linear-gradient(180deg, #A0522D 0%, #8B4513 50%, #654321 100%)',
+                border: '4px solid #5D4037',
+                borderRadius: '12px 12px 0 0',
+                height: '48px',
+                minWidth: '280px',
+                boxShadow: '0 -4px 12px rgba(0,0,0,0.3)'
+              }}
+            >
+              {/* Table Front Panel with Label */}
+              <div 
+                className="absolute top-full left-0 right-0 flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(180deg, #654321 0%, #4A2C17 100%)',
+                  border: '4px solid #5D4037',
+                  borderTop: 'none',
+                  height: '28px',
+                  borderRadius: '0 0 8px 8px'
+                }}
+              >
+                <span className="text-sm font-bold text-amber-200 tracking-wide">JUDGES</span>
+              </div>
+
+
+              {/* Judges - Behind Table */}
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-4" style={{ transform: 'translateX(-50%) translateY(-8px)' }}>
+                {judges.map((judge, index) => (
+                  <div key={judge.id} className="flex flex-col items-center">
+                    {/* Judge Character - Larger for Foreground */}
+                    <motion.div 
+                      className="relative"
+                      animate={reactingJudges[judge.id] ? { 
+                        y: [-2, -8, -2],
+                        rotate: [-2, 2, -1, 1, 0]
+                      } : { y: 0 }}
+                      transition={{ duration: 1.0 }}
+                    >
+                      <img 
+                        src={judge.avatar} 
+                        alt={judge.name}
+                        className="w-32 h-32 object-contain filter drop-shadow-lg"
+                        style={{
+                          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3)) brightness(1.1)'
+                        }}
+                      />
+                    </motion.div>
+
+                    {/* Judge Name Plate */}
+                    <div 
+                      className="-mt-4 px-2 py-1 text-xs font-bold text-center rounded"
+                      style={{
+                        background: 'linear-gradient(145deg, #D4AF37, #B8860B)',
+                        color: '#2C1810',
+                        border: '1px solid #8B7355',
+                        minWidth: '60px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }}
+                    >
+                      {judge.name.replace('Judge ', '')}
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+
+              {/* Reaction Bubble - Above Everything */}
+              <AnimatePresence>
+                {judges.some(judge => reactingJudges[judge.id]) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.7 }}
+                    animate={{ opacity: 1, y: -60, scale: 1 }}
+                    exit={{ opacity: 0, y: -80, scale: 1.2 }}
+                    className="absolute left-1/2 transform -translate-x-1/2 bg-white rounded-xl px-4 py-3 shadow-2xl border-2 border-gray-200"
+                    style={{ zIndex: 40, maxWidth: '200px' }}
+                  >
+                    <div className="text-sm font-medium text-gray-800 text-center">
+                      <span className="font-bold text-blue-600">
+                        {judges.find(judge => reactingJudges[judge.id] && judgeReactions[judge.id])?.name.replace('Judge ', '') || 'Judge'}:
+                      </span>
+                      <br />
+                      <span className="font-bold text-gray-900">
+                        "{Object.entries(reactingJudges).find(([id, reacting]) => reacting)?.[0] && 
+                         judgeReactions[Object.entries(reactingJudges).find(([id, reacting]) => reacting)?.[0]]}"
+                      </span>
+                    </div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-white"></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+        
+        {/* Competition Stats - Top Left */}
+        <div className="absolute top-4 left-8" style={{ zIndex: 20 }}>
+          <div className="text-center p-2" style={{
+            background: 'linear-gradient(145deg, rgba(232,245,232,0.95), rgba(200,230,200,0.95))',
+            border: '2px solid #28a745',
+            borderRadius: '6px',
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}>
+            <div className="text-sm mb-1">📊</div>
+            <div className="text-xs font-semibold">Competition</div>
+            <div className="text-xs text-gray-600">{competitionLevel}</div>
+            <div className="mt-1 text-xs">
+              Target: {competitionLevel === 'Training' ? '18+' : 
+                       competitionLevel === 'Intermediate' ? '25+' :
+                       competitionLevel === 'Advanced' ? '35+' : '40+'} pts
+            </div>
+            <div className="text-xs font-bold mt-1 text-green-700">
+              Avg: {Object.keys(judgeScores).length > 0 
+                ? (Object.values(judgeScores).reduce((a, b) => a + b, 0) / Object.values(judgeScores).length).toFixed(1)
+                : '--'}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Standard non-integrated layout
   return (
     <div className="grid grid-cols-4 gap-4 mb-4">
       {judges.map(judge => (
@@ -430,6 +579,7 @@ const JudgesPanel = ({
           score={judgeScores[judge.id]}
           reaction={judgeReactions[judge.id]}
           isReacting={reactingJudges[judge.id]}
+          integrated={false}
         />
       ))}
       

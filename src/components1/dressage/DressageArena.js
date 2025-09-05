@@ -73,30 +73,17 @@ const DressageArena = ({
           animate={{ opacity: 1, scale: 1 }}
           className="mb-6"
         >
-          {/* Horse Performance Arena */}
+          {/* Integrated Arena Scene */}
           <div 
-            className="relative h-64 mb-4 flex items-center justify-center overflow-hidden shadow-lg"
+            className="relative h-96 flex items-center justify-center overflow-hidden shadow-lg"
             style={arenaStyle}
           >
             {/* Arena Markings - Standard Dressage Letters */}
-            <div className="absolute inset-6 border-2 border-white border-dashed opacity-40 rounded" />
+            <div className="absolute inset-8 border-2 border-white border-dashed opacity-40 rounded" />
             
-            {/* Dressage Arena Letters */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white rounded-full flex items-center justify-center opacity-70">
-              <span className="text-xs font-bold text-gray-800">A</span>
-            </div>
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white rounded-full flex items-center justify-center opacity-70">
-              <span className="text-xs font-bold text-gray-800">C</span>
-            </div>
-            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 w-6 h-6 bg-white rounded-full flex items-center justify-center opacity-70">
-              <span className="text-xs font-bold text-gray-800">M</span>
-            </div>
-            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 w-6 h-6 bg-white rounded-full flex items-center justify-center opacity-70">
-              <span className="text-xs font-bold text-gray-800">H</span>
-            </div>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-yellow-400 rounded-full opacity-80" />
             
-            {/* Dynamic Horse Performance */}
+            {/* Dynamic Horse Performance - Center Stage */}
             <HorsePerformance
               selectedHorse={selectedHorse}
               lastPlayedCard={lastPlayedCard}
@@ -105,26 +92,17 @@ const DressageArena = ({
               flowBroke={flowBroke}
             />
 
-            {/* Arena Atmosphere Effects */}
-            <div className="absolute top-2 left-2 text-xs text-white opacity-70 bg-black bg-opacity-30 px-2 py-1 rounded">
-              🌤️ Fair Weather
-            </div>
-            <div className="absolute top-2 right-2 text-xs text-white opacity-70 bg-black bg-opacity-30 px-2 py-1 rounded">
-              🏟️ Standard Arena
-            </div>
-            <div className="absolute bottom-2 left-2 text-xs text-white opacity-70 bg-black bg-opacity-30 px-2 py-1 rounded">
-              🎯 Competition Ready
-            </div>
-          </div>
+            {/* Integrated Judges Panel - Positioned Around Arena */}
+            <JudgesPanel
+              lastPlayedCard={lastPlayedCard}
+              currentScore={currentScore}
+              flowLength={flowLength}
+              flowBroke={flowBroke}
+              competitionLevel={competitionLevel}
+              integrated={true}
+            />
 
-          {/* Dynamic Judges Panel */}
-          <JudgesPanel
-            lastPlayedCard={lastPlayedCard}
-            currentScore={currentScore}
-            flowLength={flowLength}
-            flowBroke={flowBroke}
-            competitionLevel={competitionLevel}
-          />
+          </div>
         </motion.div>
 
         {/* Game Content Area */}
