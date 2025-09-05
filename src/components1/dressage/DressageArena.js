@@ -18,6 +18,8 @@ const DressageArena = ({
   competitionLevel = 'Training',
   onBack,
   onShowTutorial,
+  selectedJudges = null, // Pass judge system
+  onJudgeClick = null, // Judge click handler
   children 
 }) => {
   // Arena dimensions and styling
@@ -100,6 +102,8 @@ const DressageArena = ({
               flowBroke={flowBroke}
               competitionLevel={competitionLevel}
               integrated={true}
+              selectedJudges={selectedJudges}
+              onJudgeClick={onJudgeClick}
             />
 
           </div>

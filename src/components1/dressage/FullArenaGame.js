@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, RotateCcw, Play, Trophy, Zap, Star, Plus, Eye } from 'lucide-react';
+import { Shuffle, RotateCcw, Play, Trophy, Zap, Star, Plus, Eye, User } from 'lucide-react';
 import DressageArena from './DressageArena';
+import { JudgeSystem } from './JudgeSystem';
 
 // This is a modified version of the card game that works WITHIN the arena
 const FullArenaGame = ({ selectedHorse, onBack }) => {
@@ -209,6 +210,30 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   const [showCalculatedRiskChoice, setShowCalculatedRiskChoice] = useState(false);
   const [pendingCardPlay, setPendingCardPlay] = useState(null);
 
+  // Judge system state
+  const [judgeSystem] = useState(new JudgeSystem());
+  const [selectedJudges, setSelectedJudges] = useState([]);
+  const [gameLog, setGameLog] = useState({ turns: [], extraDrawsTotal: 0, finalStamina: 0, hadStaminaLock: false });
+  const [showJudgePanel, setShowJudgePanel] = useState(false);
+  const [judgeScores, setJudgeScores] = useState([]);
+  const [focusedJudgeId, setFocusedJudgeId] = useState(null);
+
+  // Visual mapping for judge categories -> character visuals
+  const systemJudgeVisuals = {
+    perfectionist: { name: "Judge Regina", avatar: "/judges/queenjudge.png" },
+    finishersEye: { name: "Judge Maestro", avatar: "/judges/maestrojudge.png" },
+    linearityJudge: { name: "Judge Takeshi", avatar: "/judges/samuraijudge.png" },
+    maverick: { name: "Judge Zyx", avatar: "/judges/alienjudge.png" },
+    reboundJudge: { name: "Judge Hero", avatar: "/judges/herojudge.png" },
+    improvisationAficionado: { name: "Judge Gelato", avatar: "/judges/icecreammanjudge.png" },
+    sprinter: { name: "Judge X-42", avatar: "/judges/robotjudge.png" },
+    marathoner: { name: "Judge Atlas", avatar: "/judges/strongmanjudge.png" },
+    punctualist: { name: "Judge Quill", avatar: "/judges/typewriterjudge.png" },
+    paletteJudge: { name: "Judge Tex", avatar: "/judges/cowboyjudge.png" },
+    gaitSpecialist: { name: "Judge Gachi", avatar: "/judges/gachamanjudge.png" },
+    handManagementJudge: { name: "Judge Phantom", avatar: "/judges/ghostjudge.png" }
+  };
+
   // Get current deck cards
   const getCurrentDeck = () => deckLibrary[selectedDeck]?.cards || deckLibrary.classic.cards;
 
@@ -243,7 +268,16 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setCardTypesUsed(new Set());
     setNextCardBonus(0);
     setTurnPhase('buy');
-    setMessage('Turn 1/8 - Your turn! Draw cards with stamina or play a move.');
+    
+    // Initialize judges
+    const judges = judgeSystem.selectJudges();
+    setSelectedJudges(judges);
+    setGameLog({ turns: [], extraDrawsTotal: 0, finalStamina: 0, hadStaminaLock: false });
+    setJudgeScores([]);
+    
+    // Set judge-aware message
+    const judgeNames = judges.map(j => `${j.emoji} ${j.name}`).join(', ');
+    setMessage(`Turn 1/8 - Judges selected: ${judgeNames}. Your turn!`);
     setGameState('playing');
   };
 
@@ -931,6 +965,8 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     if (newCard) {
       setHand(prev => [...prev, newCard]);
       setStamina(prev => prev - 1);
+      // Count as an extra draw outside the automatic draw phase
+      setGameLog(prev => ({ ...prev, extraDrawsTotal: (prev.extraDrawsTotal || 0) + 1 }));
       setMessage(`Drew ${newCard.name}! Draw more or play a move.`);
     }
   };
@@ -972,6 +1008,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     }
     if (stamina < actualCost) {
       setMessage("Not enough stamina for this move!");
+      setGameLog(prev => ({ ...prev, hadStaminaLock: true }));
       return;
     }
 
@@ -1050,8 +1087,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       }
     }
     
+    // Track extra draws for this play (outside turn auto-draw)
+    let extraDrawsThisTurn = 0;
+
     // FREESTYLE CARD SPECIAL EFFECTS
-    else if (card.name === "Artistic Rebellion") {
+    if (card.name === "Artistic Rebellion") {
       // Draw cards equal to flow level lost
       const cardsToDraw = flowLevel;
       for (let i = 0; i < cardsToDraw && deck.length > 0; i++) {
@@ -1060,6 +1100,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           setTimeout(() => {
             setHand(prev => [...prev, extraCard]);
           }, 100 * (i + 1));
+          extraDrawsThisTurn += 1;
         }
       }
     } else if (card.name === "Bold Improvisation") {
@@ -1079,6 +1120,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
             setTimeout(() => {
               setHand(prev => [...prev, extraCard]);
             }, 100 * (i + 1));
+            extraDrawsThisTurn += 1;
           }
         }
       }
@@ -1095,6 +1137,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           setTimeout(() => {
             setHand(prev => [...prev, extraCard]);
           }, 100 * (i + 1));
+          extraDrawsThisTurn += 1;
         }
       }
       // If flow < 3, player will need to discard 1 card after drawing 2
@@ -1112,6 +1155,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           setTimeout(() => {
             setHand(prev => [...prev, extraCard]);
           }, 100 * (i + 1));
+          extraDrawsThisTurn += 1;
         }
       }
     } else if (card.name === "Rhythmic Recovery" && lastFlowBreakTurn === currentTurn - 1) {
@@ -1164,6 +1208,29 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     
     console.log(`Played ${card.name} (${card.instanceId?.toString().slice(2,8)}), hand size: ${newHand.length}, routine length: ${playedCards.length + 1}`);
 
+    // Build this turn entry and updated game log (for live judge progress)
+    const turnEntry = {
+      turnNumber: currentTurn,
+      card: { ...card, earnedScore: finalScore },
+      preFlowLevel: flowLevel,
+      postFlowLevel: finalFlowLevel,
+      flowBroke: finalFlowBroke,
+      earnedScore: finalScore,
+      stamina: newStamina
+    };
+    const updatedGameLog = {
+      ...gameLog,
+      turns: [...gameLog.turns, turnEntry],
+      extraDrawsTotal: (gameLog.extraDrawsTotal || 0) + extraDrawsThisTurn + (card.name === "Tempo Change" ? 1 : 0),
+      finalStamina: newStamina,
+      hadStaminaLock: gameLog.hadStaminaLock || false
+    };
+    setGameLog(updatedGameLog);
+
+    // Update judges with live modifiers so modal shows current progress
+    const judgesWithLive = judgeSystem.calculateJudgeModifiers(selectedJudges, updatedGameLog);
+    setSelectedJudges(judgesWithLive);
+
     // Clear performance state after animation
     setTimeout(() => {
       setIsPerforming(false);
@@ -1174,13 +1241,20 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       setGameOver(true);
       setGameState('finished');
       const finalTotalScore = totalScore + finalScore;
+      
+      // Calculate final judge scores
+      const judgesWithScores = judgeSystem.calculateJudgeModifiers(selectedJudges, updatedGameLog);
+      const finalJudgeScores = judgeSystem.calculateFinalScores(finalTotalScore, judgesWithScores);
+      const averageScore = judgeSystem.getAverageFinalScore(finalJudgeScores);
+      setJudgeScores(finalJudgeScores);
+      
       let rating = "Novice";
-      if (finalTotalScore >= 35) rating = "Master";
-      else if (finalTotalScore >= 25) rating = "Advanced";
-      else if (finalTotalScore >= 18) rating = "Intermediate";
+      if (averageScore >= 35) rating = "Master";
+      else if (averageScore >= 25) rating = "Advanced";
+      else if (averageScore >= 18) rating = "Intermediate";
       
       const turnBonus = currentTurn <= 6 ? " Efficient timing bonus!" : currentTurn <= 7 ? " Good timing!" : "";
-      setMessage(`Routine complete!${turnBonus} Final score: ${finalTotalScore} - ${rating} level!`);
+      setMessage(`Routine complete!${turnBonus} Average judge score: ${averageScore} - ${rating} level!`);
       return;
     } else if (currentTurn >= maxTurns) {
       // Final turn passed without finishing
@@ -1276,10 +1350,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Finished screen
   if (gameState === 'finished') {
+    const averageScore = judgeScores.length > 0 ? judgeSystem.getAverageFinalScore(judgeScores) : totalScore;
     let rating = "Novice";
-    if (totalScore >= 35) rating = "Master";
-    else if (totalScore >= 25) rating = "Advanced";
-    else if (totalScore >= 18) rating = "Intermediate";
+    if (averageScore >= 35) rating = "Master";
+    else if (averageScore >= 25) rating = "Advanced";
+    else if (averageScore >= 18) rating = "Intermediate";
 
     return (
       <DressageArena
@@ -1298,11 +1373,37 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           setShowTutorial(true);
           setTutorialStep(0);
         }}
+        selectedJudges={selectedJudges}
+        onJudgeClick={(judge) => {
+          const sysId = judge?.systemJudge?.id || null;
+          setFocusedJudgeId(sysId);
+          setShowJudgePanel(true);
+        }}
       >
         <div className="bg-white rounded-lg p-6 shadow-lg text-center">
           <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
           <h1 className="text-4xl font-bold mb-2">Routine Complete!</h1>
-          <div className="text-2xl mb-4">Final Score: <span className="font-bold text-blue-600">{totalScore}</span></div>
+          
+          {judgeScores.length > 0 ? (
+            <div>
+              <div className="text-lg mb-3">Judge Scores:</div>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {judgeScores.map((score, index) => (
+                  <div key={index} className="bg-gray-50 rounded p-2">
+                    <div className="text-sm font-semibold">{score.emoji} {score.judgeName.split(' ')[1]}</div>
+                    <div className="text-lg font-bold text-blue-600">{score.finalScore}</div>
+                    <div className="text-xs text-gray-600">
+                      {score.coreScore} + {score.judgeModifier >= 0 ? '+' : ''}{score.judgeModifier}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-2xl mb-4">Average Score: <span className="font-bold text-blue-600">{averageScore}</span></div>
+            </div>
+          ) : (
+            <div className="text-2xl mb-4">Final Score: <span className="font-bold text-blue-600">{totalScore}</span></div>
+          )}
+          
           <div className="text-xl mb-6">Rating: <span className="font-bold text-green-600">{rating}</span></div>
           <div className="flex justify-center gap-4">
             {onBack && (
@@ -1343,6 +1444,12 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       onShowTutorial={() => {
         setShowTutorial(true);
         setTutorialStep(0);
+      }}
+      selectedJudges={selectedJudges}
+      onJudgeClick={(judge) => {
+        const sysId = judge?.systemJudge?.id || null;
+        setFocusedJudgeId(sysId);
+        setShowJudgePanel(true);
       }}
     >
       {/* Game Content */}
@@ -1474,6 +1581,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           >
             <Eye className="w-4 h-4" />
             View Deck
+          </button>
+          
+          {/* View Judges Button */}
+          <button
+            onClick={() => setShowJudgePanel(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <User className="w-4 h-4" />
+            Judges Panel
           </button>
         </div>
 
@@ -1614,6 +1730,106 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+        
+        {/* Judges Panel Modal */}
+        {showJudgePanel && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">🏆 Competition Judges</h2>
+                <button 
+                  onClick={() => { setShowJudgePanel(false); setFocusedJudgeId(null); }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                {selectedJudges.map((judge) => {
+                  const visual = systemJudgeVisuals[judge.id] || null;
+                  const displayTitle = visual ? `${visual.name} - ${judge.name} Judge` : judge.name;
+                  return (
+                    <div key={judge.id} className={`rounded-lg p-4 border-2 ${judge.id === focusedJudgeId ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
+                      <div className="text-center mb-3">
+                        {visual ? (
+                          <img src={visual.avatar} alt={visual.name} className="w-12 h-12 mx-auto mb-1 object-contain" />
+                        ) : (
+                          <div className="text-2xl mb-1">{judge.emoji}</div>
+                        )}
+                        <div className="font-bold text-lg">{displayTitle}</div>
+                        <div className="text-sm text-gray-600 mb-2">{judge.description}</div>
+                      </div>
+                    
+                      {/* Judge Requirements */}
+                      <div className="bg-gray-50 rounded p-3">
+                        <h4 className="font-semibold text-sm mb-2">How to impress {visual ? visual.name.replace('Judge ', '') : 'the Judge'}:</h4>
+                        <div className="text-xs space-y-1">
+                          {Object.entries(judge.modifiers).map(([key, modifier]) => (
+                            <div key={key} className={`${modifier.value > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                              {modifier.description}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Special case for Gait Specialist */}
+                        {judge.id === 'gaitSpecialist' && judge.declaredGait && (
+                          <div className="mt-2 p-2 bg-blue-100 rounded">
+                            <div className="font-semibold text-sm text-blue-800">
+                              Specialty: {judge.declaredGait} moves
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="mt-2 text-xs text-gray-500">
+                          Cap: +{judge.cap.positive}{judge.cap.negative < 0 ? ` / ${judge.cap.negative}` : ''}
+                        </div>
+                      </div>
+
+                      {/* Current Progress (if game in progress) */}
+                      {gameLog.turns.length > 0 && (
+                        <div className="mt-3 p-2 bg-blue-50 rounded">
+                          <h5 className="font-semibold text-sm text-blue-800 mb-1">Current Progress:</h5>
+                          <div className="text-xs text-blue-700">
+                            {Object.entries(judge.triggerCounts || {}).map(([key, count]) => (
+                              count > 0 && <div key={key}>{key}: {count}</div>
+                            ))}
+                            <div className="font-semibold mt-1">
+                              Modifier: {judge.currentModifier >= 0 ? '+' : ''}{judge.currentModifier || 0}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Final Scores (if game finished) */}
+              {judgeScores.length > 0 && (
+                <div className="mt-6 border-t pt-4">
+                  <h3 className="text-lg font-bold mb-3">📊 Final Judge Scores</h3>
+                  <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    {judgeScores.map((score, index) => (
+                      <div key={index} className="bg-gray-50 rounded p-3 text-center">
+                        <div className="font-semibold">{score.emoji} {score.judgeName}</div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          Core: {score.coreScore} + Modifier: {score.judgeModifier >= 0 ? '+' : ''}{score.judgeModifier}
+                        </div>
+                        <div className="text-xl font-bold text-blue-600">
+                          {score.finalScore}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-center text-lg font-bold">
+                    Average Score: {judgeSystem.getAverageFinalScore(judgeScores)}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

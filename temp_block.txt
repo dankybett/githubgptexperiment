@@ -1,0 +1,41 @@
+    
+    // Transitions (4 cards)
+    { id: 214, name: "Flying Change", base: 2, tags: ["Transition"], flow: "+2 if after [Canter]", cost: 0, type: "transition" },
+    { id: 215, name: "Simple Change", base: 1, tags: ["Transition"], bonus: "Restore 1 Stamina", cost: 0, type: "transition" },
+    { id: 216, name: "Rein Back", base: 2, tags: ["Transition"], flow: "+1 if after [Walk]", cost: 0, type: "transition" },
+    { id: 217, name: "Tempo Change", base: 2, tags: ["Transition"], flow: "Universal connector + draw 1 card", cost: 0, type: "transition" },
+    
+    // Freestyle Risk/Reward (11 cards)
+    // Flow Breakers (3 cards)
+    { id: 218, name: "Spontaneous Leap", base: 2, tags: ["Specialty"], flow: "Breaks flow. +2 points per flow level lost (max +6)", cost: 0, type: "freestyle" },
+    { id: 219, name: "Artistic Rebellion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Draw cards equal to flow level lost", cost: 0, type: "freestyle" },
+    { id: 220, name: "Creative Explosion", base: 1, tags: ["Specialty"], flow: "Breaks flow. Gain +2 stamina", cost: 0, type: "freestyle" },
+    
+    // Post-Break Rewards (3 cards)
+    { id: 221, name: "Phoenix Rising", base: 3, tags: ["Trot"], flow: "+3 points if flow was broken this turn", cost: 0, type: "freestyle" },
+    { id: 222, name: "From the Ashes", base: 3, tags: ["Canter"], flow: "Costs 0 if flow was broken this turn, otherwise costs 2", cost: 2, type: "freestyle" },
+    { id: 223, name: "Improvised Grace", base: 2, tags: ["Walk"], flow: "+1 point for each turn since flow was broken (max +4)", cost: 0, type: "freestyle" },
+    
+    // Flow Gambler (2 cards)
+    { id: 224, name: "All or Nothing", base: 1, tags: ["Specialty"], flow: "Flow ≥5: +6 points and break flow. Flow <5: +0 points", cost: 1, type: "freestyle" },
+    { id: 225, name: "High Wire Act", base: 3, tags: ["Canter"], flow: "If this breaks flow: +5 points. If maintains flow: Draw 2 cards", cost: 1, type: "freestyle" },
+    
+    // Chaos/Utility (3 cards)
+    { id: 226, name: "Chaos Control", base: 2, tags: ["Transition"], flow: "If flow broken recently: Start new flow at level 2", cost: 0, type: "freestyle" },
+    { id: 227, name: "Wild Card", base: 2, tags: ["Wild"], flow: "Randomly counts as Walk, Trot, or Canter for combos", cost: 0, type: "freestyle" },
+    { id: 228, name: "Freestyle Finale", base: 3, tags: ["Finish"], flow: "+1 point for each time flow was broken this game", cost: 1, type: "freestyle" },
+    
+    // Hybrid Bridge Cards (6 cards)
+    { id: 229, name: "Strategic Pause", base: 1, tags: ["Specialty"], flow: "Draw 2, discard 1 (if flow ≥3, keep both)", cost: 0, type: "hybrid" },
+    { id: 230, name: "Flow Gambit", base: 2, tags: ["Specialty"], flow: "If flow ≥3: break flow, gain +flow level points", cost: 0, type: "hybrid" },
+    { id: 231, name: "Calculated Risk", base: 2, tags: ["Specialty"], flow: "Choose: +2 safe OR +4 risky (50% chance break flow)", cost: 1, type: "hybrid" },
+    { id: 232, name: "Second Chance", base: 1, tags: ["Specialty"], flow: "If flow broken this game: draw 3", cost: 0, type: "hybrid" },
+    { id: 233, name: "Perfect Balance", base: 4, tags: ["Specialty"], flow: "Costs 0 if both Classic + Freestyle played this game", cost: 2, type: "hybrid" },
+    { id: 234, name: "Rhythmic Recovery", base: 2, tags: ["Specialty"], flow: "If flow was broken last turn: +2 points + restore 2 stamina", cost: 0, type: "hybrid" },
+    
+    // Finishers (2 cards)
+    { id: 235, name: "Final Halt & Salute", base: 3, tags: ["Finish"], bonus: "+2 if routine length ≥ 6", cost: 0, type: "finish" },
+    { id: 236, name: "Balanced Finale", base: 3, tags: ["Finish"], flow: "+3 if you both maintained flow ≥3 and broke flow at least once", cost: 0, type: "finish" }
+  ];
+
+  // Deck Library

@@ -1,0 +1,247 @@
+    
+    for (let i = 1; i < gameLog.turns.length; i++) {
+      const prevTurn = gameLog.turns[i - 1];
+      const currentTurn = gameLog.turns[i];
+      
+      if (prevTurn.flowBroke && currentTurn.postFlowLevel >= 2) {
+        quickRebounds++;
+        
+        // Check for extended rebound (flow ≥3 within 2 turns)
+        for (let j = i; j < Math.min(i + 2, gameLog.turns.length); j++) {
+          if (gameLog.turns[j].postFlowLevel >= 3) {
+            extendedRebounds++;
+            break;
+          }
+        }
+      }
+    }
+    
+    judge.triggerCounts.quickRebound = Math.min(quickRebounds, judge.modifiers.quickRebound.max / judge.modifiers.quickRebound.value);
+    judge.triggerCounts.extendedRebound = Math.min(extendedRebounds, judge.modifiers.extendedRebound.max);
+    
+    modifier += judge.triggerCounts.quickRebound * judge.modifiers.quickRebound.value;
+    modifier += judge.triggerCounts.extendedRebound * judge.modifiers.extendedRebound.value;
+    
+    return modifier;
+  }
+
+  calculateImprovisationAficionado(judge, gameLog) {
+    let modifier = 0;
+    let meaningfulBreaks = 0;
+    let phoenixTriggered = false;
+    
+    gameLog.turns.forEach(turn => {
+      // Check for meaningful freestyle breaks
+      if (turn.flowBroke && turn.preFlowLevel >= 2 && 
+          (turn.card.type === 'freestyle' || this.isFreestyleBreakCard(turn.card))) {
+        meaningfulBreaks++;
+      }
+      
+      // Check for phoenix cards triggering
+      if ((turn.card.name === "Phoenix Rising" || turn.card.name === "From the Ashes") &&
+          turn.earnedScore > turn.card.base) {
+        phoenixTriggered = true;
+      }
+    });
+    
+    judge.triggerCounts.meaningfulBreaks = Math.min(meaningfulBreaks, judge.modifiers.meaningfulBreaks.max);
+    judge.triggerCounts.phoenixTrigger = phoenixTriggered ? 1 : 0;
+    
+    modifier += judge.triggerCounts.meaningfulBreaks * judge.modifiers.meaningfulBreaks.value;
+    if (phoenixTriggered) {
+      modifier += judge.modifiers.phoenixTrigger.value;
+    }
+    
+    return modifier;
+  }
+
+  calculateSprinter(judge, gameLog) {
+    let modifier = 0;
+    
+    // Early finish bonus
+    const finishTurn = gameLog.turns.findIndex(turn => turn.card.tags?.includes("Finish"));
+    if (finishTurn >= 0 && finishTurn <= 5) { // Turn 6 (0-indexed)
+      judge.triggerCounts.earlyFinish = 1;
+      modifier += judge.modifiers.earlyFinish.value;
+    }
+    
+    // Extra card draw bonus
+    if (gameLog.extraDrawsTotal >= 3) {
+      judge.triggerCounts.cardDraw = 1;
+      modifier += judge.modifiers.cardDraw.value;
+    }
+    
+    return modifier;
+  }
+
+  calculateMarathoner(judge, gameLog) {
+    let modifier = 0;
+    let lateTurns = 0;
+    let neverBroken = true;
+    
+    gameLog.turns.forEach((turn, index) => {
+      // Count turns 7-8 (indices 6-7)
+      if (index >= 6) {
+        lateTurns++;
+      }
+      
+      if (turn.flowBroke) {
+        neverBroken = false;
+      }
+    });
+    
+    judge.triggerCounts.endurance = Math.min(lateTurns, judge.modifiers.endurance.max);
+    judge.triggerCounts.neverBroken = neverBroken ? 1 : 0;
+    
+    modifier += judge.triggerCounts.endurance * judge.modifiers.endurance.value;
+    if (neverBroken) {
+      modifier += judge.modifiers.neverBroken.value;
+    }
+    
+    return modifier;
+  }
+
+  calculatePunctualist(judge, gameLog) {
+    let modifier = 0;
+    
+    // Perfect timing bonus (finish exactly on turn 7)
+    const finishTurn = gameLog.turns.findIndex(turn => turn.card.tags?.includes("Finish"));
+    if (finishTurn === 6) { // Turn 7 (0-indexed)
+      judge.triggerCounts.perfectTiming = 1;
+      modifier += judge.modifiers.perfectTiming.value;
+    }
+    
+    // Efficient stamina use
+    if (gameLog.finalStamina <= 1) {
+      judge.triggerCounts.efficient = 1;
+      modifier += judge.modifiers.efficient.value;
+    }
+    
+    return modifier;
+  }
+
+  calculatePaletteJudge(judge, gameLog) {
+    let modifier = 0;
+    const cardTypes = new Set();
+    let maxFlow = 0;
+    
+    gameLog.turns.forEach(turn => {
+      // Track card types
+      if (turn.card.tags?.includes("Walk")) cardTypes.add("Walk");
+      if (turn.card.tags?.includes("Trot")) cardTypes.add("Trot");
+      if (turn.card.tags?.includes("Canter")) cardTypes.add("Canter");
+      if (turn.card.tags?.includes("Transition")) cardTypes.add("Transition");
+      if (turn.card.tags?.includes("Finish")) cardTypes.add("Finish");
+      if (turn.card.type === "freestyle") cardTypes.add("Freestyle");
+      if (turn.card.type === "power") cardTypes.add("Power");
+      if (turn.card.type === "specialty") cardTypes.add("Specialty");
+      
+      maxFlow = Math.max(maxFlow, turn.postFlowLevel);
+    });
+    
+    judge.triggerCounts.variety = Math.min(cardTypes.size, judge.modifiers.variety.max);
+    modifier += judge.triggerCounts.variety * judge.modifiers.variety.value;
+    
+    // Too samey penalty
+    if (cardTypes.size <= 3 && maxFlow <= 2) {
+      judge.triggerCounts.tooSamey = 1;
+      modifier += judge.modifiers.tooSamey.value;
+    }
+    
+    return modifier;
+  }
+
+  calculateGaitSpecialist(judge, gameLog) {
+    let modifier = 0;
+    let specialtyCount = 0;
+    let playedSpecialty = false;
+    
+    gameLog.turns.forEach(turn => {
+      if (turn.card.tags?.includes(judge.declaredGait)) {
+        specialtyCount++;
+        playedSpecialty = true;
+      }
+    });
+    
+    judge.triggerCounts.specialtyBonus = Math.min(specialtyCount, judge.modifiers.specialtyBonus.max);
+    modifier += judge.triggerCounts.specialtyBonus * judge.modifiers.specialtyBonus.value;
+    
+    if (!playedSpecialty) {
+      judge.triggerCounts.missedSpecialty = 1;
+      modifier += judge.modifiers.missedSpecialty.value;
+    }
+    
+    return modifier;
+  }
+
+  calculateHandManagementJudge(judge, gameLog) {
+    let modifier = 0;
+    
+    judge.triggerCounts.extraDraws = Math.min(gameLog.extraDrawsTotal || 0, judge.modifiers.extraDraws.max);
+    modifier += judge.triggerCounts.extraDraws * judge.modifiers.extraDraws.value;
+    
+    // Never stamina-locked (simplified - assumes if player could always play something)
+    if (!gameLog.hadStaminaLock) {
+      judge.triggerCounts.neverLocked = 1;
+      modifier += judge.modifiers.neverLocked.value;
+    }
+    
+    return modifier;
+  }
+
+  // Helper methods
+  isNaturalProgression(prevCard, currentCard) {
+    const gaitOrder = { Walk: 1, Trot: 2, Canter: 3 };
+    const prevGait = this.getPrimaryGait(prevCard);
+    const currentGait = this.getPrimaryGait(currentCard);
+    
+    return gaitOrder[prevGait] && gaitOrder[currentGait] && 
+           gaitOrder[currentGait] === gaitOrder[prevGait] + 1;
+  }
+
+  isBackwardsGait(prevCard, currentCard) {
+    const gaitOrder = { Walk: 1, Trot: 2, Canter: 3 };
+    const prevGait = this.getPrimaryGait(prevCard);
+    const currentGait = this.getPrimaryGait(currentCard);
+    
+    // Only penalize if it's a backwards gait AND not a transition
+    return gaitOrder[prevGait] && gaitOrder[currentGait] && 
+           gaitOrder[currentGait] < gaitOrder[prevGait] && 
+           !currentCard.tags?.includes("Transition");
+  }
+
+  getPrimaryGait(card) {
+    if (card.tags?.includes("Walk")) return "Walk";
+    if (card.tags?.includes("Trot")) return "Trot"; 
+    if (card.tags?.includes("Canter")) return "Canter";
+    return null;
+  }
+
+  isFreestyleBreakCard(card) {
+    const freestyleBreakCards = [
+      "Spontaneous Leap", "Artistic Rebellion", "Bold Improvisation", 
+      "Creative Explosion", "All or Nothing"
+    ];
+    return freestyleBreakCards.includes(card.name);
+  }
+
+  // Calculate final scores with judge modifiers
+  calculateFinalScores(coreScore, judges) {
+    return judges.map(judge => ({
+      judgeName: judge.name,
+      emoji: judge.emoji,
+      coreScore: coreScore,
+      judgeModifier: judge.currentModifier,
+      finalScore: coreScore + judge.currentModifier,
+      triggerCounts: judge.triggerCounts
+    }));
+  }
+
+  // Get average final score
+  getAverageFinalScore(judgeScores) {
+    const total = judgeScores.reduce((sum, score) => sum + score.finalScore, 0);
+    return Math.round(total / judgeScores.length * 10) / 10; // Round to 1 decimal
+  }
+}
+
+export default JudgeSystem;

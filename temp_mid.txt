@@ -1,0 +1,180 @@
+      judge.currentModifier = 0;
+      judge.triggerCounts = {};
+      
+      // Initialize trigger counters for each modifier
+      Object.keys(judge.modifiers).forEach(key => {
+        judge.triggerCounts[key] = 0;
+      });
+      
+      // Special initialization for Gait Specialist
+      if (id === 'gaitSpecialist') {
+        const gaits = ['Walk', 'Trot', 'Canter'];
+        judge.declaredGait = gaits[Math.floor(Math.random() * gaits.length)];
+      }
+      
+      return judge;
+    });
+    
+    return judges;
+  }
+
+  // Calculate judge modifiers based on game state
+  calculateJudgeModifiers(judges, gameLog) {
+    return judges.map(judge => {
+      const updatedJudge = { ...judge };
+      updatedJudge.currentModifier = 0;
+      updatedJudge.triggerCounts = { ...judge.triggerCounts };
+      
+      // Calculate modifiers based on judge type
+      switch (judge.id) {
+        case 'perfectionist':
+          updatedJudge.currentModifier = this.calculatePerfectionist(updatedJudge, gameLog);
+          break;
+        case 'finishersEye':
+          updatedJudge.currentModifier = this.calculateFinishersEye(updatedJudge, gameLog);
+          break;
+        case 'linearityJudge':
+          updatedJudge.currentModifier = this.calculateLinearityJudge(updatedJudge, gameLog);
+          break;
+        case 'maverick':
+          updatedJudge.currentModifier = this.calculateMaverick(updatedJudge, gameLog);
+          break;
+        case 'reboundJudge':
+          updatedJudge.currentModifier = this.calculateReboundJudge(updatedJudge, gameLog);
+          break;
+        case 'improvisationAficionado':
+          updatedJudge.currentModifier = this.calculateImprovisationAficionado(updatedJudge, gameLog);
+          break;
+        case 'sprinter':
+          updatedJudge.currentModifier = this.calculateSprinter(updatedJudge, gameLog);
+          break;
+        case 'marathoner':
+          updatedJudge.currentModifier = this.calculateMarathoner(updatedJudge, gameLog);
+          break;
+        case 'punctualist':
+          updatedJudge.currentModifier = this.calculatePunctualist(updatedJudge, gameLog);
+          break;
+        case 'paletteJudge':
+          updatedJudge.currentModifier = this.calculatePaletteJudge(updatedJudge, gameLog);
+          break;
+        case 'gaitSpecialist':
+          updatedJudge.currentModifier = this.calculateGaitSpecialist(updatedJudge, gameLog);
+          break;
+        case 'handManagementJudge':
+          updatedJudge.currentModifier = this.calculateHandManagementJudge(updatedJudge, gameLog);
+          break;
+      }
+      
+      // Apply caps
+      updatedJudge.currentModifier = Math.max(
+        judge.cap.negative, 
+        Math.min(judge.cap.positive, updatedJudge.currentModifier)
+      );
+      
+      return updatedJudge;
+    });
+  }
+
+  // Individual judge calculation methods
+  calculatePerfectionist(judge, gameLog) {
+    let modifier = 0;
+    let highFlowTurns = 0;
+    let flowBroken = false;
+    
+    gameLog.turns.forEach(turn => {
+      if (turn.postFlowLevel >= 3) {
+        highFlowTurns++;
+      }
+      if (turn.flowBroke) {
+        flowBroken = true;
+      }
+    });
+    
+    judge.triggerCounts.highFlowTurns = Math.min(highFlowTurns, judge.modifiers.highFlowTurns.max);
+    judge.triggerCounts.flowBroken = flowBroken ? 1 : 0;
+    
+    modifier += judge.triggerCounts.highFlowTurns * judge.modifiers.highFlowTurns.value;
+    if (flowBroken) {
+      modifier += judge.modifiers.flowBroken.value;
+    }
+    
+    return modifier;
+  }
+
+  calculateFinishersEye(judge, gameLog) {
+    let modifier = 0;
+    const lastTurn = gameLog.turns[gameLog.turns.length - 1];
+    
+    // Strong finish bonus
+    if (lastTurn?.card?.tags?.includes("Finish") && lastTurn.preFlowLevel >= 3) {
+      judge.triggerCounts.strongFinish = 1;
+      modifier += judge.modifiers.strongFinish.value;
+    }
+    
+    // Long routine bonus
+    if (gameLog.turns.length >= 6) {
+      judge.triggerCounts.longRoutine = 1;
+      modifier += judge.modifiers.longRoutine.value;
+    }
+    
+    return modifier;
+  }
+
+  calculateLinearityJudge(judge, gameLog) {
+    let modifier = 0;
+    let naturalProgressions = 0;
+    let backwardsGaits = 0;
+    
+    for (let i = 1; i < gameLog.turns.length; i++) {
+      const prevCard = gameLog.turns[i - 1].card;
+      const currentCard = gameLog.turns[i].card;
+      
+      // Check for natural progression (Walk→Trot→Canter)
+      if (this.isNaturalProgression(prevCard, currentCard)) {
+        naturalProgressions++;
+      }
+      
+      // Check for backwards gait without transition
+      if (this.isBackwardsGait(prevCard, currentCard)) {
+        backwardsGaits++;
+      }
+    }
+    
+    judge.triggerCounts.naturalProgression = Math.min(naturalProgressions, judge.modifiers.naturalProgression.max);
+    judge.triggerCounts.backwardsGait = Math.min(backwardsGaits, Math.abs(judge.modifiers.backwardsGait.max));
+    
+    modifier += judge.triggerCounts.naturalProgression * judge.modifiers.naturalProgression.value;
+    modifier += judge.triggerCounts.backwardsGait * judge.modifiers.backwardsGait.value;
+    
+    return modifier;
+  }
+
+  calculateMaverick(judge, gameLog) {
+    let modifier = 0;
+    let boldBreakTriggered = false;
+    let strongRecoveries = 0;
+    
+    gameLog.turns.forEach((turn, index) => {
+      // Check for bold break (first time breaking from ≥3)
+      if (!boldBreakTriggered && turn.flowBroke && turn.preFlowLevel >= 3) {
+        boldBreakTriggered = true;
+        judge.triggerCounts.boldBreak = 1;
+        modifier += judge.modifiers.boldBreak.value;
+      }
+      
+      // Check for strong post-break moves
+      if (index > 0 && gameLog.turns[index - 1].flowBroke && turn.earnedScore >= 4) {
+        strongRecoveries++;
+      }
+    });
+    
+    judge.triggerCounts.strongRecovery = Math.min(strongRecoveries, judge.modifiers.strongRecovery.max);
+    modifier += judge.triggerCounts.strongRecovery * judge.modifiers.strongRecovery.value;
+    
+    return modifier;
+  }
+
+  calculateReboundJudge(judge, gameLog) {
+    let modifier = 0;
+    let quickRebounds = 0;
+    let extendedRebounds = 0;
