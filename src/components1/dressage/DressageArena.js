@@ -37,14 +37,15 @@ const DressageArena = ({
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6 bg-white rounded-lg p-4 shadow-lg"
+          className="mb-6 bg-white rounded-lg p-4 shadow-lg"
         >
           <div className="flex items-center justify-between">
-            <div className="flex-1"></div>
-            <div className="flex-1 flex justify-end items-center gap-4">
+            <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-800">
                 Dressage
               </h1>
+            </div>
+            <div className="flex justify-end items-center gap-4">
               <div className="flex gap-2">
               {onShowTutorial && (
                 <button 
