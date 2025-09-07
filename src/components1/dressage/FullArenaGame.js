@@ -290,7 +290,21 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setJudgeScores([]);
     
     // Set judge-aware message
-    const judgeNames = judges.map(j => `${j.emoji} ${j.name}`).join(', ');
+    const judgeVisualMapping = {
+      perfectionist: 'Regina',
+      finishersEye: 'Maestro',
+      linearityJudge: 'Takeshi',
+      maverick: 'Zyx',
+      reboundJudge: 'Hero',
+      improvisationAficionado: 'Gelato',
+      sprinter: 'X-42',
+      marathoner: 'Atlas',
+      punctualist: 'Quill',
+      paletteJudge: 'Tex',
+      gaitSpecialist: 'Gachi',
+      handManagementJudge: 'Phantom'
+    };
+    const judgeNames = judges.map(j => judgeVisualMapping[j.id] || j.name).join(', ');
     setMessage(`Turn 1/8 - Judges selected: ${judgeNames}. Your turn!`);
     setGameState('playing');
   };

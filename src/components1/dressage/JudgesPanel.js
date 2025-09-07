@@ -206,6 +206,7 @@ const JudgesPanel = ({
 
   // Create visual judges from the new judge system (reactive)
   const [judges, setJudges] = useState([]);
+  const [currentCommentingJudgeIndex, setCurrentCommentingJudgeIndex] = useState(0);
 
   useEffect(() => {
     if (selectedJudges && selectedJudges.length > 0) {
@@ -465,17 +466,27 @@ const JudgesPanel = ({
 
   // React to card plays
   useEffect(() => {
-    if (lastPlayedCard) {
+    if (lastPlayedCard && judges.length > 0) {
       const baseScore = lastPlayedCard.earnedScore || lastPlayedCard.base || 0;
       
+      // Calculate scores for all judges but only make one comment
       judges.forEach(judge => {
         const judgeScore = calculateJudgeScore(judge, lastPlayedCard, baseScore, flowLength, flowBroke);
-        const reaction = generateJudgeReaction(judge, lastPlayedCard, judgeScore, flowLength, flowBroke);
-        
         setJudgeScores(prev => ({ ...prev, [judge.id]: judgeScore }));
-        setJudgeReactions(prev => ({ ...prev, [judge.id]: reaction }));
-        setReactingJudges(prev => ({ ...prev, [judge.id]: true }));
       });
+
+      // Only the current commenting judge reacts with a comment
+      const commentingJudge = judges[currentCommentingJudgeIndex];
+      if (commentingJudge) {
+        const judgeScore = calculateJudgeScore(commentingJudge, lastPlayedCard, baseScore, flowLength, flowBroke);
+        const reaction = generateJudgeReaction(commentingJudge, lastPlayedCard, judgeScore, flowLength, flowBroke);
+        
+        setJudgeReactions(prev => ({ ...prev, [commentingJudge.id]: reaction }));
+        setReactingJudges({ [commentingJudge.id]: true });
+
+        // Move to next judge for next comment
+        setCurrentCommentingJudgeIndex(prev => (prev + 1) % judges.length);
+      }
 
       // Clear reactions after 3 seconds
       const timer = setTimeout(() => {
@@ -555,50 +566,53 @@ const JudgesPanel = ({
                       {/* Click indicator removed per feedback */}
                     </motion.div>
 
-                    {/* Judge Name Plate - Also Clickable */}
-                    <div 
-                      className="-mt-4 px-2 py-1 text-xs font-bold text-center rounded cursor-pointer hover:bg-gradient-to-r hover:from-yellow-300 hover:to-yellow-400 transition-all"
-                      style={{
-                        background: 'linear-gradient(145deg, #D4AF37, #B8860B)',
-                        color: '#2C1810',
-                        border: '1px solid #8B7355',
-                        minWidth: '60px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                      }}
-                      onClick={() => onJudgeClick && onJudgeClick(judge)}
-                      title={`Click to see ${judge.name} scoring criteria`}
-                    >
-                      {judge.name.replace('Judge ', '').replace(/🧭|🎯|➡️|🔥|🦅|🎭|⚡|🏁|⏱️|🎨|🐎|🗃️/g, '').trim()}
+                    {/* Judge Name Plate and Comment Bubble Container */}
+                    <div className="relative">
+                      {/* Comment bubble positioned above name plate */}
+                      <AnimatePresence>
+                        {reactingJudges[judge.id] && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.7 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 1.2 }}
+                            className="absolute bottom-full mb-2 left-0 right-0 mx-auto bg-white rounded-xl px-3 py-2 shadow-2xl border-2 border-gray-200 whitespace-nowrap w-max"
+                            style={{ zIndex: 40 }}
+                          >
+                            <div className="text-xs font-medium text-gray-800 text-center">
+                              <span className="font-bold text-blue-600">
+                                {judge.name.replace('Judge ', '')}:
+                              </span>
+                              <br />
+                              <span className="font-bold text-gray-900">
+                                "{judgeReactions[judge.id]}"
+                              </span>
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Judge Name Plate - Also Clickable */}
+                      <div 
+                        className="-mt-4 px-2 py-1 text-xs font-bold text-center rounded cursor-pointer hover:bg-gradient-to-r hover:from-yellow-300 hover:to-yellow-400 transition-all"
+                        style={{
+                          background: 'linear-gradient(145deg, #D4AF37, #B8860B)',
+                          color: '#2C1810',
+                          border: '1px solid #8B7355',
+                          minWidth: '60px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
+                        onClick={() => onJudgeClick && onJudgeClick(judge)}
+                        title={`Click to see ${judge.name} scoring criteria`}
+                      >
+                        {judge.name.replace('Judge ', '').replace(/🧭|🎯|➡️|🔥|🦅|🎭|⚡|🏁|⏱️|🎨|🐎|🗃️/g, '').trim()}
+                      </div>
                     </div>
 
                   </div>
                 ))}
               </div>
 
-              {/* Reaction Bubble - Above Everything */}
-              <AnimatePresence>
-                {judges.some(judge => reactingJudges[judge.id]) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.7 }}
-                    animate={{ opacity: 1, y: -60, scale: 1 }}
-                    exit={{ opacity: 0, y: -80, scale: 1.2 }}
-                    className="absolute left-1/2 transform -translate-x-1/2 bg-white rounded-xl px-4 py-3 shadow-2xl border-2 border-gray-200"
-                    style={{ zIndex: 40, maxWidth: '200px' }}
-                  >
-                    <div className="text-sm font-medium text-gray-800 text-center">
-                      <span className="font-bold text-blue-600">
-                        {judges.find(judge => reactingJudges[judge.id] && judgeReactions[judge.id])?.name.replace('Judge ', '') || 'Judge'}:
-                      </span>
-                      <br />
-                      <span className="font-bold text-gray-900">
-                        "{Object.entries(reactingJudges).find(([id, reacting]) => reacting)?.[0] && 
-                         judgeReactions[Object.entries(reactingJudges).find(([id, reacting]) => reacting)?.[0]]}"
-                      </span>
-                    </div>
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-white"></div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>
