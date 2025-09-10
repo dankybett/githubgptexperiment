@@ -19,6 +19,7 @@ const DressageArena = ({
   onBack,
   onShowTutorial,
   selectedJudges = null, // Pass judge system
+  todaysCriteria = null, // Today's competition focus
   onJudgeClick = null, // Judge click handler
   children 
 }) => {
@@ -69,6 +70,23 @@ const DressageArena = ({
           </div>
           
         </motion.div>
+
+        {/* Today's Competition Focus */}
+        {todaysCriteria && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-center"
+          >
+            <div className="text-sm font-bold text-blue-800 mb-1">
+              🏆 Today's Competition Focus: "{todaysCriteria.name}"
+            </div>
+            <div className="text-xs text-gray-700">
+              How to impress today's judges: {todaysCriteria.shortDesc}
+            </div>
+          </motion.div>
+        )}
 
         {/* Main Arena */}
         <motion.div 

@@ -214,9 +214,10 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
   // Judge system state
   const [judgeSystem] = useState(new JudgeSystem());
   const [selectedJudges, setSelectedJudges] = useState([]);
+  const [todaysCriteria, setTodaysCriteria] = useState(null);
   const [gameLog, setGameLog] = useState({ turns: [], extraDrawsTotal: 0, finalStamina: 0, hadStaminaLock: false });
   const [showJudgePanel, setShowJudgePanel] = useState(false);
-  const [judgeScores, setJudgeScores] = useState([]);
+  const [judgeScores, setJudgeScores] = useState(null);
   const [focusedJudgeId, setFocusedJudgeId] = useState(null);
   // Competition state
   const COMP_THRESHOLDS = {
@@ -283,11 +284,15 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     setNextCardBonus(0);
     setTurnPhase('buy');
     
-    // Initialize judges
+    // Initialize today's criteria and visual judges
+    const criteria = judgeSystem.selectTodaysCriteria();
+    setTodaysCriteria(criteria);
+    
+    // For display purposes, still select 3 visual judges (but they all use same criteria)
     const judges = judgeSystem.selectJudges();
     setSelectedJudges(judges);
     setGameLog({ turns: [], extraDrawsTotal: 0, finalStamina: 0, hadStaminaLock: false });
-    setJudgeScores([]);
+    setJudgeScores(null);
     
     // Set judge-aware message
     const judgeVisualMapping = {
@@ -1262,9 +1267,9 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
     };
     setGameLog(updatedGameLog);
 
-    // Update judges with live modifiers so modal shows current progress
-    const judgesWithLive = judgeSystem.calculateJudgeModifiers(selectedJudges, updatedGameLog);
-    setSelectedJudges(judgesWithLive);
+    // Update today's criteria with live modifiers so modal shows current progress
+    const criteriaWithLive = judgeSystem.calculateJudgeModifiers([todaysCriteria], updatedGameLog);
+    setTodaysCriteria(criteriaWithLive[0]);
 
     // Clear performance state after animation
     setTimeout(() => {
@@ -1277,11 +1282,11 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       setGameState('finished');
       const finalTotalScore = totalScore + finalScore;
       
-      // Calculate final judge scores
-      const judgesWithScores = judgeSystem.calculateJudgeModifiers(selectedJudges, updatedGameLog);
-      const finalJudgeScores = judgeSystem.calculateFinalScores(finalTotalScore, judgesWithScores);
-      const averageScore = judgeSystem.getAverageFinalScore(finalJudgeScores);
-      setJudgeScores(finalJudgeScores);
+      // Calculate final score with today's criteria
+      const criteriaWithScores = judgeSystem.calculateJudgeModifiers([todaysCriteria], updatedGameLog);
+      const finalJudgeScore = judgeSystem.calculateFinalScores(finalTotalScore, criteriaWithScores[0]);
+      const averageScore = judgeSystem.getAverageFinalScore(finalJudgeScore);
+      setJudgeScores(finalJudgeScore);
       
       let rating = "Novice";
       if (averageScore >= 35) rating = "Master";
@@ -1404,7 +1409,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
 
   // Finished screen
   if (gameState === 'finished') {
-    const averageScore = judgeScores.length > 0 ? judgeSystem.getAverageFinalScore(judgeScores) : totalScore;
+    const averageScore = judgeScores ? judgeSystem.getAverageFinalScore(judgeScores) : totalScore;
     let rating = "Novice";
     if (averageScore >= 35) rating = "Master";
     else if (averageScore >= 25) rating = "Advanced";
@@ -1438,21 +1443,20 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
           <h1 className="text-4xl font-bold mb-2">Routine Complete!</h1>
           
-          {judgeScores.length > 0 ? (
+          {judgeScores ? (
             <div>
-              <div className="text-lg mb-3">Judge Scores:</div>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {judgeScores.map((score, index) => (
-                  <div key={index} className="bg-gray-50 rounded p-2">
-                    <div className="text-sm font-semibold">{score.emoji} {score.judgeName.split(' ')[1]}</div>
-                    <div className="text-lg font-bold text-blue-600">{score.finalScore}</div>
-                    <div className="text-xs text-gray-600">
-                      {score.coreScore} + {score.judgeModifier >= 0 ? '+' : ''}{score.judgeModifier}
-                    </div>
+              <div className="text-lg mb-3">Today's Competition Focus:</div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl mb-2">{judgeScores.emoji}</div>
+                  <div className="font-bold text-lg text-blue-800">{judgeScores.criteriaName}</div>
+                  <div className="text-sm text-gray-600 mb-2">{judgeScores.shortDesc}</div>
+                  <div className="text-xs text-gray-600 mb-2">
+                    Core: {judgeScores.coreScore} + Criteria: {judgeScores.criteriaModifier >= 0 ? '+' : ''}{judgeScores.criteriaModifier}
                   </div>
-                ))}
+                  <div className="text-3xl font-bold text-blue-600">{judgeScores.finalScore}</div>
+                </div>
               </div>
-              <div className="text-2xl mb-4">Average Score: <span className="font-bold text-blue-600">{averageScore}</span></div>
             </div>
           ) : (
             <div className="text-2xl mb-4">Final Score: <span className="font-bold text-blue-600">{totalScore}</span></div>
@@ -1501,6 +1505,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
       }}
       competitionLevel={competitionLevel === 'introductory' ? 'Introductory' : competitionLevel === 'intermediate' ? 'Intermediate' : 'Grand Prix'}
       selectedJudges={selectedJudges}
+      todaysCriteria={todaysCriteria}
       onJudgeClick={(judge) => {
         const sysId = judge?.systemJudge?.id || null;
         setFocusedJudgeId(sysId);
@@ -1522,6 +1527,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
             Change
           </button>
         </div>
+
 
         {/* Message */}
         {message && (
@@ -1808,7 +1814,7 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">🏆 Competition Judges</h2>
+                <h2 className="text-xl font-bold">🏆 Today's Competition Focus</h2>
                 <button 
                   onClick={() => { setShowJudgePanel(false); setFocusedJudgeId(null); }}
                   className="text-gray-500 hover:text-gray-700"
@@ -1817,85 +1823,79 @@ const FullArenaGame = ({ selectedHorse, onBack }) => {
                 </button>
               </div>
               
-              <div className="grid md:grid-cols-3 gap-4">
-                {selectedJudges.map((judge) => {
-                  const visual = systemJudgeVisuals[judge.id] || null;
-                  const displayTitle = visual ? `${visual.name} - ${judge.name} Judge` : judge.name;
-                  return (
-                    <div key={judge.id} className={`rounded-lg p-4 border-2 ${judge.id === focusedJudgeId ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
-                      <div className="text-center mb-3">
-                        {visual ? (
-                          <img src={visual.avatar} alt={visual.name} className="w-12 h-12 mx-auto mb-1 object-contain" />
-                        ) : (
-                          <div className="text-2xl mb-1">{judge.emoji}</div>
-                        )}
-                        <div className="font-bold text-lg">{displayTitle}</div>
-                        <div className="text-sm text-gray-600 mb-2">{judge.description}</div>
+              {/* Today's Competition Focus */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="text-center">
+                  <div className="text-3xl mb-3">{todaysCriteria?.emoji}</div>
+                  <div className="text-xl font-bold text-blue-800 mb-2">{todaysCriteria?.name}</div>
+                  <div className="text-sm text-gray-600 mb-4">{todaysCriteria?.description}</div>
+                  <div className="text-sm font-semibold text-blue-700 mb-4">
+                    How to impress today's judges: {todaysCriteria?.shortDesc}
+                  </div>
+                  
+                  {/* Special case for Gait Specialist */}
+                  {todaysCriteria?.id === 'gaitSpecialist' && todaysCriteria.declaredGait && (
+                    <div className="mb-4 p-3 bg-blue-100 rounded">
+                      <div className="font-semibold text-sm text-blue-800">
+                        Today's Specialty Gait: {todaysCriteria.declaredGait} moves
                       </div>
-                    
-                      {/* Judge Requirements */}
-                      <div className="bg-gray-50 rounded p-3">
-                        <h4 className="font-semibold text-sm mb-2">How to impress {visual ? visual.name.replace('Judge ', '') : 'the Judge'}:</h4>
-                        <div className="text-xs space-y-1">
-                          {Object.entries(judge.modifiers).map(([key, modifier]) => (
-                            <div key={key} className={`${modifier.value > 0 ? 'text-green-700' : 'text-red-700'}`}>
-                              {modifier.description}
-                            </div>
-                          ))}
-                        </div>
+                    </div>
+                  )}
+                  
+                  {/* Live scoring display */}
+                  {todaysCriteria && (
+                    <div className="space-y-2">
+                      {Object.entries(todaysCriteria.modifiers).map(([key, modifier]) => {
+                        const triggerCount = todaysCriteria.triggerCounts?.[key] || 0;
+                        const currentValue = triggerCount * modifier.value;
+                        const cappedValue = Math.max(modifier.value < 0 ? modifier.max : -Infinity, Math.min(modifier.value > 0 ? modifier.max : Infinity, currentValue));
+                        const isMaxed = cappedValue === modifier.max && modifier.max !== 0;
                         
-                        {/* Special case for Gait Specialist */}
-                        {judge.id === 'gaitSpecialist' && judge.declaredGait && (
-                          <div className="mt-2 p-2 bg-blue-100 rounded">
-                            <div className="font-semibold text-sm text-blue-800">
-                              Specialty: {judge.declaredGait} moves
+                        return (
+                          <div key={key} className={`text-sm px-3 py-2 rounded ${isMaxed ? 'bg-green-100 text-green-800' : currentValue > 0 ? 'bg-blue-100 text-blue-800' : currentValue < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}`}>
+                            <div className="flex justify-between items-center">
+                              <span>{modifier.description}</span>
+                              <span className="font-bold">
+                                {cappedValue > 0 ? '+' : ''}{cappedValue}
+                                {isMaxed && ' (MAX)'}
+                              </span>
                             </div>
                           </div>
-                        )}
+                        );
+                      })}
+                      
+                      {/* Total current modifier */}
+                      <div className="border-t pt-3 mt-3">
+                        <div className="flex justify-between items-center text-lg font-bold">
+                          <span>Current Modifier:</span>
+                          <span className={todaysCriteria.currentModifier > 0 ? 'text-green-600' : todaysCriteria.currentModifier < 0 ? 'text-red-600' : 'text-gray-600'}>
+                            {todaysCriteria.currentModifier > 0 ? '+' : ''}{todaysCriteria.currentModifier}
+                          </span>
+                        </div>
                         
                         <div className="mt-2 text-xs text-gray-500">
-                          Cap: +{judge.cap.positive}{judge.cap.negative < 0 ? ` / ${judge.cap.negative}` : ''}
+                          Cap: +{todaysCriteria.cap.positive}{todaysCriteria.cap.negative < 0 ? ` / ${todaysCriteria.cap.negative}` : ''}
                         </div>
                       </div>
-
-                      {/* Current Progress (if game in progress) */}
-                      {gameLog.turns.length > 0 && (
-                        <div className="mt-3 p-2 bg-blue-50 rounded">
-                          <h5 className="font-semibold text-sm text-blue-800 mb-1">Current Progress:</h5>
-                          <div className="text-xs text-blue-700">
-                            {Object.entries(judge.triggerCounts || {}).map(([key, count]) => (
-                              count > 0 && <div key={key}>{key}: {count}</div>
-                            ))}
-                            <div className="font-semibold mt-1">
-                              Modifier: {judge.currentModifier >= 0 ? '+' : ''}{judge.currentModifier || 0}
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
               
-              {/* Final Scores (if game finished) */}
-              {judgeScores.length > 0 && (
+              {/* Final Score (if game finished) */}
+              {judgeScores && (
                 <div className="mt-6 border-t pt-4">
-                  <h3 className="text-lg font-bold mb-3">📊 Final Judge Scores</h3>
-                  <div className="grid md:grid-cols-3 gap-4 mb-4">
-                    {judgeScores.map((score, index) => (
-                      <div key={index} className="bg-gray-50 rounded p-3 text-center">
-                        <div className="font-semibold">{score.emoji} {score.judgeName}</div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          Core: {score.coreScore} + Modifier: {score.judgeModifier >= 0 ? '+' : ''}{score.judgeModifier}
-                        </div>
-                        <div className="text-xl font-bold text-blue-600">
-                          {score.finalScore}
-                        </div>
+                  <h3 className="text-lg font-bold mb-3">📊 Final Score</h3>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="text-center">
+                      <div className="font-semibold text-lg">{judgeScores.emoji} {judgeScores.criteriaName}</div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        Core: {judgeScores.coreScore} + Criteria: {judgeScores.criteriaModifier >= 0 ? '+' : ''}{judgeScores.criteriaModifier}
                       </div>
-                    ))}
-                  </div>
-                  <div className="text-center text-lg font-bold">
-                    Average Score: {judgeSystem.getAverageFinalScore(judgeScores)}
+                      <div className="text-2xl font-bold text-blue-600">
+                        {judgeScores.finalScore}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

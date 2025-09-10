@@ -166,36 +166,47 @@ export class JudgeSystem {
     };
   }
 
-  // Select 3 random judges for a game
-  selectJudges() {
+  // Select a single random criteria for today's competition
+  selectTodaysCriteria() {
     const judgeIds = Object.keys(this.judgeDefinitions);
-    const shuffled = [...judgeIds].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 3);
+    const randomId = judgeIds[Math.floor(Math.random() * judgeIds.length)];
+    const selectedCriteria = { ...this.judgeDefinitions[randomId] };
     
-    // Initialize selected judges with fresh state
-    const judges = selected.map(id => {
-      const judge = { ...this.judgeDefinitions[id] };
-      
-      // Initialize tracking state
-      judge.id = id;
-      judge.currentModifier = 0;
-      judge.triggerCounts = {};
-      
-      // Initialize trigger counters for each modifier
-      Object.keys(judge.modifiers).forEach(key => {
-        judge.triggerCounts[key] = 0;
-      });
-      
-      // Special initialization for Gait Specialist
-      if (id === 'gaitSpecialist') {
-        const gaits = ['Walk', 'Trot', 'Canter'];
-        judge.declaredGait = gaits[Math.floor(Math.random() * gaits.length)];
-      }
-      
-      return judge;
+    // Initialize tracking state
+    selectedCriteria.id = randomId;
+    selectedCriteria.currentModifier = 0;
+    selectedCriteria.triggerCounts = {};
+    
+    // Initialize trigger counters for each modifier
+    Object.keys(selectedCriteria.modifiers).forEach(key => {
+      selectedCriteria.triggerCounts[key] = 0;
     });
     
-    return judges;
+    // Special initialization for Gait Specialist
+    if (randomId === 'gaitSpecialist') {
+      const gaits = ['Walk', 'Trot', 'Canter'];
+      selectedCriteria.declaredGait = gaits[Math.floor(Math.random() * gaits.length)];
+    }
+    
+    return selectedCriteria;
+  }
+
+  // Legacy method for backward compatibility - now returns 3 visual judges but single criteria
+  selectJudges() {
+    // Select the single criteria
+    const todaysCriteria = this.selectTodaysCriteria();
+    
+    // Get all available judge IDs and select 3 different ones for visual display
+    const judgeIds = Object.keys(this.judgeDefinitions);
+    const shuffled = [...judgeIds].sort(() => Math.random() - 0.5);
+    const selectedVisualIds = shuffled.slice(0, 3);
+    
+    // Return 3 different visual judges but all using the same scoring criteria
+    return selectedVisualIds.map((visualId, index) => ({
+      ...todaysCriteria,
+      id: visualId, // Use different visual ID for each judge
+      visualIndex: index // Keep track of visual position
+    }));
   }
 
   // Calculate judge modifiers based on game state
@@ -517,22 +528,38 @@ export class JudgeSystem {
     return freestyleBreakCards.includes(card.name);
   }
 
-  // Calculate final scores with judge modifiers
-  calculateFinalScores(coreScore, judges) {
-    return judges.map(judge => ({
-      judgeName: judge.name,
-      emoji: judge.emoji,
+  // Calculate final scores with single criteria modifier
+  calculateFinalScores(coreScore, criteria) {
+    // With single criteria, we just return one final score
+    const modifier = Array.isArray(criteria) ? criteria[0].currentModifier : criteria.currentModifier;
+    const triggerCounts = Array.isArray(criteria) ? criteria[0].triggerCounts : criteria.triggerCounts;
+    const criteriaObj = Array.isArray(criteria) ? criteria[0] : criteria;
+    
+    return {
+      criteriaName: criteriaObj.name,
+      emoji: criteriaObj.emoji,
       coreScore: coreScore,
-      judgeModifier: judge.currentModifier,
-      finalScore: coreScore + judge.currentModifier,
-      triggerCounts: judge.triggerCounts
-    }));
+      criteriaModifier: modifier,
+      finalScore: coreScore + modifier,
+      triggerCounts: triggerCounts,
+      shortDesc: criteriaObj.shortDesc
+    };
   }
 
-  // Get average final score
+  // Get final score (no averaging needed with single criteria)
+  getFinalScore(scoreData) {
+    return scoreData.finalScore;
+  }
+
+  // Legacy method for backward compatibility
   getAverageFinalScore(judgeScores) {
+    // If it's the new single criteria format
+    if (!Array.isArray(judgeScores)) {
+      return judgeScores.finalScore;
+    }
+    // If it's still the old array format
     const total = judgeScores.reduce((sum, score) => sum + score.finalScore, 0);
-    return Math.round((total / judgeScores.length) * 10) / 10; // Round to 1 decimal
+    return Math.round((total / judgeScores.length) * 10) / 10;
   }
 }
 
